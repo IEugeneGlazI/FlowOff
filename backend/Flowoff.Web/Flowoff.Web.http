@@ -109,3 +109,80 @@ Content-Type: application/json
 {
   "status": "InAssembly"
 }
+
+### Couriers list
+GET {{Flowoff.Web_HostAddress}}/api/couriers
+Authorization: Bearer FLORIST_TOKEN
+
+### Florist assign courier
+PATCH {{Flowoff.Web_HostAddress}}/api/florist/orders/ORDER_ID/assign-courier
+Authorization: Bearer FLORIST_TOKEN
+Content-Type: application/json
+
+{
+  "courierEmail": "courier@flowoff.local"
+}
+
+### Courier assigned orders
+GET {{Flowoff.Web_HostAddress}}/api/courier/orders
+Authorization: Bearer COURIER_TOKEN
+
+### Courier update delivery status
+PATCH {{Flowoff.Web_HostAddress}}/api/courier/orders/ORDER_ID/delivery-status
+Authorization: Bearer COURIER_TOKEN
+Content-Type: application/json
+
+{
+  "status": "InTransit"
+}
+
+### Promotions
+GET {{Flowoff.Web_HostAddress}}/api/promotions
+
+### Create promotion
+POST {{Flowoff.Web_HostAddress}}/api/promotions
+Authorization: Bearer ADMIN_TOKEN
+Content-Type: application/json
+
+{
+  "title": "Spring discount",
+  "description": "Discount for seasonal bouquets",
+  "discountPercent": 10,
+  "startsAtUtc": "2026-04-26T00:00:00Z",
+  "endsAtUtc": "2026-05-05T00:00:00Z"
+}
+
+### Admin statistics
+GET {{Flowoff.Web_HostAddress}}/api/admin/statistics
+Authorization: Bearer ADMIN_TOKEN
+
+### Calculate custom bouquet
+POST {{Flowoff.Web_HostAddress}}/api/custombouquets/calculate
+Authorization: Bearer {{customer_token}}
+Content-Type: application/json
+
+[
+  {
+    "productId": "{{product_id}}",
+    "quantity": 5
+  }
+]
+
+### Create custom bouquet
+POST {{Flowoff.Web_HostAddress}}/api/custombouquets
+Authorization: Bearer {{customer_token}}
+Content-Type: application/json
+
+{
+  "name": "My spring bouquet",
+  "items": [
+    {
+      "productId": "{{product_id}}",
+      "quantity": 5
+    }
+  ]
+}
+
+### My custom bouquets
+GET {{Flowoff.Web_HostAddress}}/api/custombouquets/my
+Authorization: Bearer {{customer_token}}

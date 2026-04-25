@@ -129,6 +129,15 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
                 .HasForeignKey(item => item.CustomBouquetId);
         });
 
+        builder.Entity<CustomBouquetItem>(entity =>
+        {
+            entity.Property(item => item.UnitPrice).HasPrecision(18, 2);
+            entity.HasOne(item => item.Product)
+                .WithMany()
+                .HasForeignKey(item => item.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         builder.Entity<SupportRequest>(entity =>
         {
             entity.Property(request => request.CustomerId).HasMaxLength(450).IsRequired();

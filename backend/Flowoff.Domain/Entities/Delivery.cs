@@ -19,4 +19,19 @@ public class Delivery : Entity
         OrderId = orderId;
         Address = address;
     }
+
+    public void AssignCourier(string courierId)
+    {
+        if (string.IsNullOrWhiteSpace(courierId))
+        {
+            throw new ArgumentOutOfRangeException(nameof(courierId));
+        }
+
+        CourierId = courierId;
+    }
+
+    public void MarkDelivered()
+    {
+        DeliveredAtUtc = DateTime.UtcNow;
+    }
 }

@@ -62,6 +62,27 @@ public class Order : Entity
 
     public void SetDeliveryStatus(OrderStatus status)
     {
+        var allowedStatuses = new[]
+        {
+            OrderStatus.InTransit,
+            OrderStatus.Delivered
+        };
+
+        if (!allowedStatuses.Contains(status))
+        {
+            throw new InvalidOperationException("Invalid delivery status.");
+        }
+
+        if (Delivery is null || string.IsNullOrWhiteSpace(Delivery.CourierId))
+        {
+            throw new InvalidOperationException("Courier must be assigned before delivery workflow starts.");
+        }
+
+        if (status == OrderStatus.Delivered)
+        {
+            Delivery.MarkDelivered();
+        }
+
         Status = status;
     }
 
@@ -73,5 +94,21 @@ public class Order : Entity
     public void AttachPayment(Payment payment)
     {
         Payment = payment;
+    }
+
+    public void AssignCourier(string courierId)
+    {
+        if (Delivery is null)
+        {
+            throw new InvalidOperationException("Only delivery orders can be assigned to courier.");
+        }
+
+        if (Status != OrderStatus.Assembled && Status != OrderStatus.TransferredToCourier)
+        {
+            throw new InvalidOperationException("Courier can only be assigned after assembly is completed.");
+        }
+
+        Delivery.AssignCourier(courierId);
+        Status = OrderStatus.TransferredToCourier;
     }
 }

@@ -8,6 +8,7 @@ namespace Flowoff.Application.Services;
 
 public class OrderService : IOrderService
 {
+    private readonly ICourierDirectoryService _courierDirectoryService;
     private readonly ICurrentUserService _currentUserService;
     private readonly IOrderRepository _orderRepository;
     private readonly IProductRepository _productRepository;
@@ -15,11 +16,26 @@ public class OrderService : IOrderService
     public OrderService(
         IOrderRepository orderRepository,
         IProductRepository productRepository,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        ICourierDirectoryService courierDirectoryService)
     {
         _orderRepository = orderRepository;
         _productRepository = productRepository;
         _currentUserService = currentUserService;
+        _courierDirectoryService = courierDirectoryService;
+    }
+
+    public async Task<OrderDto> AssignCourierAsync(Guid id, AssignCourierRequestDto request, CancellationToken cancellationToken)
+    {
+        var order = await _orderRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException("Order not found.");
+
+        var courier = await _courierDirectoryService.GetCourierByEmailAsync(request.CourierEmail, cancellationToken)
+            ?? throw new InvalidOperationException("Courier not found.");
+
+        order.AssignCourier(courier.Id);
+        await _orderRepository.SaveChangesAsync(cancellationToken);
+        return Map(order);
     }
 
     public async Task<OrderDto> CreateAsync(CreateOrderRequestDto request, CancellationToken cancellationToken)
@@ -99,6 +115,17 @@ public class OrderService : IOrderService
         return orders.Select(Map).ToArray();
     }
 
+    public async Task<IReadOnlyCollection<OrderDto>> GetAssignedToCourierAsync(CancellationToken cancellationToken)
+    {
+        if (!_currentUserService.IsAuthenticated || string.IsNullOrWhiteSpace(_currentUserService.UserId))
+        {
+            return [];
+        }
+
+        var orders = await _orderRepository.GetByCourierIdAsync(_currentUserService.UserId, cancellationToken);
+        return orders.Select(Map).ToArray();
+    }
+
     public async Task<OrderDto> UpdateAssemblyStatusAsync(Guid id, UpdateAssemblyStatusRequestDto request, CancellationToken cancellationToken)
     {
         var order = await _orderRepository.GetByIdAsync(id, cancellationToken)
@@ -127,6 +154,42 @@ public class OrderService : IOrderService
         return Map(order);
     }
 
+    public async Task<OrderDto> UpdateDeliveryStatusAsync(Guid id, UpdateDeliveryStatusRequestDto request, CancellationToken cancellationToken)
+    {
+        if (!_currentUserService.IsAuthenticated || string.IsNullOrWhiteSpace(_currentUserService.UserId))
+        {
+            throw new InvalidOperationException("Authenticated courier is required.");
+        }
+
+        var order = await _orderRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException("Order not found.");
+
+        if (order.Delivery?.CourierId != _currentUserService.UserId)
+        {
+            throw new InvalidOperationException("This order is not assigned to the current courier.");
+        }
+
+        if (!Enum.TryParse<OrderStatus>(request.Status, true, out var status))
+        {
+            throw new InvalidOperationException("Invalid order status.");
+        }
+
+        var allowedDeliveryStatuses = new[]
+        {
+            OrderStatus.InTransit,
+            OrderStatus.Delivered
+        };
+
+        if (!allowedDeliveryStatuses.Contains(status))
+        {
+            throw new InvalidOperationException("Only courier delivery statuses are allowed.");
+        }
+
+        order.SetDeliveryStatus(status);
+        await _orderRepository.SaveChangesAsync(cancellationToken);
+        return Map(order);
+    }
+
     private static OrderDto Map(Order order) =>
         new()
         {
@@ -136,6 +199,7 @@ public class OrderService : IOrderService
             TotalAmount = order.TotalAmount,
             CreatedAtUtc = order.CreatedAtUtc,
             DeliveryAddress = order.Delivery?.Address,
+            CourierId = order.Delivery?.CourierId,
             PaymentStatus = order.Payment?.Status.ToString(),
             Items = order.Items.Select(item => new OrderItemDto
             {

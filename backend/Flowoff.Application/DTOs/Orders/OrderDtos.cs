@@ -42,11 +42,25 @@ public sealed class OrderDto
     public decimal TotalAmount { get; init; }
     public DateTime CreatedAtUtc { get; init; }
     public string? DeliveryAddress { get; init; }
+    public string? CourierId { get; init; }
     public string? PaymentStatus { get; init; }
     public IReadOnlyCollection<OrderItemDto> Items { get; init; } = [];
 }
 
 public sealed class UpdateAssemblyStatusRequestDto
+{
+    [Required]
+    public string Status { get; init; } = string.Empty;
+}
+
+public sealed class AssignCourierRequestDto
+{
+    [Required]
+    [EmailAddress]
+    public string CourierEmail { get; init; } = string.Empty;
+}
+
+public sealed class UpdateDeliveryStatusRequestDto
 {
     [Required]
     public string Status { get; init; } = string.Empty;

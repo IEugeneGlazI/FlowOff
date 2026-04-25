@@ -61,19 +61,25 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
 
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ICourierDirectoryService, CourierDirectoryService>();
         services.AddScoped<IEmailSender, LoggingEmailSender>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<ICartRepository, CartRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<ICustomBouquetRepository, CustomBouquetRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IPromotionRepository, PromotionRepository>();
         services.AddScoped<IReservationRepository, ReservationRepository>();
         services.AddScoped<ISupportRequestRepository, SupportRequestRepository>();
         services.AddScoped<ICartService, CartService>();
+        services.AddScoped<ICustomBouquetService, CustomBouquetService>();
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IPromotionService, PromotionService>();
         services.AddScoped<IReservationService, ReservationService>();
+        services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<ISupportRequestService, SupportRequestService>();
 
         return services;

@@ -48,6 +48,17 @@ Configuration notes:
   - `GET /api/florist/orders`
   - `GET /api/florist/orders/{id}`
   - `PATCH /api/florist/orders/{id}/assembly-status`
+  - `PATCH /api/florist/orders/{id}/assign-courier`
+  - `GET /api/couriers`
+  - `GET /api/courier/orders`
+  - `PATCH /api/courier/orders/{id}/delivery-status`
+  - `GET /api/promotions`
+  - `POST /api/promotions`
+  - `PUT /api/promotions/{id}`
+  - `GET /api/admin/statistics`
+  - `POST /api/custombouquets/calculate`
+  - `POST /api/custombouquets`
+  - `GET /api/custombouquets/my`
 
 Default admin:
 
@@ -74,9 +85,14 @@ Implemented business constraints in this phase:
 - online payment is currently implemented as a stub and marks non-cash orders as paid
 - florist/admin can create products
 - florist/admin can view all orders and update assembly statuses
+- florist/admin can assign courier after assembly is completed
 - customer can create and view own orders
 - customer can manage own cart
+- customer can calculate and save custom bouquets from flowers
 - customer can create and view own support requests
+- courier can view assigned delivery orders and update delivery statuses
+- administrator can create and edit promotions
+- administrator can view dashboard statistics for orders, revenue, reservations, and support
 - administrator can review and update support request statuses
 
 Next recommended iteration:
@@ -84,6 +100,6 @@ Next recommended iteration:
 1. Add migrations and move from `EnsureCreated()` to migrations.
 2. Replace logging email sender with SMTP or external provider.
 3. Implement promotions and custom bouquet constructor.
-4. Add courier workflow endpoints for delivery statuses.
-5. Implement promotions and custom bouquet constructor.
-6. Start React frontend with catalog, auth, cart, reservation, and checkout screens.
+4. Add admin user-management endpoints.
+5. Start React frontend with catalog, auth, cart, reservation, and checkout screens.
+6. Replace `EnsureCreated()` with migrations.

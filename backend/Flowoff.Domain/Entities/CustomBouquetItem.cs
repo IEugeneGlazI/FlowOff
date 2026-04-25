@@ -9,14 +9,16 @@ public class CustomBouquetItem : Entity
     public Guid ProductId { get; private set; }
     public Product? Product { get; private set; }
     public int Quantity { get; private set; }
+    public decimal UnitPrice { get; private set; }
 
     private CustomBouquetItem()
     {
     }
 
-    public CustomBouquetItem(Guid productId, int quantity)
+    public CustomBouquetItem(Guid productId, int quantity, decimal unitPrice)
     {
         ProductId = productId;
         Quantity = quantity;
+        UnitPrice = unitPrice;
     }
 }

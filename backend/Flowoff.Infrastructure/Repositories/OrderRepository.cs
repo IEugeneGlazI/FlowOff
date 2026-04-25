@@ -40,6 +40,18 @@ public class OrderRepository : IOrderRepository
             .ToArrayAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<Order>> GetByCourierIdAsync(string courierId, CancellationToken cancellationToken)
+    {
+        return await _dbContext.Orders
+            .AsNoTracking()
+            .Include(order => order.Items)
+            .Include(order => order.Delivery)
+            .Include(order => order.Payment)
+            .Where(order => order.Delivery != null && order.Delivery.CourierId == courierId)
+            .OrderByDescending(order => order.CreatedAtUtc)
+            .ToArrayAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyCollection<Order>> GetByCustomerIdAsync(string customerId, CancellationToken cancellationToken)
     {
         return await _dbContext.Orders

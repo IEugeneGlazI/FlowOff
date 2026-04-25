@@ -24,4 +24,19 @@ public class Promotion : Entity
         EndsAtUtc = endsAtUtc;
         IsActive = true;
     }
+
+    public void Update(string title, string? description, decimal discountPercent, DateTime startsAtUtc, DateTime endsAtUtc, bool isActive)
+    {
+        if (startsAtUtc >= endsAtUtc)
+        {
+            throw new InvalidOperationException("Promotion end time must be later than start time.");
+        }
+
+        Title = title;
+        Description = description;
+        DiscountPercent = discountPercent;
+        StartsAtUtc = startsAtUtc;
+        EndsAtUtc = endsAtUtc;
+        IsActive = isActive;
+    }
 }
