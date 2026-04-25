@@ -1,0 +1,111 @@
+@Flowoff.Web_HostAddress = https://localhost:7225
+@customer_email = customer@flowoff.local
+@customer_password = Customer123!
+@customer_token =
+@product_id =
+
+### Register customer
+POST {{Flowoff.Web_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{customer_email}}",
+  "password": "{{customer_password}}",
+  "fullName": "Test Customer"
+}
+
+### Confirm email
+GET {{Flowoff.Web_HostAddress}}/api/auth/confirm-email?userId=USER_ID&token=TOKEN
+
+### Login
+POST {{Flowoff.Web_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{customer_email}}",
+  "password": "{{customer_password}}"
+}
+
+### Forgot password
+POST {{Flowoff.Web_HostAddress}}/api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "{{customer_email}}"
+}
+
+### Reset password
+POST {{Flowoff.Web_HostAddress}}/api/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "{{customer_email}}",
+  "token": "TOKEN",
+  "newPassword": "NewCustomer123!"
+}
+
+### Categories
+GET {{Flowoff.Web_HostAddress}}/api/categories
+
+### Catalog
+GET {{Flowoff.Web_HostAddress}}/api/products
+
+### My cart
+GET {{Flowoff.Web_HostAddress}}/api/cart
+Authorization: Bearer {{customer_token}}
+
+### Add item to cart
+POST {{Flowoff.Web_HostAddress}}/api/cart/items
+Authorization: Bearer {{customer_token}}
+Content-Type: application/json
+
+{
+  "productId": "{{product_id}}",
+  "quantity": 3
+}
+
+### My reservations
+GET {{Flowoff.Web_HostAddress}}/api/reservations/my
+Authorization: Bearer {{customer_token}}
+
+### Create reservation
+POST {{Flowoff.Web_HostAddress}}/api/reservations
+Authorization: Bearer {{customer_token}}
+Content-Type: application/json
+
+{
+  "productId": "{{product_id}}",
+  "startAtUtc": "2026-04-26T12:00:00Z",
+  "endAtUtc": "2026-04-26T18:00:00Z"
+}
+
+### My support requests
+GET {{Flowoff.Web_HostAddress}}/api/supportrequests/my
+Authorization: Bearer {{customer_token}}
+
+### Create support request
+POST {{Flowoff.Web_HostAddress}}/api/supportrequests
+Authorization: Bearer {{customer_token}}
+Content-Type: application/json
+
+{
+  "subject": "Order status clarification",
+  "message": "Please уточните, когда будет обновлен статус заказа."
+}
+
+### Florist orders
+GET {{Flowoff.Web_HostAddress}}/api/florist/orders
+Authorization: Bearer FLORIST_TOKEN
+
+### Florist order details
+GET {{Flowoff.Web_HostAddress}}/api/florist/orders/ORDER_ID
+Authorization: Bearer FLORIST_TOKEN
+
+### Florist update assembly status
+PATCH {{Flowoff.Web_HostAddress}}/api/florist/orders/ORDER_ID/assembly-status
+Authorization: Bearer FLORIST_TOKEN
+Content-Type: application/json
+
+{
+  "status": "InAssembly"
+}
