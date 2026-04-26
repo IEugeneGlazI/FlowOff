@@ -34,6 +34,7 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.Property(user => user.FullName).HasMaxLength(150);
             entity.Property(user => user.Role).HasConversion<string>().HasMaxLength(32);
+            entity.Property(user => user.IsDeleted).HasDefaultValue(false);
         });
 
         builder.Entity<Category>(entity =>
@@ -48,6 +49,7 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(product => product.Description).HasMaxLength(2000);
             entity.Property(product => product.Price).HasPrecision(18, 2);
             entity.Property(product => product.Type).HasConversion<string>().HasMaxLength(32);
+            entity.Property(product => product.IsDeleted).HasDefaultValue(false);
             entity.HasOne(product => product.Category)
                 .WithMany()
                 .HasForeignKey(product => product.CategoryId)
@@ -151,6 +153,7 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(promotion => promotion.Title).HasMaxLength(150).IsRequired();
             entity.Property(promotion => promotion.Description).HasMaxLength(1000);
             entity.Property(promotion => promotion.DiscountPercent).HasPrecision(5, 2);
+            entity.Property(promotion => promotion.IsDeleted).HasDefaultValue(false);
         });
     }
 }

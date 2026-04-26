@@ -156,6 +156,10 @@ Content-Type: application/json
 GET {{Flowoff.Web_HostAddress}}/api/admin/statistics
 Authorization: Bearer ADMIN_TOKEN
 
+### Delete promotion
+DELETE {{Flowoff.Web_HostAddress}}/api/promotions/PROMOTION_ID
+Authorization: Bearer ADMIN_TOKEN
+
 ### Calculate custom bouquet
 POST {{Flowoff.Web_HostAddress}}/api/custombouquets/calculate
 Authorization: Bearer {{customer_token}}
@@ -186,3 +190,36 @@ Content-Type: application/json
 ### My custom bouquets
 GET {{Flowoff.Web_HostAddress}}/api/custombouquets/my
 Authorization: Bearer {{customer_token}}
+
+### Update product
+PUT {{Flowoff.Web_HostAddress}}/api/products/PRODUCT_ID
+Authorization: Bearer FLORIST_TOKEN
+Content-Type: application/json
+
+{
+  "name": "Updated rose",
+  "description": "Updated description",
+  "price": 190,
+  "stockQuantity": 120,
+  "isShowcase": false
+}
+
+### Update product stock
+PATCH {{Flowoff.Web_HostAddress}}/api/products/PRODUCT_ID/stock
+Authorization: Bearer FLORIST_TOKEN
+Content-Type: application/json
+
+{
+  "stockQuantity": 99
+}
+
+### Delete product
+DELETE {{Flowoff.Web_HostAddress}}/api/products/PRODUCT_ID
+Authorization: Bearer FLORIST_TOKEN
+
+### Status references
+GET {{Flowoff.Web_HostAddress}}/api/references/statuses
+
+### Admin users
+GET {{Flowoff.Web_HostAddress}}/api/admin/users
+Authorization: Bearer ADMIN_TOKEN

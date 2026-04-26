@@ -11,6 +11,8 @@ public class Product : Entity
     public int StockQuantity { get; private set; }
     public ProductType Type { get; private set; }
     public bool IsShowcase { get; private set; }
+    public bool IsDeleted { get; private set; }
+    public DateTime? DeletedAtUtc { get; private set; }
     public Guid CategoryId { get; private set; }
     public Category? Category { get; private set; }
 
@@ -38,6 +40,11 @@ public class Product : Entity
 
     public void UpdateDetails(string name, string? description, decimal price, int stockQuantity, bool isShowcase)
     {
+        if (IsDeleted)
+        {
+            throw new InvalidOperationException("Deleted product cannot be updated.");
+        }
+
         Name = name;
         Description = description;
         Price = price;
@@ -47,6 +54,11 @@ public class Product : Entity
 
     public void DecreaseStock(int quantity)
     {
+        if (IsDeleted)
+        {
+            throw new InvalidOperationException("Deleted product cannot be used.");
+        }
+
         if (quantity <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(quantity));
@@ -58,5 +70,31 @@ public class Product : Entity
         }
 
         StockQuantity -= quantity;
+    }
+
+    public void SetStockQuantity(int quantity)
+    {
+        if (IsDeleted)
+        {
+            throw new InvalidOperationException("Deleted product cannot be updated.");
+        }
+
+        if (quantity < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+        }
+
+        StockQuantity = quantity;
+    }
+
+    public void SoftDelete()
+    {
+        if (IsDeleted)
+        {
+            return;
+        }
+
+        IsDeleted = true;
+        DeletedAtUtc = DateTime.UtcNow;
     }
 }

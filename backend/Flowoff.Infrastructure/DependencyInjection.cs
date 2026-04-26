@@ -65,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailSender, LoggingEmailSender>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IReferenceDataService, ReferenceDataService>();
         services.AddScoped<ICartRepository, CartRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -81,6 +82,7 @@ public static class DependencyInjection
         services.AddScoped<IReservationService, ReservationService>();
         services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<ISupportRequestService, SupportRequestService>();
+        services.AddScoped<IUserManagementService, UserManagementService>();
 
         return services;
     }

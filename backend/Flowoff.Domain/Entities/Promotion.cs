@@ -10,6 +10,8 @@ public class Promotion : Entity
     public DateTime StartsAtUtc { get; private set; }
     public DateTime EndsAtUtc { get; private set; }
     public bool IsActive { get; private set; }
+    public bool IsDeleted { get; private set; }
+    public DateTime? DeletedAtUtc { get; private set; }
 
     private Promotion()
     {
@@ -27,6 +29,11 @@ public class Promotion : Entity
 
     public void Update(string title, string? description, decimal discountPercent, DateTime startsAtUtc, DateTime endsAtUtc, bool isActive)
     {
+        if (IsDeleted)
+        {
+            throw new InvalidOperationException("Deleted promotion cannot be updated.");
+        }
+
         if (startsAtUtc >= endsAtUtc)
         {
             throw new InvalidOperationException("Promotion end time must be later than start time.");
@@ -38,5 +45,17 @@ public class Promotion : Entity
         StartsAtUtc = startsAtUtc;
         EndsAtUtc = endsAtUtc;
         IsActive = isActive;
+    }
+
+    public void SoftDelete()
+    {
+        if (IsDeleted)
+        {
+            return;
+        }
+
+        IsDeleted = true;
+        IsActive = false;
+        DeletedAtUtc = DateTime.UtcNow;
     }
 }

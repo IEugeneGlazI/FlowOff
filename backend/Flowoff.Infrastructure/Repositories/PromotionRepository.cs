@@ -24,13 +24,14 @@ public class PromotionRepository : IPromotionRepository
     {
         return await _dbContext.Promotions
             .AsNoTracking()
+            .Where(promotion => !promotion.IsDeleted)
             .OrderByDescending(promotion => promotion.StartsAtUtc)
             .ToArrayAsync(cancellationToken);
     }
 
     public Task<Promotion?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        return _dbContext.Promotions.FirstOrDefaultAsync(promotion => promotion.Id == id, cancellationToken);
+        return _dbContext.Promotions.FirstOrDefaultAsync(promotion => promotion.Id == id && !promotion.IsDeleted, cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)

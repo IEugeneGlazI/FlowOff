@@ -31,7 +31,7 @@ public class AuthService : IAuthService
     public async Task ConfirmEmailAsync(ConfirmEmailRequestDto request, CancellationToken cancellationToken)
     {
         var user = await _userManager.FindByIdAsync(request.UserId);
-        if (user is null)
+        if (user is null || user.IsDeleted)
         {
             throw new InvalidOperationException("User not found.");
         }
@@ -47,7 +47,7 @@ public class AuthService : IAuthService
     public async Task<ForgotPasswordResponseDto> ForgotPasswordAsync(ForgotPasswordRequestDto request, CancellationToken cancellationToken)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user is null || !await _userManager.IsEmailConfirmedAsync(user))
+        if (user is null || user.IsDeleted || !await _userManager.IsEmailConfirmedAsync(user))
         {
             return new ForgotPasswordResponseDto
             {
@@ -72,7 +72,7 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user is null)
+        if (user is null || user.IsDeleted)
         {
             throw new InvalidOperationException("Invalid credentials.");
         }
@@ -94,7 +94,7 @@ public class AuthService : IAuthService
     public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken)
     {
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
-        if (existingUser is not null)
+        if (existingUser is not null && !existingUser.IsDeleted)
         {
             throw new InvalidOperationException("Email is already registered.");
         }
@@ -126,7 +126,7 @@ public class AuthService : IAuthService
     public async Task ResendConfirmationEmailAsync(ResendConfirmationEmailRequestDto request, CancellationToken cancellationToken)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user is null)
+        if (user is null || user.IsDeleted)
         {
             return;
         }
@@ -142,7 +142,7 @@ public class AuthService : IAuthService
     public async Task ResetPasswordAsync(ResetPasswordRequestDto request, CancellationToken cancellationToken)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user is null)
+        if (user is null || user.IsDeleted)
         {
             throw new InvalidOperationException("User not found.");
         }

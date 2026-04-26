@@ -54,4 +54,29 @@ public class ProductsController : ControllerBase
         var createdProduct = await _productService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = createdProduct.Id }, createdProduct);
     }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = nameof(UserRole.Florist) + "," + nameof(UserRole.Administrator))]
+    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ProductDto>> Update(Guid id, UpdateProductRequestDto request, CancellationToken cancellationToken)
+    {
+        return Ok(await _productService.UpdateAsync(id, request, cancellationToken));
+    }
+
+    [HttpPatch("{id:guid}/stock")]
+    [Authorize(Roles = nameof(UserRole.Florist) + "," + nameof(UserRole.Administrator))]
+    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ProductDto>> UpdateStock(Guid id, UpdateProductStockRequestDto request, CancellationToken cancellationToken)
+    {
+        return Ok(await _productService.UpdateStockAsync(id, request, cancellationToken));
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = nameof(UserRole.Florist) + "," + nameof(UserRole.Administrator))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _productService.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
 }

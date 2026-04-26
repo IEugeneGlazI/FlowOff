@@ -8,6 +8,7 @@ Current backend stage:
 - email confirmation and password reset flow with email sender abstraction
 - SQL Server / EF Core context with initial domain model
 - current default database server: `I_EUGENE_I`
+- soft delete is used for products, promotions, and users
 
 Current email delivery behavior:
 
@@ -55,10 +56,19 @@ Configuration notes:
   - `GET /api/promotions`
   - `POST /api/promotions`
   - `PUT /api/promotions/{id}`
+  - `DELETE /api/promotions/{id}`
   - `GET /api/admin/statistics`
   - `POST /api/custombouquets/calculate`
   - `POST /api/custombouquets`
   - `GET /api/custombouquets/my`
+  - `PUT /api/products/{id}`
+  - `PATCH /api/products/{id}/stock`
+  - `DELETE /api/products/{id}`
+  - `GET /api/references/statuses`
+  - `GET /api/admin/users`
+  - `PUT /api/admin/users/{id}`
+  - `PATCH /api/admin/users/{id}/block`
+  - `DELETE /api/admin/users/{id}`
 
 Default admin:
 
@@ -92,14 +102,16 @@ Implemented business constraints in this phase:
 - customer can create and view own support requests
 - courier can view assigned delivery orders and update delivery statuses
 - administrator can create and edit promotions
+- administrator can soft delete promotions and manage users
 - administrator can view dashboard statistics for orders, revenue, reservations, and support
 - administrator can review and update support request statuses
+- status dictionaries are exposed via `/api/references/statuses`
 
 Next recommended iteration:
 
 1. Add migrations and move from `EnsureCreated()` to migrations.
 2. Replace logging email sender with SMTP or external provider.
 3. Implement promotions and custom bouquet constructor.
-4. Add admin user-management endpoints.
+4. Add more detailed user profile editing and audit fields where needed.
 5. Start React frontend with catalog, auth, cart, reservation, and checkout screens.
 6. Replace `EnsureCreated()` with migrations.

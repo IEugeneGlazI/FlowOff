@@ -45,3 +45,27 @@ public sealed class CreateProductRequestDto
 
     public bool IsShowcase { get; init; }
 }
+
+public sealed class UpdateProductRequestDto
+{
+    [Required]
+    [MaxLength(150)]
+    public string Name { get; init; } = string.Empty;
+
+    [MaxLength(2000)]
+    public string? Description { get; init; }
+
+    [Range(0.01, 1000000)]
+    public decimal Price { get; init; }
+
+    [Range(0, 100000)]
+    public int StockQuantity { get; init; }
+
+    public bool IsShowcase { get; init; }
+}
+
+public sealed class UpdateProductStockRequestDto
+{
+    [Range(0, 100000)]
+    public int StockQuantity { get; init; }
+}

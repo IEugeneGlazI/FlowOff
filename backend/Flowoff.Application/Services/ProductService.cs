@@ -37,6 +37,15 @@ public class ProductService : IProductService
         return Map(product, category.Name);
     }
 
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var product = await _productRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException("Product not found.");
+
+        product.SoftDelete();
+        await _productRepository.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<ProductDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var product = await _productRepository.GetByIdAsync(id, cancellationToken);
@@ -47,6 +56,32 @@ public class ProductService : IProductService
     {
         var products = await _productRepository.GetAllAsync(filter.Type, filter.CategoryId, cancellationToken);
         return products.Select(product => Map(product, product.Category?.Name)).ToArray();
+    }
+
+    public async Task<ProductDto> UpdateAsync(Guid id, UpdateProductRequestDto request, CancellationToken cancellationToken)
+    {
+        var product = await _productRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException("Product not found.");
+
+        product.UpdateDetails(
+            request.Name,
+            request.Description,
+            request.Price,
+            request.StockQuantity,
+            request.IsShowcase);
+
+        await _productRepository.SaveChangesAsync(cancellationToken);
+        return Map(product, product.Category?.Name);
+    }
+
+    public async Task<ProductDto> UpdateStockAsync(Guid id, UpdateProductStockRequestDto request, CancellationToken cancellationToken)
+    {
+        var product = await _productRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException("Product not found.");
+
+        product.SetStockQuantity(request.StockQuantity);
+        await _productRepository.SaveChangesAsync(cancellationToken);
+        return Map(product, product.Category?.Name);
     }
 
     private static ProductDto Map(Product product, string? categoryName) =>

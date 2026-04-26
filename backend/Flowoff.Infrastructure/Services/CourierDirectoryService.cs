@@ -20,7 +20,7 @@ public class CourierDirectoryService : ICourierDirectoryService
     {
         var courier = await _userManager.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(user => user.Email == email && user.Role == UserRole.Courier, cancellationToken);
+            .FirstOrDefaultAsync(user => user.Email == email && user.Role == UserRole.Courier && !user.IsDeleted, cancellationToken);
 
         return courier is null ? null : Map(courier);
     }
@@ -29,7 +29,7 @@ public class CourierDirectoryService : ICourierDirectoryService
     {
         var couriers = await _userManager.Users
             .AsNoTracking()
-            .Where(user => user.Role == UserRole.Courier)
+            .Where(user => user.Role == UserRole.Courier && !user.IsDeleted)
             .OrderBy(user => user.FullName)
             .ToArrayAsync(cancellationToken);
 

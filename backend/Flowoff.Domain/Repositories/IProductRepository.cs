@@ -8,4 +8,5 @@ public interface IProductRepository
     Task<IReadOnlyCollection<Product>> GetAllAsync(ProductType? type, Guid? categoryId, CancellationToken cancellationToken);
     Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     Task AddAsync(Product product, CancellationToken cancellationToken);
+    Task SaveChangesAsync(CancellationToken cancellationToken);
 }

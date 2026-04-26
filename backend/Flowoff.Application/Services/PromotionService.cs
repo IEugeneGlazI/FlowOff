@@ -32,6 +32,15 @@ public class PromotionService : IPromotionService
         return Map(promotion);
     }
 
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var promotion = await _promotionRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException("Promotion not found.");
+
+        promotion.SoftDelete();
+        await _promotionRepository.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyCollection<PromotionDto>> GetAllAsync(CancellationToken cancellationToken)
     {
         var promotions = await _promotionRepository.GetAllAsync(cancellationToken);

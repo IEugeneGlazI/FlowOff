@@ -44,4 +44,13 @@ public class PromotionsController : ControllerBase
     {
         return Ok(await _promotionService.UpdateAsync(id, request, cancellationToken));
     }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = nameof(UserRole.Administrator))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _promotionService.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
 }

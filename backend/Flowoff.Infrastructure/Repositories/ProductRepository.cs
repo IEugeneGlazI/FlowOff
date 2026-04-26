@@ -25,7 +25,8 @@ public class ProductRepository : IProductRepository
     {
         IQueryable<Product> query = _dbContext.Products
             .AsNoTracking()
-            .Include(product => product.Category);
+            .Include(product => product.Category)
+            .Where(product => !product.IsDeleted);
 
         if (type.HasValue)
         {
@@ -44,6 +45,11 @@ public class ProductRepository : IProductRepository
     {
         return _dbContext.Products
             .Include(product => product.Category)
-            .FirstOrDefaultAsync(product => product.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(product => product.Id == id && !product.IsDeleted, cancellationToken);
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        return _dbContext.SaveChangesAsync(cancellationToken);
     }
 }
