@@ -115,3 +115,48 @@ Next recommended iteration:
 4. Add more detailed user profile editing and audit fields where needed.
 5. Start React frontend with catalog, auth, cart, reservation, and checkout screens.
 6. Replace `EnsureCreated()` with migrations.
+## Database migrations
+
+The project now uses EF Core migrations instead of `EnsureCreated()`.
+
+### What you need locally
+
+1. `dotnet-ef` installed:
+
+```powershell
+dotnet tool install --global dotnet-ef
+```
+
+If it is already installed, update it if needed:
+
+```powershell
+dotnet tool update --global dotnet-ef
+```
+
+2. A valid local `backend/Flowoff.Web/appsettings.Development.json` with:
+- your SQL Server connection string
+- a local JWT key
+
+3. Rights on SQL Server `I_EUGENE_I` to create/alter the `FlowoffDb` database.
+
+### Important transition note
+
+If your current `FlowoffDb` was created with `EnsureCreated()`, the easiest path is:
+
+1. back up any data you want to keep
+2. drop `FlowoffDb`
+3. create the first migration
+4. apply the migration to a fresh database
+
+That is the cleanest way to switch because an `EnsureCreated()` database does not have migration history.
+
+### Migration commands
+
+Run from `backend`:
+
+```powershell
+dotnet ef migrations add InitialCreate --project .\Flowoff.Infrastructure\Flowoff.Infrastructure.csproj --startup-project .\Flowoff.Web\Flowoff.Web.csproj --output-dir Data\Migrations
+dotnet ef database update --project .\Flowoff.Infrastructure\Flowoff.Infrastructure.csproj --startup-project .\Flowoff.Web\Flowoff.Web.csproj
+```
+
+After that, application startup will apply pending migrations automatically via `Database.MigrateAsync()`.
