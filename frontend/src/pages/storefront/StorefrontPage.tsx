@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   Chip,
   FormControl,
   Grid,
@@ -17,9 +16,10 @@ import {
   Stack,
   TextField,
   Typography,
+  alpha,
 } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import { ArrowRight, LoaderCircle } from 'lucide-react';
+import { ArrowRight, LoaderCircle, Search } from 'lucide-react';
 import type { Category, Product, Promotion } from '../../entities/catalog';
 import { getCategories, getProducts, getPromotions } from '../../features/catalog/catalogApi';
 import { formatCurrency } from '../../shared/format';
@@ -42,13 +42,13 @@ const giftTypes = [
 ];
 
 const giftKeywordMap: Record<string, string[]> = {
-  'Шары': ['шар', 'шары', 'balloon'],
-  'Сладости': ['сладост', 'конфет', 'шоколад', 'dessert'],
+  Шары: ['шар', 'шары', 'balloon'],
+  Сладости: ['сладост', 'конфет', 'шоколад', 'dessert'],
   'Продуктовые корзины': ['продукт', 'grocery'],
   'Фруктовые корзины': ['фрукт', 'fruit'],
   'Мягкие игрушки': ['игрушк', 'плюш', 'teddy'],
-  'Вазы': ['ваза', 'vase'],
-  'Свечи': ['свеч', 'candle'],
+  Вазы: ['ваза', 'vase'],
+  Свечи: ['свеч', 'candle'],
 };
 
 function toSearchBlob(product: Product) {
@@ -75,6 +75,28 @@ function detectGiftType(product: Product) {
 
 function isGiftProduct(product: Product) {
   return detectGiftType(product) !== null;
+}
+
+function getTabHeading(activeTab: CatalogTab) {
+  switch (activeTab) {
+    case 'flowers':
+      return 'Цветы';
+    case 'gifts':
+      return 'Подарки';
+    default:
+      return 'Букеты';
+  }
+}
+
+function getTabSubheading(activeTab: CatalogTab) {
+  switch (activeTab) {
+    case 'flowers':
+      return 'Поштучные цветы с быстрым подбором по типу и диапазону цены.';
+    case 'gifts':
+      return 'Сопутствующие подарки для заказа: от ваз до сладостей и мягких игрушек.';
+    default:
+      return 'Композиции для доставки, витрины и особых поводов с фильтрами по составу.';
+  }
 }
 
 export function StorefrontPage() {
@@ -196,8 +218,8 @@ export function StorefrontPage() {
   function renderTabFilters() {
     if (activeTab === 'bouquets') {
       return (
-        <>
-          <Typography variant="subtitle2" color="text.secondary">
+        <Stack spacing={1}>
+          <Typography variant="caption" color="text.secondary">
             Цвета в составе
           </Typography>
           <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
@@ -216,11 +238,12 @@ export function StorefrontPage() {
                         : [...current, color],
                     )
                   }
+                  sx={{ bgcolor: active ? 'primary.main' : alpha('#ffffff', 0.84) }}
                 />
               );
             })}
           </Stack>
-        </>
+        </Stack>
       );
     }
 
@@ -266,31 +289,57 @@ export function StorefrontPage() {
   }
 
   return (
-    <Box sx={{ display: 'grid', gap: 3 }}>
-      <Card>
-        <CardHeader title="Фильтры" subheader="Горизонтальная панель фильтрации для текущего раздела" />
-        <CardContent>
-          <Grid container spacing={2} sx={{ alignItems: 'flex-start' }}>
-            <Grid size={{ xs: 12, md: 4 }}>
+    <Box sx={{ display: 'grid', gap: 4 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 1.25,
+          pt: { xs: 1, md: 2 },
+          pb: 1,
+        }}
+      >
+        <Typography variant="h1">{getTabHeading(activeTab)}</Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ maxWidth: '64ch', fontSize: '1.05rem' }}>
+          {getTabSubheading(activeTab)}
+        </Typography>
+      </Box>
+
+      <Card
+        sx={{
+          overflow: 'hidden',
+          background: `
+            linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(246,251,247,0.82) 100%)
+          `,
+          backdropFilter: 'blur(14px)',
+        }}
+      >
+        <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+          <Grid container spacing={2} sx={{ alignItems: 'center' }}>
+            <Grid size={{ xs: 12, md: 3.5 }}>
               <TextField
+                fullWidth
                 label="Поиск"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={
                   activeTab === 'bouquets'
-                    ? 'Например, свадебный или пионовый'
+                    ? 'Свадебный, нежный, пионовый'
                     : activeTab === 'flowers'
-                      ? 'Например, роза или тюльпан'
-                      : 'Например, ваза или сладости'
+                      ? 'Роза, тюльпан, орхидея'
+                      : 'Ваза, сладости, свечи'
                 }
-                fullWidth
+                slotProps={{
+                  input: {
+                    startAdornment: <Search size={16} style={{ marginRight: 8, opacity: 0.55 }} />,
+                  },
+                }}
               />
             </Grid>
 
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Box sx={{ px: { xs: 1, md: 2 }, pt: 1 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Цена
+            <Grid size={{ xs: 12, md: 3.5 }}>
+              <Box sx={{ px: { xs: 0.5, md: 1 } }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                  Диапазон цены
                 </Typography>
                 <Slider
                   value={priceRange}
@@ -299,6 +348,7 @@ export function StorefrontPage() {
                   onChange={(_, value) => setPriceRange(value as PriceRange)}
                   valueLabelDisplay="auto"
                   valueLabelFormat={(value) => `${value} ₽`}
+                  color="primary"
                 />
                 <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                   <Typography variant="body2" color="text.secondary">
@@ -311,12 +361,18 @@ export function StorefrontPage() {
               </Box>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 3 }}>
+            <Grid size={{ xs: 12, md: 4 }}>
               {renderTabFilters()}
             </Grid>
 
             <Grid size={{ xs: 12, md: 1 }}>
-              <Button variant="text" color="inherit" onClick={resetFilters} fullWidth sx={{ minHeight: 56 }}>
+              <Button
+                variant="text"
+                color="inherit"
+                onClick={resetFilters}
+                fullWidth
+                sx={{ minHeight: 48, bgcolor: alpha('#ffffff', 0.42) }}
+              >
                 Сбросить
               </Button>
             </Grid>
@@ -324,167 +380,205 @@ export function StorefrontPage() {
         </CardContent>
       </Card>
 
-      <Stack spacing={3}>
-        <Card>
-          <CardHeader title="Акции" subheader="Подтягиваются из backend" />
-          <CardContent>
-            <Grid container spacing={2}>
-              {promotions.length === 0 ? (
-                <Grid size={12}>
-                  <Alert severity="info">Пока нет активных акций.</Alert>
-                </Grid>
-              ) : (
-                promotions.slice(0, 3).map((promotion) => (
-                  <Grid key={promotion.id} size={{ xs: 12, md: 4 }}>
-                    <Card variant="outlined" sx={{ height: '100%' }}>
-                      <CardContent>
-                        <Stack spacing={1.5}>
-                          <Chip label={`-${promotion.discountPercent}%`} color="primary" sx={{ width: 'fit-content' }} />
-                          <Typography variant="h6">{promotion.title}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {promotion.description || 'Скидка уже доступна для ближайших заказов.'}
-                          </Typography>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))
-              )}
+      {promotions.length > 0 ? (
+        <Grid container spacing={2}>
+          {promotions.slice(0, 3).map((promotion) => (
+            <Grid key={promotion.id} size={{ xs: 12, md: 4 }}>
+              <Card
+                sx={{
+                  height: '100%',
+                  background: `
+                    linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(220,239,228,0.74) 100%)
+                  `,
+                }}
+              >
+                <CardContent sx={{ display: 'grid', gap: 1.5, minHeight: 172 }}>
+                  <Chip
+                    label={`-${promotion.discountPercent}%`}
+                    color="primary"
+                    sx={{ width: 'fit-content', bgcolor: alpha('#5c8f73', 0.14), color: 'primary.dark' }}
+                  />
+                  <Typography variant="h6">{promotion.title}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {promotion.description || 'Скидка уже доступна для ближайших заказов.'}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
-          </CardContent>
-        </Card>
+          ))}
+        </Grid>
+      ) : null}
 
-        {feedback ? <Alert severity="success">{feedback}</Alert> : null}
+      {feedback ? <Alert severity="success" sx={{ borderRadius: 2 }}>{feedback}</Alert> : null}
 
-        <Box>
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={1}
-            sx={{ mb: 2, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' } }}
-          >
-            <Box>
-              <Typography variant="h2">
-                {activeTab === 'bouquets' ? 'Букеты' : activeTab === 'flowers' ? 'Цветы' : 'Подарки'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {filteredProducts.length} позиций после фильтрации
-              </Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              Категорий в справочнике: {categories.length}
+      <Box>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={1.5}
+          sx={{ mb: 2.5, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'flex-end' } }}
+        >
+          <Box>
+            <Typography variant="h2">{getTabHeading(activeTab)}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {filteredProducts.length} позиций после фильтрации
             </Typography>
-          </Stack>
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            {categories.length} категорий в каталоге
+          </Typography>
+        </Stack>
 
-          {activeTab === 'gifts' && productStats.gifts === 0 ? (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              На backend пока нет явно распознанных подарочных товаров. Вкладка и фильтры уже готовы,
-              но контент появится после наполнения каталога позициями вроде «Шары», «Вазы» или «Сладости».
-            </Alert>
-          ) : null}
+        {activeTab === 'gifts' && productStats.gifts === 0 ? (
+          <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+            Вкладка подарков уже готова по интерфейсу, но на backend пока нет явно распознанных
+            позиций вроде шаров, ваз или сладостей.
+          </Alert>
+        ) : null}
 
-          {isLoading ? (
-            <Card>
-              <CardContent>
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                  <LoaderCircle size={18} />
-                  <Typography>Загружаем каталог...</Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-          ) : (
-            <Grid container spacing={2}>
-              {filteredProducts.map((product) => {
-                const bouquetColorTags = detectBouquetColors(product);
-                const flowerType = detectFlowerType(product);
-                const giftType = detectGiftType(product);
+        {isLoading ? (
+          <Card sx={{ backgroundColor: alpha('#ffffff', 0.8) }}>
+            <CardContent>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <LoaderCircle size={18} />
+                <Typography>Загружаем каталог...</Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        ) : (
+          <Grid container spacing={2}>
+            {filteredProducts.map((product) => {
+              const bouquetColorTags = detectBouquetColors(product);
+              const flowerType = detectFlowerType(product);
+              const giftType = detectGiftType(product);
 
-                return (
-                  <Grid key={product.id} size={{ xs: 12, md: 6, xl: 4 }}>
-                    <Card sx={{ height: '100%' }}>
-                      <CardContent sx={{ display: 'grid', gap: 2, height: '100%' }}>
+              return (
+                <Grid key={product.id} size={{ xs: 12, md: 6, xl: 4 }}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      background: 'rgba(255,255,255,0.84)',
+                      backdropFilter: 'blur(12px)',
+                      transition: 'transform 180ms ease, box-shadow 180ms ease',
+                      ':hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 28px 66px rgba(38, 54, 45, 0.10)',
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ display: 'grid', gap: 2, height: '100%', p: 2.25 }}>
+                      <Box
+                        sx={{
+                          minHeight: 140,
+                          borderRadius: 2,
+                          border: '1px solid rgba(24,38,31,0.06)',
+                          background: `
+                            radial-gradient(circle at 20% 20%, rgba(220,239,228,0.94), transparent 36%),
+                            radial-gradient(circle at 75% 30%, rgba(255,244,234,0.92), transparent 32%),
+                            linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(242,248,243,0.98) 100%)
+                          `,
+                          p: 2,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                        }}
+                      >
                         <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
-                          <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-                            <Chip
-                              size="small"
-                              color={product.type === 'Bouquet' ? 'primary' : 'secondary'}
-                              label={
-                                activeTab === 'gifts'
-                                  ? giftType || 'Подарок'
-                                  : product.type === 'Bouquet'
-                                    ? 'Букет'
-                                    : flowerType || 'Цветок'
-                              }
-                            />
-                            {product.isShowcase ? <Chip size="small" variant="outlined" label="Витрина" /> : null}
-                          </Stack>
-                          <Typography
-                            variant="caption"
-                            color={product.stockQuantity > 0 ? 'secondary.main' : 'error.main'}
-                          >
-                            {product.stockQuantity > 0 ? `В наличии: ${product.stockQuantity}` : 'Нет в наличии'}
-                          </Typography>
+                          <Chip
+                            size="small"
+                            color={product.type === 'Bouquet' ? 'primary' : 'secondary'}
+                            label={
+                              activeTab === 'gifts'
+                                ? giftType || 'Подарок'
+                                : product.type === 'Bouquet'
+                                  ? 'Букет'
+                                  : flowerType || 'Цветок'
+                            }
+                          />
+                          {product.isShowcase ? <Chip size="small" variant="outlined" label="Витрина" /> : null}
                         </Stack>
 
-                        <Box sx={{ display: 'grid', gap: 1 }}>
-                          <Typography variant="h6">{product.name}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {product.description || 'Описание пока не заполнено.'}
-                          </Typography>
-                        </Box>
+                        <Typography variant="h5" sx={{ maxWidth: '10ch' }}>
+                          {formatCurrency(product.price)}
+                        </Typography>
+                      </Box>
 
-                        <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-                          {product.categoryName ? <Chip size="small" variant="outlined" label={product.categoryName} /> : null}
-                          {activeTab === 'bouquets'
-                            ? bouquetColorTags.map((color) => (
-                                <Chip key={color} size="small" variant="outlined" label={color} />
-                              ))
-                            : null}
-                        </Stack>
+                      <Box sx={{ display: 'grid', gap: 0.9 }}>
+                        <Typography variant="h6">{product.name}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {product.description || 'Описание пока не заполнено.'}
+                        </Typography>
+                      </Box>
 
-                        <Box sx={{ mt: 'auto' }}>
-                          <Typography variant="h6" sx={{ mb: 1.5 }}>
-                            {formatCurrency(product.price)}
-                          </Typography>
-                          <Stack direction="row" spacing={1}>
-                            <Button
-                              component={RouterLink}
-                              to={`/products/${product.id}`}
-                              variant="outlined"
-                              color="inherit"
-                              fullWidth
-                              endIcon={<ArrowRight size={16} />}
-                            >
-                              Подробнее
-                            </Button>
-                            <Button
-                              variant="contained"
-                              fullWidth
-                              disabled={product.stockQuantity === 0}
-                              onClick={() => void handleAddToCart(product.id)}
-                            >
-                              В корзину
-                            </Button>
-                          </Stack>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                );
-              })}
-            </Grid>
-          )}
+                      <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
+                        {product.categoryName ? (
+                          <Chip
+                            size="small"
+                            variant="outlined"
+                            label={product.categoryName}
+                            sx={{ bgcolor: alpha('#ffffff', 0.74) }}
+                          />
+                        ) : null}
+                        {activeTab === 'bouquets'
+                          ? bouquetColorTags.map((color) => (
+                              <Chip
+                                key={color}
+                                size="small"
+                                variant="outlined"
+                                label={color}
+                                sx={{ bgcolor: alpha('#ffffff', 0.74) }}
+                              />
+                            ))
+                          : null}
+                      </Stack>
 
-          {!isLoading && filteredProducts.length === 0 ? (
-            <Card sx={{ mt: 2 }}>
-              <CardContent>
-                <Typography variant="body1">
-                  По текущим фильтрам ничего не найдено. Попробуй ослабить поиск или сбросить часть условий.
-                </Typography>
-              </CardContent>
-            </Card>
-          ) : null}
-        </Box>
-      </Stack>
+                      <Stack
+                        direction="row"
+                        sx={{ justifyContent: 'space-between', alignItems: 'center', color: 'text.secondary' }}
+                      >
+                        <Typography variant="caption">
+                          {product.stockQuantity > 0 ? `В наличии: ${product.stockQuantity}` : 'Нет в наличии'}
+                        </Typography>
+                      </Stack>
+
+                      <Stack direction="row" spacing={1} sx={{ mt: 'auto' }}>
+                        <Button
+                          component={RouterLink}
+                          to={`/products/${product.id}`}
+                          variant="outlined"
+                          color="inherit"
+                          fullWidth
+                          endIcon={<ArrowRight size={16} />}
+                        >
+                          Подробнее
+                        </Button>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          fullWidth
+                          disabled={product.stockQuantity === 0}
+                          onClick={() => void handleAddToCart(product.id)}
+                        >
+                          В корзину
+                        </Button>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
+        )}
+
+        {!isLoading && filteredProducts.length === 0 ? (
+          <Card sx={{ mt: 2, backgroundColor: alpha('#ffffff', 0.8) }}>
+            <CardContent>
+              <Typography variant="body1">
+                По текущим фильтрам ничего не найдено. Попробуй ослабить поиск или сбросить часть условий.
+              </Typography>
+            </CardContent>
+          </Card>
+        ) : null}
+      </Box>
     </Box>
   );
 }

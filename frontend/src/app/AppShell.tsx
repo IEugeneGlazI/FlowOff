@@ -8,6 +8,7 @@ import {
   Stack,
   Toolbar,
   Typography,
+  alpha,
 } from '@mui/material';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Flower2, Package2, ShoppingBag, UserRound } from 'lucide-react';
@@ -20,14 +21,20 @@ export function AppShell() {
   const { cart } = useCart();
 
   const cartCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
-  const storefrontPath = location.pathname.startsWith('/flowers')
-    ? '/flowers'
-    : location.pathname.startsWith('/gifts')
-      ? '/gifts'
-      : '/bouquets';
+  const storefrontPath = location.pathname.startsWith('/bouquets')
+    ? '/bouquets'
+    : location.pathname.startsWith('/flowers')
+      ? '/flowers'
+      : location.pathname.startsWith('/gifts')
+        ? '/gifts'
+        : null;
 
   function getCatalogButtonVariant(path: string) {
     return storefrontPath === path ? 'contained' : 'text';
+  }
+
+  function getSectionButtonVariant(path: string) {
+    return location.pathname.startsWith(path) ? 'contained' : 'text';
   }
 
   return (
@@ -37,18 +44,34 @@ export function AppShell() {
         color="inherit"
         elevation={0}
         sx={{
-          backdropFilter: 'blur(18px)',
-          backgroundColor: 'rgba(247, 247, 251, 0.9)',
-          borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
+          backdropFilter: 'blur(22px)',
+          backgroundColor: alpha('#f7fbf7', 0.82),
+          borderBottom: '1px solid rgba(24, 38, 31, 0.08)',
         }}
       >
         <Container maxWidth="xl">
           <Toolbar
             disableGutters
-            sx={{ minHeight: 84, gap: 2, justifyContent: 'space-between', flexWrap: 'wrap' }}
+            sx={{
+              minHeight: 88,
+              gap: 2,
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              py: 1,
+            }}
           >
             <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'primary.main', width: 42, height: 42 }}>
+              <Avatar
+                sx={{
+                  width: 46,
+                  height: 46,
+                  bgcolor: 'transparent',
+                  color: 'primary.dark',
+                  border: '1px solid rgba(24, 38, 31, 0.08)',
+                  background:
+                    'linear-gradient(180deg, rgba(255,255,255,0.84) 0%, rgba(220,239,228,0.82) 100%)',
+                }}
+              >
                 <Flower2 size={18} />
               </Avatar>
               <Box>
@@ -56,31 +79,46 @@ export function AppShell() {
                   component={NavLink}
                   to="/bouquets"
                   variant="h6"
-                  sx={{ color: 'text.primary', textDecoration: 'none' }}
+                  sx={{ color: 'text.primary', textDecoration: 'none', fontWeight: 700 }}
                 >
                   Flowoff
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Цветочный магазин с доставкой, бронью и онлайн-заказами
+                  Современная цветочная витрина с мягкой навигацией по разделам
                 </Typography>
               </Box>
             </Stack>
 
             <Stack direction="row" spacing={1} aria-label="Основная навигация" sx={{ flexWrap: 'wrap' }}>
-              <Button component={NavLink} to="/bouquets" variant={getCatalogButtonVariant('/bouquets')} color="inherit">
+              <Button
+                component={NavLink}
+                to="/bouquets"
+                variant={getCatalogButtonVariant('/bouquets')}
+                color={storefrontPath === '/bouquets' ? 'primary' : 'inherit'}
+              >
                 Букеты
               </Button>
-              <Button component={NavLink} to="/flowers" variant={getCatalogButtonVariant('/flowers')} color="inherit">
+              <Button
+                component={NavLink}
+                to="/flowers"
+                variant={getCatalogButtonVariant('/flowers')}
+                color={storefrontPath === '/flowers' ? 'primary' : 'inherit'}
+              >
                 Цветы
               </Button>
-              <Button component={NavLink} to="/gifts" variant={getCatalogButtonVariant('/gifts')} color="inherit">
+              <Button
+                component={NavLink}
+                to="/gifts"
+                variant={getCatalogButtonVariant('/gifts')}
+                color={storefrontPath === '/gifts' ? 'primary' : 'inherit'}
+              >
                 Подарки
               </Button>
               <Button
                 component={NavLink}
                 to="/orders"
-                variant="text"
-                color="inherit"
+                variant={getSectionButtonVariant('/orders')}
+                color={location.pathname.startsWith('/orders') ? 'primary' : 'inherit'}
                 startIcon={<Package2 size={16} />}
               >
                 Заказы
@@ -88,10 +126,10 @@ export function AppShell() {
               <Button
                 component={NavLink}
                 to="/cart"
-                variant="outlined"
-                color="inherit"
+                variant={location.pathname.startsWith('/cart') ? 'contained' : 'outlined'}
+                color={location.pathname.startsWith('/cart') ? 'primary' : 'inherit'}
                 startIcon={
-                  <Badge badgeContent={cartCount} color="secondary">
+                  <Badge badgeContent={cartCount} color="primary">
                     <ShoppingBag size={16} />
                   </Badge>
                 }
@@ -116,7 +154,7 @@ export function AppShell() {
                   </Button>
                 </>
               ) : (
-                <Button component={NavLink} to="/account" variant="contained" startIcon={<UserRound size={16} />}>
+                <Button component={NavLink} to="/account" variant="contained" color="primary" startIcon={<UserRound size={16} />}>
                   Войти
                 </Button>
               )}
