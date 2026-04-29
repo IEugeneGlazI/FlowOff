@@ -1,0 +1,276 @@
+:root {
+  color-scheme: light;
+  background:
+    radial-gradient(circle at top left, rgba(255, 201, 214, 0.4), transparent 28%),
+    radial-gradient(circle at top right, rgba(173, 227, 214, 0.45), transparent 34%),
+    #f6f7fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.page-frame {
+  width: min(1440px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 1.5rem 0 2rem;
+}
+
+.cart-layout,
+.account-layout,
+.details-layout {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.storefront-grid,
+.cart-layout,
+.details-layout,
+.account-layout {
+  grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
+}
+
+.orders-list,
+.cart-items,
+.checkout-form,
+.account-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel,
+.order-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(23, 32, 51, 0.07);
+  box-shadow: 0 18px 40px rgba(30, 41, 59, 0.05);
+  border-radius: 0.75rem;
+}
+
+.panel {
+  padding: 1.15rem;
+}
+
+.text-area {
+  width: 100%;
+  min-height: 6.5rem;
+  resize: vertical;
+  border: 1px solid rgba(23, 32, 51, 0.12);
+  border-radius: 0.7rem;
+  background: #ffffff;
+  padding: 0.85rem 0.95rem;
+  color: #172033;
+  font: inherit;
+}
+
+.promotion-empty,
+.loading-state,
+.empty-panel {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 8rem;
+}
+
+.inline-feedback,
+.helper-text {
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.7rem;
+  background: rgba(255, 226, 184, 0.35);
+}
+
+.success-text {
+  background: rgba(173, 227, 214, 0.34);
+  color: #1f6c57;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(61, 143, 121, 0.12);
+  color: #215f4e;
+}
+
+.details-main,
+.details-side {
+  min-height: fit-content;
+}
+
+.details-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.details-price-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 12rem;
+  align-items: flex-end;
+}
+
+.details-price-block strong,
+.checkout-summary strong,
+.order-summary strong {
+  font-size: 1.15rem;
+}
+
+.details-specs {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(23, 32, 51, 0.08);
+}
+
+.spec-label {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #5f6980;
+  font-size: 0.86rem;
+}
+
+.quantity-picker {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.quantity-picker.compact {
+  gap: 0.5rem;
+}
+
+.cart-item,
+.order-item-row,
+.order-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.cart-item,
+.order-item-row {
+  padding: 0.9rem 0;
+  border-top: 1px solid rgba(23, 32, 51, 0.08);
+}
+
+.cart-item:first-child,
+.order-item-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.checkout-panel {
+  align-self: start;
+}
+
+.checkout-form {
+  margin-top: 1rem;
+}
+
+.checkout-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 0 0;
+  border-top: 1px solid rgba(23, 32, 51, 0.08);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.account-intro {
+  min-height: fit-content;
+}
+
+.account-form-panel {
+  align-self: start;
+}
+
+.account-form {
+  margin-top: 1rem;
+}
+
+.orders-list {
+  margin-top: 1rem;
+}
+
+.order-card {
+  padding: 1rem;
+}
+
+.order-card h3,
+.order-card p {
+  margin: 0;
+}
+
+.order-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.order-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.order-meta {
+  margin: 1rem 0;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 1080px) {
+  .cart-layout,
+  .account-layout,
+  .details-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .details-price-block,
+  .order-summary {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-frame {
+    width: min(100% - 1rem, 100%);
+  }
+
+  .cart-item,
+  .order-card-head,
+  .order-meta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
