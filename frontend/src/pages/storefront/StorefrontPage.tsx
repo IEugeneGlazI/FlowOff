@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Card,
+  CardActionArea,
   CardContent,
   Chip,
   FormControl,
@@ -13,13 +14,15 @@ import {
   OutlinedInput,
   Select,
   Slider,
+  Snackbar,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   alpha,
 } from '@mui/material';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
-import { ArrowRight, LoaderCircle, Search } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { LoaderCircle, Plus, Search } from 'lucide-react';
 import type { Category, ColorReference, FlowerInReference, Product, Promotion } from '../../entities/catalog';
 import { getCategories, getColors, getFlowerIns, getProducts, getPromotions } from '../../features/catalog/catalogApi';
 import { useCart } from '../../features/cart/CartContext';
@@ -28,6 +31,10 @@ import { formatCurrency } from '../../shared/format';
 
 type CatalogTab = 'bouquets' | 'flowers' | 'gifts';
 type PriceRange = [number, number];
+type FeedbackState = {
+  message: string;
+  severity: 'success' | 'info' | 'warning' | 'error';
+};
 
 function toSearchBlob(product: Product) {
   return [
@@ -66,8 +73,21 @@ function getTabSubheading(activeTab: CatalogTab) {
   }
 }
 
+function getProductPlaceholderImage(product: Product) {
+  if (product.type === 'Flower') {
+    return 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=80';
+  }
+
+  if (product.type === 'Gift') {
+    return 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0ea?auto=format&fit=crop&w=900&q=80';
+  }
+
+  return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=900&q=80';
+}
+
 export function StorefrontPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [colors, setColors] = useState<ColorReference[]>([]);
   const [flowerIns, setFlowerIns] = useState<FlowerInReference[]>([]);
@@ -81,7 +101,7 @@ export function StorefrontPage() {
   const [selectedFlowerColorId, setSelectedFlowerColorId] = useState('');
   const [selectedGiftCategoryId, setSelectedGiftCategoryId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const { addItem } = useCart();
 
   const activeTab: CatalogTab = location.pathname.startsWith('/flowers')
@@ -185,10 +205,16 @@ export function StorefrontPage() {
   async function handleAddToCart(productId: string) {
     try {
       await addItem(productId, 1);
-      setFeedback('Товар добавлен в корзину.');
+      setFeedback({
+        message: 'Товар добавлен в корзину.',
+        severity: 'success',
+      });
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Не удалось добавить товар в корзину.';
-      setFeedback(message);
+      setFeedback({
+        message,
+        severity: error instanceof ApiError && error.status === 401 ? 'warning' : 'error',
+      });
     }
   }
 
@@ -422,12 +448,6 @@ export function StorefrontPage() {
         </Grid>
       ) : null}
 
-      {feedback ? (
-        <Alert severity="success" sx={{ borderRadius: 2 }}>
-          {feedback}
-        </Alert>
-      ) : null}
-
       <Box>
         {isLoading ? (
           <Card sx={{ backgroundColor: alpha('#ffffff', 0.8) }}>
@@ -454,79 +474,138 @@ export function StorefrontPage() {
                     },
                   }}
                 >
-                  <CardContent sx={{ display: 'grid', gap: 2, height: '100%', p: 2.25 }}>
-                    <Box
-                      sx={{
-                        minHeight: 140,
-                        borderRadius: 2,
-                        border: '1px solid rgba(24,38,31,0.06)',
-                        background: `
-                          radial-gradient(circle at 20% 20%, rgba(220,239,228,0.94), transparent 36%),
-                          radial-gradient(circle at 75% 30%, rgba(255,244,234,0.92), transparent 32%),
-                          linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(242,248,243,0.98) 100%)
-                        `,
-                        p: 2,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <Typography variant="h5" sx={{ maxWidth: '10ch' }}>
-                        {formatCurrency(product.price)}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ display: 'grid', gap: 0.9 }}>
-                      <Typography variant="h6">{product.name}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {product.description || 'Описание пока не заполнено.'}
-                      </Typography>
-                    </Box>
-
-                    <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-                      {product.categoryName ? (
-                        <Chip
-                          size="small"
-                          variant="outlined"
-                          label={product.categoryName}
-                          sx={{ bgcolor: alpha('#ffffff', 0.74) }}
-                        />
-                      ) : null}
-                      {(product.colorNames ?? []).map((colorName) => (
-                        <Chip
-                          key={`${product.id}-${colorName}`}
-                          size="small"
-                          variant="outlined"
-                          label={colorName}
-                          sx={{ bgcolor: alpha('#ffffff', 0.74) }}
-                        />
-                      ))}
-                      {product.flowerInName && product.type === 'Flower' ? (
-                        <Chip
-                          size="small"
-                          variant="outlined"
-                          label={product.flowerInName}
-                          sx={{ bgcolor: alpha('#ffffff', 0.74) }}
-                        />
-                      ) : null}
-                    </Stack>
-
-                    <Stack direction="row" spacing={1} sx={{ mt: 'auto' }}>
-                      <Button
-                        component={RouterLink}
-                        to={`/products/${product.id}`}
-                        variant="outlined"
-                        color="inherit"
-                        fullWidth
-                        endIcon={<ArrowRight size={16} />}
+                  <CardActionArea
+                    onClick={() => navigate(`/products/${product.id}`)}
+                    sx={{
+                      height: '100%',
+                      display: 'block',
+                    }}
+                  >
+                    <CardContent sx={{ display: 'grid', gap: 2, height: '100%', p: 2.25 }}>
+                      <Box
+                        sx={{
+                          minHeight: 320,
+                          borderRadius: 2,
+                          border: '1px solid rgba(24,38,31,0.06)',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          backgroundColor: '#f3f7f4',
+                        }}
                       >
-                        Подробнее
-                      </Button>
-                      <Button variant="contained" color="primary" fullWidth onClick={() => void handleAddToCart(product.id)}>
-                        В корзину
-                      </Button>
-                    </Stack>
-                  </CardContent>
+                        <Box
+                          component="img"
+                          src={getProductPlaceholderImage(product)}
+                          alt={product.name}
+                          sx={{
+                            width: '100%',
+                            height: 320,
+                            objectFit: 'cover',
+                            display: 'block',
+                          }}
+                        />
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            background:
+                              'linear-gradient(180deg, rgba(14,19,16,0.02) 0%, rgba(14,19,16,0.05) 48%, rgba(14,19,16,0.22) 100%)',
+                          }}
+                        />
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            right: 12,
+                            bottom: 12,
+                            px: 1.5,
+                            py: 0.75,
+                            borderRadius: 999,
+                            bgcolor: 'rgba(255,255,255,0.88)',
+                            backdropFilter: 'blur(10px)',
+                            boxShadow: '0 8px 24px rgba(31,42,35,0.10)',
+                          }}
+                        >
+                          <Typography variant="h5" sx={{ maxWidth: '10ch' }}>
+                            {formatCurrency(product.price)}
+                          </Typography>
+                        </Box>
+
+                        <Tooltip title="В корзину">
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              void handleAddToCart(product.id);
+                            }}
+                            sx={{
+                              position: 'absolute',
+                              top: 12,
+                              right: 12,
+                              minWidth: 44,
+                              width: 44,
+                              height: 44,
+                              borderRadius: '50%',
+                              p: 0,
+                              opacity: { xs: 1, md: 0 },
+                              transform: { xs: 'scale(1)', md: 'scale(0.92)' },
+                              transition: 'opacity 180ms ease, transform 180ms ease',
+                              '.MuiCard-root:hover &': {
+                                opacity: 1,
+                                transform: 'scale(1)',
+                              },
+                            }}
+                          >
+                            <Plus size={18} />
+                          </Button>
+                        </Tooltip>
+                      </Box>
+
+                      <Box sx={{ display: 'grid', gap: 0.9 }}>
+                        <Typography variant="h6">{product.name}</Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {product.description || 'Описание пока не заполнено.'}
+                        </Typography>
+                      </Box>
+
+                      <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap', mt: 'auto' }}>
+                        {product.categoryName ? (
+                          <Chip
+                            size="small"
+                            variant="outlined"
+                            label={product.categoryName}
+                            sx={{ bgcolor: alpha('#ffffff', 0.74) }}
+                          />
+                        ) : null}
+                        {(product.colorNames ?? []).map((colorName) => (
+                          <Chip
+                            key={`${product.id}-${colorName}`}
+                            size="small"
+                            variant="outlined"
+                            label={colorName}
+                            sx={{ bgcolor: alpha('#ffffff', 0.74) }}
+                          />
+                        ))}
+                        {product.flowerInName && product.type === 'Flower' ? (
+                          <Chip
+                            size="small"
+                            variant="outlined"
+                            label={product.flowerInName}
+                            sx={{ bgcolor: alpha('#ffffff', 0.74) }}
+                          />
+                        ) : null}
+                      </Stack>
+                    </CardContent>
+                  </CardActionArea>
                 </Card>
               </Grid>
             ))}
@@ -543,6 +622,21 @@ export function StorefrontPage() {
           </Card>
         ) : null}
       </Box>
+
+      <Snackbar
+        open={Boolean(feedback)}
+        autoHideDuration={3200}
+        onClose={() => setFeedback(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity={feedback?.severity ?? 'info'}
+          onClose={() => setFeedback(null)}
+          sx={{ borderRadius: 2, minWidth: 320, boxShadow: '0 18px 40px rgba(31,42,35,0.18)' }}
+        >
+          {feedback?.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
