@@ -1,162 +1,82 @@
 # Flowoff Backend
 
-Current backend stage:
+Backend for the Flowoff flower shop application built with Clean Architecture.
 
-- Clean Architecture solution with `Domain`, `Application`, `Infrastructure`, `Web`
-- ASP.NET Core Web API with controllers, Swagger, JWT authentication
-- ASP.NET Core Identity integration with seeded roles and default admin
-- email confirmation and password reset flow with email sender abstraction
-- SQL Server / EF Core context with initial domain model
-- current default database server: `I_EUGENE_I`
-- soft delete is used for products, promotions, and users
+## Solution structure
 
-Current email delivery behavior:
+- `Flowoff.Domain` - entities, enums, repository interfaces
+- `Flowoff.Application` - DTOs, services, business rules
+- `Flowoff.Infrastructure` - EF Core, repositories, Identity, JWT, seeding
+- `Flowoff.Web` - controllers, middleware, Swagger, configuration
 
-- emails are sent through a stub `LoggingEmailSender`
-- confirmation links and reset tokens are written to application logs
-- this can later be replaced by SMTP, SendGrid, or another provider without changing application layer contracts
+## Current state
 
-Configuration notes:
+Implemented modules:
 
-- `appsettings.json` contains safe placeholder values for repository storage
-- local secrets and machine-specific settings should live in `Flowoff.Web/appsettings.Development.json`
-- an example local config is available in `Flowoff.Web/appsettings.Development.example.json`
-- Current public and customer endpoints:
-  - `POST /api/auth/register`
-  - `POST /api/auth/login`
-  - `GET /api/auth/confirm-email`
-  - `POST /api/auth/forgot-password`
-  - `POST /api/auth/reset-password`
-  - `POST /api/auth/resend-confirmation`
-  - `GET /api/categories`
-  - `GET /api/products`
-  - `GET /api/products/{id}`
-  - `GET /api/cart`
-  - `POST /api/cart/items`
-  - `PUT /api/cart/items`
-  - `DELETE /api/cart/items/{productId}`
-  - `DELETE /api/cart`
-  - `GET /api/reservations/my`
-  - `POST /api/reservations`
-  - `DELETE /api/reservations/{reservationId}`
-  - `GET /api/reservations/active`
-  - `GET /api/supportrequests/my`
-  - `POST /api/supportrequests`
-  - `GET /api/supportrequests`
-  - `PATCH /api/supportrequests/{id}/status`
-  - `POST /api/orders`
-  - `GET /api/orders/my`
-  - `GET /api/florist/orders`
-  - `GET /api/florist/orders/{id}`
-  - `PATCH /api/florist/orders/{id}/assembly-status`
-  - `PATCH /api/florist/orders/{id}/assign-courier`
-  - `GET /api/couriers`
-  - `GET /api/courier/orders`
-  - `PATCH /api/courier/orders/{id}/delivery-status`
-  - `GET /api/promotions`
-  - `POST /api/promotions`
-  - `PUT /api/promotions/{id}`
-  - `DELETE /api/promotions/{id}`
-  - `GET /api/admin/statistics`
-  - `POST /api/custombouquets/calculate`
-  - `POST /api/custombouquets`
-  - `GET /api/custombouquets/my`
-  - `PUT /api/products/{id}`
-  - `PATCH /api/products/{id}/stock`
-  - `DELETE /api/products/{id}`
-  - `GET /api/references/statuses`
-  - `GET /api/admin/users`
-  - `PUT /api/admin/users/{id}`
-  - `PATCH /api/admin/users/{id}/block`
-  - `DELETE /api/admin/users/{id}`
+- `Auth`
+- `Categories`
+- `Colors`
+- `FlowerIns`
+- `Products`
+- `Cart`
+- `Orders`
+- `FloristOrders`
+- `CourierOrders`
+- `Couriers`
+- `Promotions`
+- `SupportRequests`
+- `AdminStatistics`
+- `AdminUsers`
+- `References`
 
-Default admin:
+## Catalog model
 
-- Email: `admin@flowoff.local`
-- Password: `Admin123!`
+The catalog is stored in separate tables:
 
-Seeded role accounts:
+- `Bouquets`
+- `Flowers`
+- `Gifts`
 
-- Florist: `florist@flowoff.local` / `Florist123!`
-- Courier: `courier@flowoff.local` / `Courier123!`
+Reference tables:
 
-Implemented business constraints in this phase:
+- `FlowerIns`
+- `Colors`
+- `Categories`
 
-- unique email through Identity configuration
-- one role per user
+## Important notes
+
+- reservation functionality was removed from the project
+- `StockQuantity` was removed from the domain model, API, and frontend
+- cart items and order items now store concrete links to `Bouquets`, `Flowers`, or `Gifts`
+- email confirmation is required before login
+- SMTP email sending is supported through the `Smtp` section in configuration
 - public registration creates only `Customer`
-- login is blocked until email is confirmed
-- password reset is available through token-based email flow
-- delivery order cannot be created with pay-on-pickup
-- delivery address is required for delivery orders
-- only showcase bouquets can be reserved
-- reservation duration cannot exceed 24 hours
-- overlapping active reservations are blocked
-- online payment is currently implemented as a stub and marks non-cash orders as paid
-- florist/admin can create products
-- florist/admin can view all orders and update assembly statuses
-- florist/admin can assign courier after assembly is completed
-- customer can create and view own orders
-- customer can manage own cart
-- customer can calculate and save custom bouquets from flowers
-- customer can create and view own support requests
-- courier can view assigned delivery orders and update delivery statuses
-- administrator can create and edit promotions
-- administrator can soft delete promotions and manage users
-- administrator can view dashboard statistics for orders, revenue, reservations, and support
-- administrator can review and update support request statuses
-- status dictionaries are exposed via `/api/references/statuses`
+- products, promotions, and users use soft delete where required
 
-Next recommended iteration:
+## Migrations
 
-1. Add migrations and move from `EnsureCreated()` to migrations.
-2. Replace logging email sender with SMTP or external provider.
-3. Implement promotions and custom bouquet constructor.
-4. Add more detailed user profile editing and audit fields where needed.
-5. Start React frontend with catalog, auth, cart, reservation, and checkout screens.
-6. Replace `EnsureCreated()` with migrations.
-## Database migrations
-
-The project now uses EF Core migrations instead of `EnsureCreated()`.
-
-### What you need locally
-
-1. `dotnet-ef` installed:
+After schema changes:
 
 ```powershell
-dotnet tool install --global dotnet-ef
-```
-
-If it is already installed, update it if needed:
-
-```powershell
-dotnet tool update --global dotnet-ef
-```
-
-2. A valid local `backend/Flowoff.Web/appsettings.Development.json` with:
-- your SQL Server connection string
-- a local JWT key
-
-3. Rights on SQL Server `I_EUGENE_I` to create/alter the `FlowoffDb` database.
-
-### Important transition note
-
-If your current `FlowoffDb` was created with `EnsureCreated()`, the easiest path is:
-
-1. back up any data you want to keep
-2. drop `FlowoffDb`
-3. create the first migration
-4. apply the migration to a fresh database
-
-That is the cleanest way to switch because an `EnsureCreated()` database does not have migration history.
-
-### Migration commands
-
-Run from `backend`:
-
-```powershell
-dotnet ef migrations add InitialCreate --project .\Flowoff.Infrastructure\Flowoff.Infrastructure.csproj --startup-project .\Flowoff.Web\Flowoff.Web.csproj --output-dir Data\Migrations
+dotnet ef migrations add RebuildCatalogStructure --project .\Flowoff.Infrastructure\Flowoff.Infrastructure.csproj --startup-project .\Flowoff.Web\Flowoff.Web.csproj --output-dir Data\Migrations
 dotnet ef database update --project .\Flowoff.Infrastructure\Flowoff.Infrastructure.csproj --startup-project .\Flowoff.Web\Flowoff.Web.csproj
 ```
 
-After that, application startup will apply pending migrations automatically via `Database.MigrateAsync()`.
+## SMTP setup
+
+Configure real email sending in `Flowoff.Web/appsettings.Development.json`:
+
+```json
+"Smtp": {
+  "Host": "smtp.example.com",
+  "Port": 587,
+  "Username": "no-reply@example.com",
+  "Password": "your-smtp-password",
+  "FromEmail": "no-reply@example.com",
+  "FromName": "Flowoff",
+  "EnableSsl": true,
+  "UseLoggingFallbackWhenNotConfigured": true
+}
+```
+
+If `Host` or `FromEmail` is not filled, backend falls back to logging the email instead of sending it.

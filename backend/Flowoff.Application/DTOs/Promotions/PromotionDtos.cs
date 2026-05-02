@@ -19,6 +19,10 @@ public sealed class CreatePromotionRequestDto
 
     [Required]
     public DateTime EndsAtUtc { get; init; }
+
+    public IReadOnlyCollection<Guid> BouquetIds { get; init; } = [];
+    public IReadOnlyCollection<Guid> FlowerIds { get; init; } = [];
+    public IReadOnlyCollection<Guid> GiftIds { get; init; } = [];
 }
 
 public sealed class UpdatePromotionRequestDto
@@ -40,6 +44,9 @@ public sealed class UpdatePromotionRequestDto
     public DateTime EndsAtUtc { get; init; }
 
     public bool IsActive { get; init; }
+    public IReadOnlyCollection<Guid> BouquetIds { get; init; } = [];
+    public IReadOnlyCollection<Guid> FlowerIds { get; init; } = [];
+    public IReadOnlyCollection<Guid> GiftIds { get; init; } = [];
 }
 
 public sealed class PromotionDto
@@ -51,4 +58,7 @@ public sealed class PromotionDto
     public DateTime StartsAtUtc { get; init; }
     public DateTime EndsAtUtc { get; init; }
     public bool IsActive { get; init; }
+    public IReadOnlyCollection<Guid> BouquetIds { get; init; } = [];
+    public IReadOnlyCollection<Guid> FlowerIds { get; init; } = [];
+    public IReadOnlyCollection<Guid> GiftIds { get; init; } = [];
 }

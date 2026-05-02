@@ -20,61 +20,28 @@ import {
 } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { ArrowRight, LoaderCircle, Search } from 'lucide-react';
-import type { Category, Product, Promotion } from '../../entities/catalog';
-import { getCategories, getProducts, getPromotions } from '../../features/catalog/catalogApi';
-import { formatCurrency } from '../../shared/format';
+import type { Category, ColorReference, FlowerInReference, Product, Promotion } from '../../entities/catalog';
+import { getCategories, getColors, getFlowerIns, getProducts, getPromotions } from '../../features/catalog/catalogApi';
 import { useCart } from '../../features/cart/CartContext';
 import { ApiError } from '../../shared/api';
+import { formatCurrency } from '../../shared/format';
 
 type CatalogTab = 'bouquets' | 'flowers' | 'gifts';
 type PriceRange = [number, number];
 
-const bouquetColors = ['Белый', 'Розовый', 'Красный', 'Желтый', 'Фиолетовый', 'Синий'];
-const flowerTypes = ['Роза', 'Тюльпан', 'Пион', 'Лилия', 'Хризантема', 'Гербера', 'Гвоздика', 'Орхидея'];
-const giftTypes = [
-  'Шары',
-  'Сладости',
-  'Продуктовые корзины',
-  'Фруктовые корзины',
-  'Мягкие игрушки',
-  'Вазы',
-  'Свечи',
-];
-
-const giftKeywordMap: Record<string, string[]> = {
-  Шары: ['шар', 'шары', 'balloon'],
-  Сладости: ['сладост', 'конфет', 'шоколад', 'dessert'],
-  'Продуктовые корзины': ['продукт', 'grocery'],
-  'Фруктовые корзины': ['фрукт', 'fruit'],
-  'Мягкие игрушки': ['игрушк', 'плюш', 'teddy'],
-  Вазы: ['ваза', 'vase'],
-  Свечи: ['свеч', 'candle'],
-};
-
 function toSearchBlob(product: Product) {
-  return [product.name, product.description, product.categoryName].filter(Boolean).join(' ').toLowerCase();
-}
-
-function detectBouquetColors(product: Product) {
-  const blob = toSearchBlob(product);
-  return bouquetColors.filter((color) => blob.includes(color.toLowerCase()));
-}
-
-function detectFlowerType(product: Product) {
-  const blob = toSearchBlob(product);
-  return flowerTypes.find((flowerType) => blob.includes(flowerType.toLowerCase())) ?? null;
-}
-
-function detectGiftType(product: Product) {
-  const blob = toSearchBlob(product);
-  return (
-    giftTypes.find((giftType) => giftKeywordMap[giftType].some((keyword) => blob.includes(keyword.toLowerCase()))) ??
-    null
-  );
-}
-
-function isGiftProduct(product: Product) {
-  return detectGiftType(product) !== null;
+  return [
+    product.name,
+    product.description,
+    product.categoryName,
+    product.flowerInName,
+    ...(product.flowerInNames ?? []),
+    product.colorName,
+    ...(product.colorNames ?? []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
 }
 
 function getTabHeading(activeTab: CatalogTab) {
@@ -91,24 +58,28 @@ function getTabHeading(activeTab: CatalogTab) {
 function getTabSubheading(activeTab: CatalogTab) {
   switch (activeTab) {
     case 'flowers':
-      return 'Поштучные цветы с быстрым подбором по типу и диапазону цены.';
+      return 'Там, где рождаются чувства.';
     case 'gifts':
-      return 'Сопутствующие подарки для заказа: от ваз до сладостей и мягких игрушек.';
+      return 'Маленькие детали, которые делают день особенным.';
     default:
-      return 'Композиции для доставки, витрины и особых поводов с фильтрами по составу.';
+      return 'Идеальные сочетания для особых моментов.';
   }
 }
 
 export function StorefrontPage() {
   const location = useLocation();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [colors, setColors] = useState<ColorReference[]>([]);
+  const [flowerIns, setFlowerIns] = useState<FlowerInReference[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [priceRange, setPriceRange] = useState<PriceRange>([0, 25000]);
-  const [selectedBouquetColors, setSelectedBouquetColors] = useState<string[]>([]);
-  const [selectedFlowerType, setSelectedFlowerType] = useState('');
-  const [selectedGiftType, setSelectedGiftType] = useState('');
+  const [selectedBouquetColorId, setSelectedBouquetColorId] = useState('');
+  const [selectedBouquetFlowerInId, setSelectedBouquetFlowerInId] = useState('');
+  const [selectedFlowerInId, setSelectedFlowerInId] = useState('');
+  const [selectedFlowerColorId, setSelectedFlowerColorId] = useState('');
+  const [selectedGiftCategoryId, setSelectedGiftCategoryId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [feedback, setFeedback] = useState<string | null>(null);
   const { addItem } = useCart();
@@ -120,31 +91,67 @@ export function StorefrontPage() {
       : 'bouquets';
 
   useEffect(() => {
-    async function loadInitial() {
+    async function loadReferences() {
+      const [nextCategories, nextColors, nextFlowerIns, nextPromotions] = await Promise.all([
+        getCategories(),
+        getColors(),
+        getFlowerIns(),
+        getPromotions(),
+      ]);
+
+      setCategories(nextCategories);
+      setColors(nextColors);
+      setFlowerIns(nextFlowerIns);
+      setPromotions(nextPromotions.filter((item) => item.isActive));
+    }
+
+    void loadReferences();
+  }, []);
+
+  useEffect(() => {
+    async function loadProducts() {
       setIsLoading(true);
 
       try {
-        const [nextCategories, nextPromotions, nextProducts] = await Promise.all([
-          getCategories(),
-          getPromotions(),
-          getProducts({}),
-        ]);
+        const nextProducts = await getProducts({
+          type: activeTab === 'bouquets' ? 'Bouquet' : activeTab === 'flowers' ? 'Flower' : 'Gift',
+          colorId:
+            activeTab === 'bouquets' && selectedBouquetColorId
+              ? selectedBouquetColorId
+              : activeTab === 'flowers' && selectedFlowerColorId
+                ? selectedFlowerColorId
+                : null,
+          flowerInId:
+            activeTab === 'bouquets' && selectedBouquetFlowerInId
+              ? selectedBouquetFlowerInId
+              : activeTab === 'flowers' && selectedFlowerInId
+                ? selectedFlowerInId
+                : null,
+          categoryId: activeTab === 'gifts' && selectedGiftCategoryId ? selectedGiftCategoryId : null,
+        });
 
-        setCategories(nextCategories);
-        setPromotions(nextPromotions.filter((item) => item.isActive));
         setProducts(nextProducts);
 
         if (nextProducts.length > 0) {
           const prices = nextProducts.map((item) => item.price);
           setPriceRange([Math.floor(Math.min(...prices)), Math.ceil(Math.max(...prices))]);
+        } else {
+          setPriceRange([0, 25000]);
         }
       } finally {
         setIsLoading(false);
       }
     }
 
-    void loadInitial();
-  }, []);
+    void loadProducts();
+  }, [
+    activeTab,
+    selectedBouquetColorId,
+    selectedBouquetFlowerInId,
+    selectedFlowerInId,
+    selectedFlowerColorId,
+    selectedGiftCategoryId,
+  ]);
 
   const priceBounds = useMemo<PriceRange>(() => {
     if (products.length === 0) {
@@ -155,15 +162,6 @@ export function StorefrontPage() {
     return [Math.floor(Math.min(...prices)), Math.ceil(Math.max(...prices))];
   }, [products]);
 
-  const productStats = useMemo(
-    () => ({
-      bouquets: products.filter((item) => item.type === 'Bouquet').length,
-      flowers: products.filter((item) => item.type === 'Flower').length,
-      gifts: products.filter((item) => isGiftProduct(item)).length,
-    }),
-    [products],
-  );
-
   const filteredProducts = useMemo(() => {
     const needle = search.trim().toLowerCase();
 
@@ -171,38 +169,25 @@ export function StorefrontPage() {
       const blob = toSearchBlob(product);
       const matchesSearch = !needle || blob.includes(needle);
       const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
-
-      if (!matchesSearch || !matchesPrice) {
-        return false;
-      }
-
-      if (activeTab === 'bouquets') {
-        const colors = detectBouquetColors(product);
-        const matchesColors =
-          selectedBouquetColors.length === 0 ||
-          selectedBouquetColors.every((selectedColor) => colors.includes(selectedColor));
-        return product.type === 'Bouquet' && matchesColors;
-      }
-
-      if (activeTab === 'flowers') {
-        const flowerType = detectFlowerType(product);
-        const matchesFlowerType = !selectedFlowerType || flowerType === selectedFlowerType;
-        return product.type === 'Flower' && matchesFlowerType;
-      }
-
-      const giftType = detectGiftType(product);
-      const matchesGiftType = !selectedGiftType || giftType === selectedGiftType;
-      return isGiftProduct(product) && matchesGiftType;
+      return matchesSearch && matchesPrice;
     });
-  }, [activeTab, priceRange, products, search, selectedBouquetColors, selectedFlowerType, selectedGiftType]);
+  }, [priceRange, products, search]);
+
+  useEffect(() => {
+    setSearch('');
+    setSelectedBouquetColorId('');
+    setSelectedBouquetFlowerInId('');
+    setSelectedFlowerInId('');
+    setSelectedFlowerColorId('');
+    setSelectedGiftCategoryId('');
+  }, [activeTab]);
 
   async function handleAddToCart(productId: string) {
     try {
       await addItem(productId, 1);
       setFeedback('Товар добавлен в корзину.');
     } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : 'Не удалось добавить товар в корзину.';
+      const message = error instanceof ApiError ? error.message : 'Не удалось добавить товар в корзину.';
       setFeedback(message);
     }
   }
@@ -210,77 +195,107 @@ export function StorefrontPage() {
   function resetFilters() {
     setSearch('');
     setPriceRange(priceBounds);
-    setSelectedBouquetColors([]);
-    setSelectedFlowerType('');
-    setSelectedGiftType('');
+    setSelectedBouquetColorId('');
+    setSelectedBouquetFlowerInId('');
+    setSelectedFlowerInId('');
+    setSelectedFlowerColorId('');
+    setSelectedGiftCategoryId('');
   }
 
   function renderTabFilters() {
     if (activeTab === 'bouquets') {
       return (
-        <Stack spacing={1}>
-          <Typography variant="caption" color="text.secondary">
-            Цвета в составе
-          </Typography>
-          <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-            {bouquetColors.map((color) => {
-              const active = selectedBouquetColors.includes(color);
-              return (
-                <Chip
-                  key={color}
-                  label={color}
-                  color={active ? 'primary' : 'default'}
-                  variant={active ? 'filled' : 'outlined'}
-                  onClick={() =>
-                    setSelectedBouquetColors((current) =>
-                      current.includes(color)
-                        ? current.filter((item) => item !== color)
-                        : [...current, color],
-                    )
-                  }
-                  sx={{ bgcolor: active ? 'primary.main' : alpha('#ffffff', 0.84) }}
-                />
-              );
-            })}
-          </Stack>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <FormControl fullWidth>
+            <InputLabel id="bouquet-color-label">Цвета в составе</InputLabel>
+            <Select
+              labelId="bouquet-color-label"
+              value={selectedBouquetColorId}
+              input={<OutlinedInput label="Цвета в составе" />}
+              onChange={(event) => setSelectedBouquetColorId(event.target.value)}
+            >
+              <MenuItem value="">Все цвета</MenuItem>
+              {colors.map((color) => (
+                <MenuItem key={color.id} value={color.id}>
+                  {color.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel id="bouquet-flowerin-label">Цветки в составе</InputLabel>
+            <Select
+              labelId="bouquet-flowerin-label"
+              value={selectedBouquetFlowerInId}
+              input={<OutlinedInput label="Цветки в составе" />}
+              onChange={(event) => setSelectedBouquetFlowerInId(event.target.value)}
+            >
+              <MenuItem value="">Все цветки</MenuItem>
+              {flowerIns.map((flowerIn) => (
+                <MenuItem key={flowerIn.id} value={flowerIn.id}>
+                  {flowerIn.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Stack>
       );
     }
 
     if (activeTab === 'flowers') {
       return (
-        <FormControl fullWidth>
-          <InputLabel id="flower-type-label">Тип цветка</InputLabel>
-          <Select
-            labelId="flower-type-label"
-            value={selectedFlowerType}
-            input={<OutlinedInput label="Тип цветка" />}
-            onChange={(event) => setSelectedFlowerType(event.target.value)}
-          >
-            <MenuItem value="">Все типы</MenuItem>
-            {flowerTypes.map((flowerType) => (
-              <MenuItem key={flowerType} value={flowerType}>
-                {flowerType}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <FormControl fullWidth>
+            <InputLabel id="flower-type-label">Тип цветка</InputLabel>
+            <Select
+              labelId="flower-type-label"
+              value={selectedFlowerInId}
+              input={<OutlinedInput label="Тип цветка" />}
+              onChange={(event) => setSelectedFlowerInId(event.target.value)}
+            >
+              <MenuItem value="">Все типы</MenuItem>
+              {flowerIns.map((flowerIn) => (
+                <MenuItem key={flowerIn.id} value={flowerIn.id}>
+                  {flowerIn.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel id="flower-color-label">Цвет цветка</InputLabel>
+            <Select
+              labelId="flower-color-label"
+              value={selectedFlowerColorId}
+              input={<OutlinedInput label="Цвет цветка" />}
+              onChange={(event) => setSelectedFlowerColorId(event.target.value)}
+            >
+              <MenuItem value="">Все цвета</MenuItem>
+              {colors.map((color) => (
+                <MenuItem key={color.id} value={color.id}>
+                  {color.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
       );
     }
 
     return (
       <FormControl fullWidth>
-        <InputLabel id="gift-type-label">Тип подарка</InputLabel>
+        <InputLabel id="gift-category-label">Категория подарка</InputLabel>
         <Select
-          labelId="gift-type-label"
-          value={selectedGiftType}
-          input={<OutlinedInput label="Тип подарка" />}
-          onChange={(event) => setSelectedGiftType(event.target.value)}
+          labelId="gift-category-label"
+          value={selectedGiftCategoryId}
+          input={<OutlinedInput label="Категория подарка" />}
+          onChange={(event) => setSelectedGiftCategoryId(event.target.value)}
         >
           <MenuItem value="">Все подарки</MenuItem>
-          {giftTypes.map((giftType) => (
-            <MenuItem key={giftType} value={giftType}>
-              {giftType}
+          {categories.map((category) => (
+            <MenuItem key={category.id} value={category.id}>
+              {category.name}
             </MenuItem>
           ))}
         </Select>
@@ -361,9 +376,7 @@ export function StorefrontPage() {
               </Box>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 4 }}>
-              {renderTabFilters()}
-            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>{renderTabFilters()}</Grid>
 
             <Grid size={{ xs: 12, md: 1 }}>
               <Button
@@ -409,32 +422,13 @@ export function StorefrontPage() {
         </Grid>
       ) : null}
 
-      {feedback ? <Alert severity="success" sx={{ borderRadius: 2 }}>{feedback}</Alert> : null}
+      {feedback ? (
+        <Alert severity="success" sx={{ borderRadius: 2 }}>
+          {feedback}
+        </Alert>
+      ) : null}
 
       <Box>
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={1.5}
-          sx={{ mb: 2.5, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'flex-end' } }}
-        >
-          <Box>
-            <Typography variant="h2">{getTabHeading(activeTab)}</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {filteredProducts.length} позиций после фильтрации
-            </Typography>
-          </Box>
-          <Typography variant="body2" color="text.secondary">
-            {categories.length} категорий в каталоге
-          </Typography>
-        </Stack>
-
-        {activeTab === 'gifts' && productStats.gifts === 0 ? (
-          <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
-            Вкладка подарков уже готова по интерфейсу, но на backend пока нет явно распознанных
-            позиций вроде шаров, ваз или сладостей.
-          </Alert>
-        ) : null}
-
         {isLoading ? (
           <Card sx={{ backgroundColor: alpha('#ffffff', 0.8) }}>
             <CardContent>
@@ -446,126 +440,96 @@ export function StorefrontPage() {
           </Card>
         ) : (
           <Grid container spacing={2}>
-            {filteredProducts.map((product) => {
-              const bouquetColorTags = detectBouquetColors(product);
-              const flowerType = detectFlowerType(product);
-              const giftType = detectGiftType(product);
+            {filteredProducts.map((product) => (
+              <Grid key={product.id} size={{ xs: 12, md: 6, xl: 4 }}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    background: 'rgba(255,255,255,0.84)',
+                    backdropFilter: 'blur(12px)',
+                    transition: 'transform 180ms ease, box-shadow 180ms ease',
+                    ':hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 28px 66px rgba(38, 54, 45, 0.10)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ display: 'grid', gap: 2, height: '100%', p: 2.25 }}>
+                    <Box
+                      sx={{
+                        minHeight: 140,
+                        borderRadius: 2,
+                        border: '1px solid rgba(24,38,31,0.06)',
+                        background: `
+                          radial-gradient(circle at 20% 20%, rgba(220,239,228,0.94), transparent 36%),
+                          radial-gradient(circle at 75% 30%, rgba(255,244,234,0.92), transparent 32%),
+                          linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(242,248,243,0.98) 100%)
+                        `,
+                        p: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <Typography variant="h5" sx={{ maxWidth: '10ch' }}>
+                        {formatCurrency(product.price)}
+                      </Typography>
+                    </Box>
 
-              return (
-                <Grid key={product.id} size={{ xs: 12, md: 6, xl: 4 }}>
-                  <Card
-                    sx={{
-                      height: '100%',
-                      background: 'rgba(255,255,255,0.84)',
-                      backdropFilter: 'blur(12px)',
-                      transition: 'transform 180ms ease, box-shadow 180ms ease',
-                      ':hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 28px 66px rgba(38, 54, 45, 0.10)',
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ display: 'grid', gap: 2, height: '100%', p: 2.25 }}>
-                      <Box
-                        sx={{
-                          minHeight: 140,
-                          borderRadius: 2,
-                          border: '1px solid rgba(24,38,31,0.06)',
-                          background: `
-                            radial-gradient(circle at 20% 20%, rgba(220,239,228,0.94), transparent 36%),
-                            radial-gradient(circle at 75% 30%, rgba(255,244,234,0.92), transparent 32%),
-                            linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(242,248,243,0.98) 100%)
-                          `,
-                          p: 2,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
-                          <Chip
-                            size="small"
-                            color={product.type === 'Bouquet' ? 'primary' : 'secondary'}
-                            label={
-                              activeTab === 'gifts'
-                                ? giftType || 'Подарок'
-                                : product.type === 'Bouquet'
-                                  ? 'Букет'
-                                  : flowerType || 'Цветок'
-                            }
-                          />
-                          {product.isShowcase ? <Chip size="small" variant="outlined" label="Витрина" /> : null}
-                        </Stack>
+                    <Box sx={{ display: 'grid', gap: 0.9 }}>
+                      <Typography variant="h6">{product.name}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {product.description || 'Описание пока не заполнено.'}
+                      </Typography>
+                    </Box>
 
-                        <Typography variant="h5" sx={{ maxWidth: '10ch' }}>
-                          {formatCurrency(product.price)}
-                        </Typography>
-                      </Box>
-
-                      <Box sx={{ display: 'grid', gap: 0.9 }}>
-                        <Typography variant="h6">{product.name}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {product.description || 'Описание пока не заполнено.'}
-                        </Typography>
-                      </Box>
-
-                      <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-                        {product.categoryName ? (
-                          <Chip
-                            size="small"
-                            variant="outlined"
-                            label={product.categoryName}
-                            sx={{ bgcolor: alpha('#ffffff', 0.74) }}
-                          />
-                        ) : null}
-                        {activeTab === 'bouquets'
-                          ? bouquetColorTags.map((color) => (
-                              <Chip
-                                key={color}
-                                size="small"
-                                variant="outlined"
-                                label={color}
-                                sx={{ bgcolor: alpha('#ffffff', 0.74) }}
-                              />
-                            ))
-                          : null}
-                      </Stack>
-
-                      <Stack
-                        direction="row"
-                        sx={{ justifyContent: 'space-between', alignItems: 'center', color: 'text.secondary' }}
-                      >
-                        <Typography variant="caption">
-                          {product.stockQuantity > 0 ? `В наличии: ${product.stockQuantity}` : 'Нет в наличии'}
-                        </Typography>
-                      </Stack>
-
-                      <Stack direction="row" spacing={1} sx={{ mt: 'auto' }}>
-                        <Button
-                          component={RouterLink}
-                          to={`/products/${product.id}`}
+                    <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
+                      {product.categoryName ? (
+                        <Chip
+                          size="small"
                           variant="outlined"
-                          color="inherit"
-                          fullWidth
-                          endIcon={<ArrowRight size={16} />}
-                        >
-                          Подробнее
-                        </Button>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          fullWidth
-                          disabled={product.stockQuantity === 0}
-                          onClick={() => void handleAddToCart(product.id)}
-                        >
-                          В корзину
-                        </Button>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              );
-            })}
+                          label={product.categoryName}
+                          sx={{ bgcolor: alpha('#ffffff', 0.74) }}
+                        />
+                      ) : null}
+                      {(product.colorNames ?? []).map((colorName) => (
+                        <Chip
+                          key={`${product.id}-${colorName}`}
+                          size="small"
+                          variant="outlined"
+                          label={colorName}
+                          sx={{ bgcolor: alpha('#ffffff', 0.74) }}
+                        />
+                      ))}
+                      {product.flowerInName && product.type === 'Flower' ? (
+                        <Chip
+                          size="small"
+                          variant="outlined"
+                          label={product.flowerInName}
+                          sx={{ bgcolor: alpha('#ffffff', 0.74) }}
+                        />
+                      ) : null}
+                    </Stack>
+
+                    <Stack direction="row" spacing={1} sx={{ mt: 'auto' }}>
+                      <Button
+                        component={RouterLink}
+                        to={`/products/${product.id}`}
+                        variant="outlined"
+                        color="inherit"
+                        fullWidth
+                        endIcon={<ArrowRight size={16} />}
+                      >
+                        Подробнее
+                      </Button>
+                      <Button variant="contained" color="primary" fullWidth onClick={() => void handleAddToCart(product.id)}>
+                        В корзину
+                      </Button>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
         )}
 
@@ -573,7 +537,7 @@ export function StorefrontPage() {
           <Card sx={{ mt: 2, backgroundColor: alpha('#ffffff', 0.8) }}>
             <CardContent>
               <Typography variant="body1">
-                По текущим фильтрам ничего не найдено. Попробуй ослабить поиск или сбросить часть условий.
+                Ничего не найдено. Попробуйте изменить поисковый запрос или сбросить фильтры, чтобы увидеть все доступные товары.
               </Typography>
             </CardContent>
           </Card>

@@ -8,9 +8,21 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
+const string FrontendCorsPolicy = "FrontendCorsPolicy";
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(FrontendCorsPolicy, policy =>
+    {
+        policy
+            .WithOrigins("http://127.0.0.1:5173", "http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -59,6 +71,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseCors(FrontendCorsPolicy);
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

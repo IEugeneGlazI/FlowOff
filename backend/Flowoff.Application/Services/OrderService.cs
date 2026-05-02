@@ -65,8 +65,7 @@ public class OrderService : IOrderService
                 throw new InvalidOperationException($"Product {item.ProductId} not found.");
             }
 
-            product.DecreaseStock(item.Quantity);
-            orderItems.Add(new OrderItem(product.Id, product.Name, product.Price, item.Quantity));
+            orderItems.Add(new OrderItem(product, item.Quantity));
         }
 
         var totalAmount = orderItems.Sum(item => item.UnitPrice * item.Quantity);
@@ -204,6 +203,7 @@ public class OrderService : IOrderService
             Items = order.Items.Select(item => new OrderItemDto
             {
                 ProductId = item.ProductId,
+                ProductType = item.ProductType,
                 ProductName = item.ProductName,
                 UnitPrice = item.UnitPrice,
                 Quantity = item.Quantity

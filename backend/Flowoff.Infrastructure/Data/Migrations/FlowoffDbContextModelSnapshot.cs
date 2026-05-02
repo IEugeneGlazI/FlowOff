@@ -22,6 +22,36 @@ namespace Flowoff.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Flowoff.Domain.Entities.BouquetColor", b =>
+                {
+                    b.Property<Guid>("BouquetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ColorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("BouquetId", "ColorId");
+
+                    b.HasIndex("ColorId");
+
+                    b.ToTable("BouquetColors", (string)null);
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.BouquetFlowerIn", b =>
+                {
+                    b.Property<Guid>("BouquetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FlowerInId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("BouquetId", "FlowerInId");
+
+                    b.HasIndex("FlowerInId");
+
+                    b.ToTable("BouquetFlowerIns", (string)null);
+                });
+
             modelBuilder.Entity("Flowoff.Domain.Entities.Cart", b =>
                 {
                     b.Property<Guid>("Id")
@@ -47,10 +77,16 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("BouquetId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("CartId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid?>("FlowerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("GiftId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Quantity")
@@ -58,10 +94,15 @@ namespace Flowoff.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("BouquetId");
 
-                    b.HasIndex("CartId", "ProductId")
-                        .IsUnique();
+                    b.HasIndex("FlowerId");
+
+                    b.HasIndex("GiftId");
+
+                    b.HasIndex("CartId", "BouquetId", "FlowerId", "GiftId")
+                        .IsUnique()
+                        .HasFilter("[BouquetId] IS NOT NULL AND [FlowerId] IS NOT NULL AND [GiftId] IS NOT NULL");
 
                     b.ToTable("CartItems");
                 });
@@ -72,9 +113,17 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -86,57 +135,31 @@ namespace Flowoff.Infrastructure.Data.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("Flowoff.Domain.Entities.CustomBouquet", b =>
+            modelBuilder.Entity("Flowoff.Domain.Entities.Color", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("CustomerId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<decimal>("TotalPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("CustomBouquets");
-                });
+                    b.HasIndex("Name")
+                        .IsUnique();
 
-            modelBuilder.Entity("Flowoff.Domain.Entities.CustomBouquetItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CustomBouquetId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CustomBouquetId");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("CustomBouquetItems");
+                    b.ToTable("Colors");
                 });
 
             modelBuilder.Entity("Flowoff.Domain.Entities.Delivery", b =>
@@ -165,6 +188,33 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Deliveries");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.FlowerIn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("FlowerIns");
                 });
 
             modelBuilder.Entity("Flowoff.Domain.Entities.Order", b =>
@@ -206,16 +256,27 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("OrderId")
+                    b.Property<Guid?>("BouquetId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid?>("FlowerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("GiftId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OrderId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ProductType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
@@ -226,9 +287,13 @@ namespace Flowoff.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId");
+                    b.HasIndex("BouquetId");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("FlowerId");
+
+                    b.HasIndex("GiftId");
+
+                    b.HasIndex("OrderId");
 
                     b.ToTable("OrderItems");
                 });
@@ -273,9 +338,6 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -288,8 +350,10 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
-                    b.Property<bool>("IsShowcase")
-                        .HasColumnType("bit");
+                    b.Property<bool>("IsVisible")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -300,19 +364,11 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("StockQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
+                    b.ToTable((string)null);
 
-                    b.ToTable("Products");
+                    b.UseTpcMappingStrategy();
                 });
 
             modelBuilder.Entity("Flowoff.Domain.Entities.Promotion", b =>
@@ -356,36 +412,49 @@ namespace Flowoff.Infrastructure.Data.Migrations
                     b.ToTable("Promotions");
                 });
 
-            modelBuilder.Entity("Flowoff.Domain.Entities.Reservation", b =>
+            modelBuilder.Entity("Flowoff.Domain.Entities.PromotionBouquet", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<Guid>("PromotionId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("CustomerId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("EndAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid>("BouquetId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("StartAtUtc")
-                        .HasColumnType("datetime2");
+                    b.HasKey("PromotionId", "BouquetId");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                    b.HasIndex("BouquetId");
 
-                    b.HasKey("Id");
+                    b.ToTable("PromotionBouquets", (string)null);
+                });
 
-                    b.HasIndex("ProductId");
+            modelBuilder.Entity("Flowoff.Domain.Entities.PromotionFlower", b =>
+                {
+                    b.Property<Guid>("PromotionId")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.ToTable("Reservations");
+                    b.Property<Guid>("FlowerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("PromotionId", "FlowerId");
+
+                    b.HasIndex("FlowerId");
+
+                    b.ToTable("PromotionFlowers", (string)null);
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.PromotionGift", b =>
+                {
+                    b.Property<Guid>("PromotionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("GiftId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("PromotionId", "GiftId");
+
+                    b.HasIndex("GiftId");
+
+                    b.ToTable("PromotionGifts", (string)null);
                 });
 
             modelBuilder.Entity("Flowoff.Domain.Entities.SupportRequest", b =>
@@ -638,42 +707,110 @@ namespace Flowoff.Infrastructure.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Flowoff.Domain.Entities.Bouquet", b =>
+                {
+                    b.HasBaseType("Flowoff.Domain.Entities.Product");
+
+                    b.ToTable("Bouquets", (string)null);
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.Flower", b =>
+                {
+                    b.HasBaseType("Flowoff.Domain.Entities.Product");
+
+                    b.Property<Guid>("ColorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FlowerInId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasIndex("ColorId");
+
+                    b.HasIndex("FlowerInId");
+
+                    b.ToTable("Flowers", (string)null);
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.Gift", b =>
+                {
+                    b.HasBaseType("Flowoff.Domain.Entities.Product");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("Gifts", (string)null);
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.BouquetColor", b =>
+                {
+                    b.HasOne("Flowoff.Domain.Entities.Bouquet", "Bouquet")
+                        .WithMany("Colors")
+                        .HasForeignKey("BouquetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Flowoff.Domain.Entities.Color", "Color")
+                        .WithMany()
+                        .HasForeignKey("ColorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Bouquet");
+
+                    b.Navigation("Color");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.BouquetFlowerIn", b =>
+                {
+                    b.HasOne("Flowoff.Domain.Entities.Bouquet", "Bouquet")
+                        .WithMany("FlowerIns")
+                        .HasForeignKey("BouquetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Flowoff.Domain.Entities.FlowerIn", "FlowerIn")
+                        .WithMany()
+                        .HasForeignKey("FlowerInId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Bouquet");
+
+                    b.Navigation("FlowerIn");
+                });
+
             modelBuilder.Entity("Flowoff.Domain.Entities.CartItem", b =>
                 {
+                    b.HasOne("Flowoff.Domain.Entities.Bouquet", "Bouquet")
+                        .WithMany()
+                        .HasForeignKey("BouquetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Flowoff.Domain.Entities.Cart", "Cart")
                         .WithMany("Items")
                         .HasForeignKey("CartId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Flowoff.Domain.Entities.Product", "Product")
+                    b.HasOne("Flowoff.Domain.Entities.Flower", "Flower")
                         .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("FlowerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Flowoff.Domain.Entities.Gift", "Gift")
+                        .WithMany()
+                        .HasForeignKey("GiftId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Bouquet");
 
                     b.Navigation("Cart");
 
-                    b.Navigation("Product");
-                });
+                    b.Navigation("Flower");
 
-            modelBuilder.Entity("Flowoff.Domain.Entities.CustomBouquetItem", b =>
-                {
-                    b.HasOne("Flowoff.Domain.Entities.CustomBouquet", "CustomBouquet")
-                        .WithMany("Items")
-                        .HasForeignKey("CustomBouquetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Flowoff.Domain.Entities.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CustomBouquet");
-
-                    b.Navigation("Product");
+                    b.Navigation("Gift");
                 });
 
             modelBuilder.Entity("Flowoff.Domain.Entities.Delivery", b =>
@@ -689,21 +826,34 @@ namespace Flowoff.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Flowoff.Domain.Entities.OrderItem", b =>
                 {
+                    b.HasOne("Flowoff.Domain.Entities.Bouquet", "Bouquet")
+                        .WithMany()
+                        .HasForeignKey("BouquetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Flowoff.Domain.Entities.Flower", "Flower")
+                        .WithMany()
+                        .HasForeignKey("FlowerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Flowoff.Domain.Entities.Gift", "Gift")
+                        .WithMany()
+                        .HasForeignKey("GiftId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Flowoff.Domain.Entities.Order", "Order")
                         .WithMany("Items")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Flowoff.Domain.Entities.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Bouquet");
+
+                    b.Navigation("Flower");
+
+                    b.Navigation("Gift");
 
                     b.Navigation("Order");
-
-                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("Flowoff.Domain.Entities.Payment", b =>
@@ -717,26 +867,61 @@ namespace Flowoff.Infrastructure.Data.Migrations
                     b.Navigation("Order");
                 });
 
-            modelBuilder.Entity("Flowoff.Domain.Entities.Product", b =>
+            modelBuilder.Entity("Flowoff.Domain.Entities.PromotionBouquet", b =>
                 {
-                    b.HasOne("Flowoff.Domain.Entities.Category", "Category")
+                    b.HasOne("Flowoff.Domain.Entities.Bouquet", "Bouquet")
                         .WithMany()
-                        .HasForeignKey("CategoryId")
+                        .HasForeignKey("BouquetId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Category");
+                    b.HasOne("Flowoff.Domain.Entities.Promotion", "Promotion")
+                        .WithMany("Bouquets")
+                        .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Bouquet");
+
+                    b.Navigation("Promotion");
                 });
 
-            modelBuilder.Entity("Flowoff.Domain.Entities.Reservation", b =>
+            modelBuilder.Entity("Flowoff.Domain.Entities.PromotionFlower", b =>
                 {
-                    b.HasOne("Flowoff.Domain.Entities.Product", "Product")
+                    b.HasOne("Flowoff.Domain.Entities.Flower", "Flower")
                         .WithMany()
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("FlowerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Product");
+                    b.HasOne("Flowoff.Domain.Entities.Promotion", "Promotion")
+                        .WithMany("Flowers")
+                        .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Flower");
+
+                    b.Navigation("Promotion");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.PromotionGift", b =>
+                {
+                    b.HasOne("Flowoff.Domain.Entities.Gift", "Gift")
+                        .WithMany()
+                        .HasForeignKey("GiftId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Flowoff.Domain.Entities.Promotion", "Promotion")
+                        .WithMany("Gifts")
+                        .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Gift");
+
+                    b.Navigation("Promotion");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -790,12 +975,37 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Flowoff.Domain.Entities.Cart", b =>
+            modelBuilder.Entity("Flowoff.Domain.Entities.Flower", b =>
                 {
-                    b.Navigation("Items");
+                    b.HasOne("Flowoff.Domain.Entities.Color", "Color")
+                        .WithMany()
+                        .HasForeignKey("ColorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Flowoff.Domain.Entities.FlowerIn", "FlowerIn")
+                        .WithMany()
+                        .HasForeignKey("FlowerInId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Color");
+
+                    b.Navigation("FlowerIn");
                 });
 
-            modelBuilder.Entity("Flowoff.Domain.Entities.CustomBouquet", b =>
+            modelBuilder.Entity("Flowoff.Domain.Entities.Gift", b =>
+                {
+                    b.HasOne("Flowoff.Domain.Entities.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.Cart", b =>
                 {
                     b.Navigation("Items");
                 });
@@ -807,6 +1017,22 @@ namespace Flowoff.Infrastructure.Data.Migrations
                     b.Navigation("Items");
 
                     b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.Promotion", b =>
+                {
+                    b.Navigation("Bouquets");
+
+                    b.Navigation("Flowers");
+
+                    b.Navigation("Gifts");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.Bouquet", b =>
+                {
+                    b.Navigation("Colors");
+
+                    b.Navigation("FlowerIns");
                 });
 #pragma warning restore 612, 618
         }

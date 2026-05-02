@@ -1,4 +1,4 @@
-@Flowoff.Web_HostAddress = https://localhost:7225
+@Flowoff.Web_HostAddress = http://localhost:5277
 @customer_email = customer@flowoff.local
 @customer_password = Customer123!
 @customer_token =
@@ -26,29 +26,20 @@ Content-Type: application/json
   "password": "{{customer_password}}"
 }
 
-### Forgot password
-POST {{Flowoff.Web_HostAddress}}/api/auth/forgot-password
-Content-Type: application/json
-
-{
-  "email": "{{customer_email}}"
-}
-
-### Reset password
-POST {{Flowoff.Web_HostAddress}}/api/auth/reset-password
-Content-Type: application/json
-
-{
-  "email": "{{customer_email}}",
-  "token": "TOKEN",
-  "newPassword": "NewCustomer123!"
-}
-
 ### Categories
 GET {{Flowoff.Web_HostAddress}}/api/categories
 
+### Colors
+GET {{Flowoff.Web_HostAddress}}/api/colors
+
+### Flower types
+GET {{Flowoff.Web_HostAddress}}/api/flowerins
+
 ### Catalog
 GET {{Flowoff.Web_HostAddress}}/api/products
+
+### Product details
+GET {{Flowoff.Web_HostAddress}}/api/products/{{product_id}}
 
 ### My cart
 GET {{Flowoff.Web_HostAddress}}/api/cart
@@ -64,20 +55,26 @@ Content-Type: application/json
   "quantity": 3
 }
 
-### My reservations
-GET {{Flowoff.Web_HostAddress}}/api/reservations/my
-Authorization: Bearer {{customer_token}}
-
-### Create reservation
-POST {{Flowoff.Web_HostAddress}}/api/reservations
+### Create order
+POST {{Flowoff.Web_HostAddress}}/api/orders
 Authorization: Bearer {{customer_token}}
 Content-Type: application/json
 
 {
-  "productId": "{{product_id}}",
-  "startAtUtc": "2026-04-26T12:00:00Z",
-  "endAtUtc": "2026-04-26T18:00:00Z"
+  "deliveryMethod": "Delivery",
+  "deliveryAddress": "Москва, ул. Цветочная, д. 15",
+  "payOnPickup": false,
+  "items": [
+    {
+      "productId": "{{product_id}}",
+      "quantity": 1
+    }
+  ]
 }
+
+### My orders
+GET {{Flowoff.Web_HostAddress}}/api/orders/my
+Authorization: Bearer {{customer_token}}
 
 ### My support requests
 GET {{Flowoff.Web_HostAddress}}/api/supportrequests/my
@@ -89,52 +86,29 @@ Authorization: Bearer {{customer_token}}
 Content-Type: application/json
 
 {
-  "subject": "Order status clarification",
-  "message": "Please уточните, когда будет обновлен статус заказа."
+  "subject": "Уточнение по заказу",
+  "message": "Подскажите, пожалуйста, когда будет обновлен статус заказа."
 }
 
 ### Florist orders
 GET {{Flowoff.Web_HostAddress}}/api/florist/orders
 Authorization: Bearer FLORIST_TOKEN
 
-### Florist order details
-GET {{Flowoff.Web_HostAddress}}/api/florist/orders/ORDER_ID
-Authorization: Bearer FLORIST_TOKEN
-
-### Florist update assembly status
-PATCH {{Flowoff.Web_HostAddress}}/api/florist/orders/ORDER_ID/assembly-status
+### Update product
+PUT {{Flowoff.Web_HostAddress}}/api/products/PRODUCT_ID
 Authorization: Bearer FLORIST_TOKEN
 Content-Type: application/json
 
 {
-  "status": "InAssembly"
+  "name": "Обновленный товар",
+  "description": "Новое описание",
+  "price": 190,
+  "isVisible": true
 }
 
-### Couriers list
-GET {{Flowoff.Web_HostAddress}}/api/couriers
+### Delete product
+DELETE {{Flowoff.Web_HostAddress}}/api/products/PRODUCT_ID
 Authorization: Bearer FLORIST_TOKEN
-
-### Florist assign courier
-PATCH {{Flowoff.Web_HostAddress}}/api/florist/orders/ORDER_ID/assign-courier
-Authorization: Bearer FLORIST_TOKEN
-Content-Type: application/json
-
-{
-  "courierEmail": "courier@flowoff.local"
-}
-
-### Courier assigned orders
-GET {{Flowoff.Web_HostAddress}}/api/courier/orders
-Authorization: Bearer COURIER_TOKEN
-
-### Courier update delivery status
-PATCH {{Flowoff.Web_HostAddress}}/api/courier/orders/ORDER_ID/delivery-status
-Authorization: Bearer COURIER_TOKEN
-Content-Type: application/json
-
-{
-  "status": "InTransit"
-}
 
 ### Promotions
 GET {{Flowoff.Web_HostAddress}}/api/promotions
@@ -145,81 +119,16 @@ Authorization: Bearer ADMIN_TOKEN
 Content-Type: application/json
 
 {
-  "title": "Spring discount",
-  "description": "Discount for seasonal bouquets",
+  "title": "Весенние скидки",
+  "description": "Скидка на выбранные позиции каталога",
   "discountPercent": 10,
-  "startsAtUtc": "2026-04-26T00:00:00Z",
-  "endsAtUtc": "2026-05-05T00:00:00Z"
+  "startsAtUtc": "2026-05-02T09:00:00Z",
+  "endsAtUtc": "2026-05-12T21:00:00Z",
+  "bouquetIds": [],
+  "flowerIds": [],
+  "giftIds": []
 }
 
 ### Admin statistics
 GET {{Flowoff.Web_HostAddress}}/api/admin/statistics
-Authorization: Bearer ADMIN_TOKEN
-
-### Delete promotion
-DELETE {{Flowoff.Web_HostAddress}}/api/promotions/PROMOTION_ID
-Authorization: Bearer ADMIN_TOKEN
-
-### Calculate custom bouquet
-POST {{Flowoff.Web_HostAddress}}/api/custombouquets/calculate
-Authorization: Bearer {{customer_token}}
-Content-Type: application/json
-
-[
-  {
-    "productId": "{{product_id}}",
-    "quantity": 5
-  }
-]
-
-### Create custom bouquet
-POST {{Flowoff.Web_HostAddress}}/api/custombouquets
-Authorization: Bearer {{customer_token}}
-Content-Type: application/json
-
-{
-  "name": "My spring bouquet",
-  "items": [
-    {
-      "productId": "{{product_id}}",
-      "quantity": 5
-    }
-  ]
-}
-
-### My custom bouquets
-GET {{Flowoff.Web_HostAddress}}/api/custombouquets/my
-Authorization: Bearer {{customer_token}}
-
-### Update product
-PUT {{Flowoff.Web_HostAddress}}/api/products/PRODUCT_ID
-Authorization: Bearer FLORIST_TOKEN
-Content-Type: application/json
-
-{
-  "name": "Updated rose",
-  "description": "Updated description",
-  "price": 190,
-  "stockQuantity": 120,
-  "isShowcase": false
-}
-
-### Update product stock
-PATCH {{Flowoff.Web_HostAddress}}/api/products/PRODUCT_ID/stock
-Authorization: Bearer FLORIST_TOKEN
-Content-Type: application/json
-
-{
-  "stockQuantity": 99
-}
-
-### Delete product
-DELETE {{Flowoff.Web_HostAddress}}/api/products/PRODUCT_ID
-Authorization: Bearer FLORIST_TOKEN
-
-### Status references
-GET {{Flowoff.Web_HostAddress}}/api/references/statuses
-
-### Admin users
-GET {{Flowoff.Web_HostAddress}}/api/admin/users
 Authorization: Bearer ADMIN_TOKEN

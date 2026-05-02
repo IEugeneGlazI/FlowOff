@@ -1,4 +1,4 @@
-export type ProductType = 'Flower' | 'Bouquet';
+export type ProductType = 'Flower' | 'Bouquet' | 'Gift';
 
 export type Category = {
   id: string;
@@ -6,16 +6,32 @@ export type Category = {
   description?: string | null;
 };
 
+export type ColorReference = {
+  id: string;
+  name: string;
+};
+
+export type FlowerInReference = {
+  id: string;
+  name: string;
+};
+
 export type Product = {
   id: string;
   name: string;
   description?: string | null;
   price: number;
-  stockQuantity: number;
   type: ProductType;
-  isShowcase: boolean;
-  categoryId: string;
+  categoryId?: string | null;
   categoryName?: string | null;
+  flowerInId?: string | null;
+  flowerInName?: string | null;
+  colorId?: string | null;
+  colorName?: string | null;
+  flowerInIds?: string[];
+  flowerInNames?: string[];
+  colorIds?: string[];
+  colorNames?: string[];
 };
 
 export type Promotion = {

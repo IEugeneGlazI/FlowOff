@@ -32,7 +32,6 @@ public class CartRepository : ICartRepository
     {
         return _dbContext.Carts
             .Include(cart => cart.Items)
-            .ThenInclude(item => item.Product)
             .FirstOrDefaultAsync(cart => cart.CustomerId == customerId, cancellationToken);
     }
 

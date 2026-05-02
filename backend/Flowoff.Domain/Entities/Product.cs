@@ -3,88 +3,35 @@ using Flowoff.Domain.Enums;
 
 namespace Flowoff.Domain.Entities;
 
-public class Product : Entity
+public abstract class Product : Entity
 {
-    public string Name { get; private set; } = string.Empty;
-    public string? Description { get; private set; }
-    public decimal Price { get; private set; }
-    public int StockQuantity { get; private set; }
-    public ProductType Type { get; private set; }
-    public bool IsShowcase { get; private set; }
-    public bool IsDeleted { get; private set; }
-    public DateTime? DeletedAtUtc { get; private set; }
-    public Guid CategoryId { get; private set; }
-    public Category? Category { get; private set; }
+    public string Name { get; protected set; } = string.Empty;
+    public string? Description { get; protected set; }
+    public decimal Price { get; protected set; }
+    public bool IsVisible { get; protected set; } = true;
+    public bool IsDeleted { get; protected set; }
+    public DateTime? DeletedAtUtc { get; protected set; }
+    public abstract ProductType Type { get; }
 
-    private Product()
+    protected Product()
     {
     }
 
-    public Product(
-        string name,
-        string? description,
-        decimal price,
-        int stockQuantity,
-        ProductType type,
-        Guid categoryId,
-        bool isShowcase = false)
+    protected Product(string name, string? description, decimal price, bool isVisible = true)
     {
         Name = name;
         Description = description;
         Price = price;
-        StockQuantity = stockQuantity;
-        Type = type;
-        CategoryId = categoryId;
-        IsShowcase = isShowcase;
+        IsVisible = isVisible;
     }
 
-    public void UpdateDetails(string name, string? description, decimal price, int stockQuantity, bool isShowcase)
+    public virtual void UpdateDetails(string name, string? description, decimal price)
     {
-        if (IsDeleted)
-        {
-            throw new InvalidOperationException("Deleted product cannot be updated.");
-        }
+        EnsureNotDeleted();
 
         Name = name;
         Description = description;
         Price = price;
-        StockQuantity = stockQuantity;
-        IsShowcase = isShowcase;
-    }
-
-    public void DecreaseStock(int quantity)
-    {
-        if (IsDeleted)
-        {
-            throw new InvalidOperationException("Deleted product cannot be used.");
-        }
-
-        if (quantity <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(quantity));
-        }
-
-        if (StockQuantity < quantity)
-        {
-            throw new InvalidOperationException("Insufficient stock.");
-        }
-
-        StockQuantity -= quantity;
-    }
-
-    public void SetStockQuantity(int quantity)
-    {
-        if (IsDeleted)
-        {
-            throw new InvalidOperationException("Deleted product cannot be updated.");
-        }
-
-        if (quantity < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(quantity));
-        }
-
-        StockQuantity = quantity;
     }
 
     public void SoftDelete()
@@ -96,5 +43,19 @@ public class Product : Entity
 
         IsDeleted = true;
         DeletedAtUtc = DateTime.UtcNow;
+    }
+
+    public void SetVisibility(bool isVisible)
+    {
+        EnsureNotDeleted();
+        IsVisible = isVisible;
+    }
+
+    protected void EnsureNotDeleted()
+    {
+        if (IsDeleted)
+        {
+            throw new InvalidOperationException("Deleted product cannot be used.");
+        }
     }
 }

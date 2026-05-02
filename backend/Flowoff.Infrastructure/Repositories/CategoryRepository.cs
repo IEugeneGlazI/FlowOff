@@ -18,12 +18,13 @@ public class CategoryRepository : ICategoryRepository
     {
         return await _dbContext.Categories
             .AsNoTracking()
+            .Where(category => !category.IsDeleted)
             .OrderBy(category => category.Name)
             .ToArrayAsync(cancellationToken);
     }
 
     public Task<Category?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        return _dbContext.Categories.FirstOrDefaultAsync(category => category.Id == id, cancellationToken);
+        return _dbContext.Categories.FirstOrDefaultAsync(category => category.Id == id && !category.IsDeleted, cancellationToken);
     }
 }

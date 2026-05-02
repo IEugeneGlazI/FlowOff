@@ -84,7 +84,7 @@ export function AppShell() {
                   Flowoff
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Современная цветочная витрина с мягкой навигацией по разделам
+                  Когда чувства важнее слов
                 </Typography>
               </Box>
             </Stack>

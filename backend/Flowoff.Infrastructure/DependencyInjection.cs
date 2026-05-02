@@ -4,6 +4,7 @@ using Flowoff.Application.Services;
 using Flowoff.Domain.Repositories;
 using Flowoff.Infrastructure.Data;
 using Flowoff.Infrastructure.Identity;
+using Flowoff.Infrastructure.Options;
 using Flowoff.Infrastructure.Repositories;
 using Flowoff.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -19,6 +20,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
 
@@ -62,24 +65,22 @@ public static class DependencyInjection
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICourierDirectoryService, CourierDirectoryService>();
-        services.AddScoped<IEmailSender, LoggingEmailSender>();
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IReferenceDataService, ReferenceDataService>();
         services.AddScoped<ICartRepository, CartRepository>();
+        services.AddScoped<IColorRepository, ColorRepository>();
+        services.AddScoped<IFlowerInRepository, FlowerInRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
-        services.AddScoped<ICustomBouquetRepository, CustomBouquetRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IPromotionRepository, PromotionRepository>();
-        services.AddScoped<IReservationRepository, ReservationRepository>();
         services.AddScoped<ISupportRequestRepository, SupportRequestRepository>();
         services.AddScoped<ICartService, CartService>();
-        services.AddScoped<ICustomBouquetService, CustomBouquetService>();
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IPromotionService, PromotionService>();
-        services.AddScoped<IReservationService, ReservationService>();
         services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<ISupportRequestService, SupportRequestService>();
         services.AddScoped<IUserManagementService, UserManagementService>();

@@ -17,35 +17,145 @@ public class ProductRepository : IProductRepository
 
     public async Task AddAsync(Product product, CancellationToken cancellationToken)
     {
-        await _dbContext.Products.AddAsync(product, cancellationToken);
+        switch (product)
+        {
+            case Bouquet bouquet:
+                await _dbContext.Bouquets.AddAsync(bouquet, cancellationToken);
+                break;
+            case Flower flower:
+                await _dbContext.Flowers.AddAsync(flower, cancellationToken);
+                break;
+            case Gift gift:
+                await _dbContext.Gifts.AddAsync(gift, cancellationToken);
+                break;
+            default:
+                throw new InvalidOperationException("Unsupported product type.");
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<Product>> GetAllAsync(ProductType? type, Guid? categoryId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<Product>> GetAllAsync(
+        ProductType? type,
+        Guid? categoryId,
+        Guid? colorId,
+        Guid? flowerInId,
+        CancellationToken cancellationToken)
     {
-        IQueryable<Product> query = _dbContext.Products
-            .AsNoTracking()
-            .Include(product => product.Category)
-            .Where(product => !product.IsDeleted);
+        var results = new List<Product>();
 
-        if (type.HasValue)
+        if (!type.HasValue || type == ProductType.Bouquet)
         {
-            query = query.Where(product => product.Type == type.Value);
+            var bouquetsQuery = _dbContext.Bouquets
+                .AsNoTracking()
+                .Include(bouquet => bouquet.FlowerIns)
+                .ThenInclude(item => item.FlowerIn)
+                .Include(bouquet => bouquet.Colors)
+                .ThenInclude(item => item.Color)
+                .Where(bouquet => !bouquet.IsDeleted && bouquet.IsVisible);
+
+            if (colorId.HasValue)
+            {
+                bouquetsQuery = bouquetsQuery.Where(bouquet => bouquet.Colors.Any(item => item.ColorId == colorId.Value));
+            }
+
+            if (flowerInId.HasValue)
+            {
+                bouquetsQuery = bouquetsQuery.Where(bouquet => bouquet.FlowerIns.Any(item => item.FlowerInId == flowerInId.Value));
+            }
+
+            results.AddRange(await bouquetsQuery.ToArrayAsync(cancellationToken));
         }
 
-        if (categoryId.HasValue)
+        if (!type.HasValue || type == ProductType.Flower)
         {
-            query = query.Where(product => product.CategoryId == categoryId.Value);
+            var flowersQuery = _dbContext.Flowers
+                .AsNoTracking()
+                .Include(flower => flower.FlowerIn)
+                .Include(flower => flower.Color)
+                .Where(flower => !flower.IsDeleted && flower.IsVisible);
+
+            if (colorId.HasValue)
+            {
+                flowersQuery = flowersQuery.Where(flower => flower.ColorId == colorId.Value);
+            }
+
+            if (flowerInId.HasValue)
+            {
+                flowersQuery = flowersQuery.Where(flower => flower.FlowerInId == flowerInId.Value);
+            }
+
+            results.AddRange(await flowersQuery.ToArrayAsync(cancellationToken));
         }
 
-        return await query.OrderBy(product => product.Name).ToArrayAsync(cancellationToken);
+        if (!type.HasValue || type == ProductType.Gift)
+        {
+            var giftsQuery = _dbContext.Gifts
+                .AsNoTracking()
+                .Include(gift => gift.Category)
+                .Where(gift => !gift.IsDeleted && gift.IsVisible);
+
+            if (categoryId.HasValue)
+            {
+                giftsQuery = giftsQuery.Where(gift => gift.CategoryId == categoryId.Value);
+            }
+
+            results.AddRange(await giftsQuery.ToArrayAsync(cancellationToken));
+        }
+
+        return results.OrderBy(product => product.Name).ToArray();
     }
 
-    public Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken, bool includeHidden = false)
     {
-        return _dbContext.Products
-            .Include(product => product.Category)
-            .FirstOrDefaultAsync(product => product.Id == id && !product.IsDeleted, cancellationToken);
+        var allowHidden = includeHidden;
+
+        Product? product = await _dbContext.Bouquets
+            .Include(bouquet => bouquet.FlowerIns)
+            .ThenInclude(item => item.FlowerIn)
+            .Include(bouquet => bouquet.Colors)
+            .ThenInclude(item => item.Color)
+            .FirstOrDefaultAsync(
+                bouquet => bouquet.Id == id && !bouquet.IsDeleted && (allowHidden || bouquet.IsVisible),
+                cancellationToken);
+
+        if (product is not null)
+        {
+            return product;
+        }
+
+        product = await _dbContext.Flowers
+            .Include(flower => flower.FlowerIn)
+            .Include(flower => flower.Color)
+            .FirstOrDefaultAsync(
+                flower => flower.Id == id && !flower.IsDeleted && (allowHidden || flower.IsVisible),
+                cancellationToken);
+
+        if (product is not null)
+        {
+            return product;
+        }
+
+        return await _dbContext.Gifts
+            .Include(gift => gift.Category)
+            .FirstOrDefaultAsync(
+                gift => gift.Id == id && !gift.IsDeleted && (allowHidden || gift.IsVisible),
+                cancellationToken);
+    }
+
+    public Task<bool> CategoryExistsAsync(Guid categoryId, CancellationToken cancellationToken)
+    {
+        return _dbContext.Categories.AnyAsync(category => category.Id == categoryId && !category.IsDeleted, cancellationToken);
+    }
+
+    public Task<bool> ColorExistsAsync(Guid colorId, CancellationToken cancellationToken)
+    {
+        return _dbContext.Colors.AnyAsync(color => color.Id == colorId && !color.IsDeleted, cancellationToken);
+    }
+
+    public Task<bool> FlowerInExistsAsync(Guid flowerInId, CancellationToken cancellationToken)
+    {
+        return _dbContext.FlowerIns.AnyAsync(flowerIn => flowerIn.Id == flowerInId && !flowerIn.IsDeleted, cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)

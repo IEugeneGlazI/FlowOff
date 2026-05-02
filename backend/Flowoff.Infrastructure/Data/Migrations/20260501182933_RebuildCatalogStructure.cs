@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Flowoff.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class RebuildCatalogStructure : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -55,6 +55,23 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Bouquets",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    DeletedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsShowcase = table.Column<bool>(type: "bit", nullable: false, defaultValue: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Bouquets", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Carts",
                 columns: table => new
                 {
@@ -80,17 +97,27 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CustomBouquets",
+                name: "Colors",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CustomerId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
-                    TotalPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false)
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CustomBouquets", x => x.Id);
+                    table.PrimaryKey("PK_Colors", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FlowerIns",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FlowerIns", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -251,27 +278,102 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Products",
+                name: "Gifts",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
                     Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    StockQuantity = table.Column<int>(type: "int", nullable: false),
-                    Type = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
-                    IsShowcase = table.Column<bool>(type: "bit", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
                     DeletedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CategoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Products", x => x.Id);
+                    table.PrimaryKey("PK_Gifts", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Products_Categories_CategoryId",
+                        name: "FK_Gifts_Categories_CategoryId",
                         column: x => x.CategoryId,
                         principalTable: "Categories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "BouquetColors",
+                columns: table => new
+                {
+                    BouquetId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ColorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BouquetColors", x => new { x.BouquetId, x.ColorId });
+                    table.ForeignKey(
+                        name: "FK_BouquetColors_Bouquets_BouquetId",
+                        column: x => x.BouquetId,
+                        principalTable: "Bouquets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_BouquetColors_Colors_ColorId",
+                        column: x => x.ColorId,
+                        principalTable: "Colors",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "BouquetFlowerIns",
+                columns: table => new
+                {
+                    BouquetId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FlowerInId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BouquetFlowerIns", x => new { x.BouquetId, x.FlowerInId });
+                    table.ForeignKey(
+                        name: "FK_BouquetFlowerIns_Bouquets_BouquetId",
+                        column: x => x.BouquetId,
+                        principalTable: "Bouquets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_BouquetFlowerIns_FlowerIns_FlowerInId",
+                        column: x => x.FlowerInId,
+                        principalTable: "FlowerIns",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Flowers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    DeletedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    FlowerInId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ColorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Flowers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Flowers_Colors_ColorId",
+                        column: x => x.ColorId,
+                        principalTable: "Colors",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Flowers_FlowerIns_FlowerInId",
+                        column: x => x.FlowerInId,
+                        principalTable: "FlowerIns",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -325,12 +427,20 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CartId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BouquetId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    FlowerId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    GiftId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Quantity = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CartItems", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CartItems_Bouquets_BouquetId",
+                        column: x => x.BouquetId,
+                        principalTable: "Bouquets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_CartItems_Carts_CartId",
                         column: x => x.CartId,
@@ -338,36 +448,15 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_CartItems_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
+                        name: "FK_CartItems_Flowers_FlowerId",
+                        column: x => x.FlowerId,
+                        principalTable: "Flowers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CustomBouquetItems",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CustomBouquetId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Quantity = table.Column<int>(type: "int", nullable: false),
-                    UnitPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CustomBouquetItems", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_CustomBouquetItems_CustomBouquets_CustomBouquetId",
-                        column: x => x.CustomBouquetId,
-                        principalTable: "CustomBouquets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_CustomBouquetItems_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
+                        name: "FK_CartItems_Gifts_GiftId",
+                        column: x => x.GiftId,
+                        principalTable: "Gifts",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -378,7 +467,10 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     OrderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BouquetId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    FlowerId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    GiftId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ProductType = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
                     ProductName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     UnitPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false)
@@ -387,39 +479,29 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 {
                     table.PrimaryKey("PK_OrderItems", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_OrderItems_Bouquets_BouquetId",
+                        column: x => x.BouquetId,
+                        principalTable: "Bouquets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_OrderItems_Flowers_FlowerId",
+                        column: x => x.FlowerId,
+                        principalTable: "Flowers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_OrderItems_Gifts_GiftId",
+                        column: x => x.GiftId,
+                        principalTable: "Gifts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_OrderItems_Orders_OrderId",
                         column: x => x.OrderId,
                         principalTable: "Orders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_OrderItems_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Reservations",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CustomerId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
-                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    StartAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    EndAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Reservations", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Reservations_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -462,15 +544,36 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CartItems_CartId_ProductId",
-                table: "CartItems",
-                columns: new[] { "CartId", "ProductId" },
-                unique: true);
+                name: "IX_BouquetColors_ColorId",
+                table: "BouquetColors",
+                column: "ColorId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CartItems_ProductId",
+                name: "IX_BouquetFlowerIns_FlowerInId",
+                table: "BouquetFlowerIns",
+                column: "FlowerInId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CartItems_BouquetId",
                 table: "CartItems",
-                column: "ProductId");
+                column: "BouquetId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CartItems_CartId_BouquetId_FlowerId_GiftId",
+                table: "CartItems",
+                columns: new[] { "CartId", "BouquetId", "FlowerId", "GiftId" },
+                unique: true,
+                filter: "[BouquetId] IS NOT NULL AND [FlowerId] IS NOT NULL AND [GiftId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CartItems_FlowerId",
+                table: "CartItems",
+                column: "FlowerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CartItems_GiftId",
+                table: "CartItems",
+                column: "GiftId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Carts_CustomerId",
@@ -479,14 +582,10 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_CustomBouquetItems_CustomBouquetId",
-                table: "CustomBouquetItems",
-                column: "CustomBouquetId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CustomBouquetItems_ProductId",
-                table: "CustomBouquetItems",
-                column: "ProductId");
+                name: "IX_Colors_Name",
+                table: "Colors",
+                column: "Name",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Deliveries_OrderId",
@@ -495,30 +594,51 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_FlowerIns_Name",
+                table: "FlowerIns",
+                column: "Name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Flowers_ColorId",
+                table: "Flowers",
+                column: "ColorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Flowers_FlowerInId",
+                table: "Flowers",
+                column: "FlowerInId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Gifts_CategoryId",
+                table: "Gifts",
+                column: "CategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_BouquetId",
+                table: "OrderItems",
+                column: "BouquetId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_FlowerId",
+                table: "OrderItems",
+                column: "FlowerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_GiftId",
+                table: "OrderItems",
+                column: "GiftId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_OrderId",
                 table: "OrderItems",
                 column: "OrderId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OrderItems_ProductId",
-                table: "OrderItems",
-                column: "ProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Payments_OrderId",
                 table: "Payments",
                 column: "OrderId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Products_CategoryId",
-                table: "Products",
-                column: "CategoryId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Reservations_ProductId",
-                table: "Reservations",
-                column: "ProductId");
         }
 
         /// <inheritdoc />
@@ -540,10 +660,13 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "CartItems");
+                name: "BouquetColors");
 
             migrationBuilder.DropTable(
-                name: "CustomBouquetItems");
+                name: "BouquetFlowerIns");
+
+            migrationBuilder.DropTable(
+                name: "CartItems");
 
             migrationBuilder.DropTable(
                 name: "Deliveries");
@@ -558,9 +681,6 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 name: "Promotions");
 
             migrationBuilder.DropTable(
-                name: "Reservations");
-
-            migrationBuilder.DropTable(
                 name: "SupportRequests");
 
             migrationBuilder.DropTable(
@@ -573,13 +693,22 @@ namespace Flowoff.Infrastructure.Data.Migrations
                 name: "Carts");
 
             migrationBuilder.DropTable(
-                name: "CustomBouquets");
+                name: "Bouquets");
+
+            migrationBuilder.DropTable(
+                name: "Flowers");
+
+            migrationBuilder.DropTable(
+                name: "Gifts");
 
             migrationBuilder.DropTable(
                 name: "Orders");
 
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "Colors");
+
+            migrationBuilder.DropTable(
+                name: "FlowerIns");
 
             migrationBuilder.DropTable(
                 name: "Categories");

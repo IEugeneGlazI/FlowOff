@@ -24,6 +24,9 @@ public class PromotionRepository : IPromotionRepository
     {
         return await _dbContext.Promotions
             .AsNoTracking()
+            .Include(promotion => promotion.Bouquets)
+            .Include(promotion => promotion.Flowers)
+            .Include(promotion => promotion.Gifts)
             .Where(promotion => !promotion.IsDeleted)
             .OrderByDescending(promotion => promotion.StartsAtUtc)
             .ToArrayAsync(cancellationToken);
@@ -31,7 +34,11 @@ public class PromotionRepository : IPromotionRepository
 
     public Task<Promotion?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        return _dbContext.Promotions.FirstOrDefaultAsync(promotion => promotion.Id == id && !promotion.IsDeleted, cancellationToken);
+        return _dbContext.Promotions
+            .Include(promotion => promotion.Bouquets)
+            .Include(promotion => promotion.Flowers)
+            .Include(promotion => promotion.Gifts)
+            .FirstOrDefaultAsync(promotion => promotion.Id == id && !promotion.IsDeleted, cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)

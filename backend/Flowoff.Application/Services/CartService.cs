@@ -27,7 +27,7 @@ public class CartService : ICartService
             ?? throw new InvalidOperationException("Product not found.");
 
         var cart = await _cartRepository.GetOrCreateAsync(customerId, cancellationToken);
-        cart.AddItem(product.Id, request.Quantity);
+        cart.AddItem(product, request.Quantity);
         await _cartRepository.SaveChangesAsync(cancellationToken);
 
         return await MapAsync(cart, cancellationToken);
@@ -78,7 +78,7 @@ public class CartService : ICartService
 
         foreach (var item in cart.Items)
         {
-            var product = item.Product ?? await _productRepository.GetByIdAsync(item.ProductId, cancellationToken);
+            var product = await _productRepository.GetByIdAsync(item.ProductId, cancellationToken, includeHidden: true);
             if (product is null)
             {
                 continue;

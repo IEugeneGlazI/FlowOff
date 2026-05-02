@@ -16,26 +16,26 @@ public class Cart : Entity
         CustomerId = customerId;
     }
 
-    public void AddItem(Guid productId, int quantity)
+    public void AddItem(Product product, int quantity)
     {
         if (quantity <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(quantity));
         }
 
-        var existingItem = Items.FirstOrDefault(item => item.ProductId == productId);
+        var existingItem = Items.FirstOrDefault(item => item.MatchesProductId(product.Id));
         if (existingItem is not null)
         {
             existingItem.IncreaseQuantity(quantity);
             return;
         }
 
-        Items.Add(new CartItem(Id, productId, quantity));
+        Items.Add(new CartItem(Id, product, quantity));
     }
 
     public void UpdateItemQuantity(Guid productId, int quantity)
     {
-        var item = Items.FirstOrDefault(cartItem => cartItem.ProductId == productId);
+        var item = Items.FirstOrDefault(cartItem => cartItem.MatchesProductId(productId));
         if (item is null)
         {
             throw new InvalidOperationException("Cart item not found.");
@@ -52,7 +52,7 @@ public class Cart : Entity
 
     public void RemoveItem(Guid productId)
     {
-        var item = Items.FirstOrDefault(cartItem => cartItem.ProductId == productId);
+        var item = Items.FirstOrDefault(cartItem => cartItem.MatchesProductId(productId));
         if (item is null)
         {
             return;

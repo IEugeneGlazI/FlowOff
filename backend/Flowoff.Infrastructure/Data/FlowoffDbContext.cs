@@ -13,16 +13,18 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
     }
 
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<FlowerIn> FlowerIns => Set<FlowerIn>();
+    public DbSet<Color> Colors => Set<Color>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<Bouquet> Bouquets => Set<Bouquet>();
+    public DbSet<Flower> Flowers => Set<Flower>();
+    public DbSet<Gift> Gifts => Set<Gift>();
     public DbSet<Cart> Carts => Set<Cart>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<Delivery> Deliveries => Set<Delivery>();
     public DbSet<Payment> Payments => Set<Payment>();
-    public DbSet<Reservation> Reservations => Set<Reservation>();
-    public DbSet<CustomBouquet> CustomBouquets => Set<CustomBouquet>();
-    public DbSet<CustomBouquetItem> CustomBouquetItems => Set<CustomBouquetItem>();
     public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
 
@@ -41,18 +43,83 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.Property(category => category.Name).HasMaxLength(100).IsRequired();
             entity.Property(category => category.Description).HasMaxLength(500);
+            entity.Property(category => category.IsDeleted).HasDefaultValue(false);
+        });
+
+        builder.Entity<FlowerIn>(entity =>
+        {
+            entity.Property(flowerIn => flowerIn.Name).HasMaxLength(100).IsRequired();
+            entity.Property(flowerIn => flowerIn.IsDeleted).HasDefaultValue(false);
+            entity.HasIndex(flowerIn => flowerIn.Name).IsUnique();
+        });
+
+        builder.Entity<Color>(entity =>
+        {
+            entity.Property(color => color.Name).HasMaxLength(100).IsRequired();
+            entity.Property(color => color.IsDeleted).HasDefaultValue(false);
+            entity.HasIndex(color => color.Name).IsUnique();
         });
 
         builder.Entity<Product>(entity =>
         {
+            entity.UseTpcMappingStrategy();
             entity.Property(product => product.Name).HasMaxLength(150).IsRequired();
             entity.Property(product => product.Description).HasMaxLength(2000);
             entity.Property(product => product.Price).HasPrecision(18, 2);
-            entity.Property(product => product.Type).HasConversion<string>().HasMaxLength(32);
+            entity.Property(product => product.IsVisible).HasDefaultValue(true);
             entity.Property(product => product.IsDeleted).HasDefaultValue(false);
-            entity.HasOne(product => product.Category)
+        });
+
+        builder.Entity<Flower>(entity =>
+        {
+            entity.ToTable("Flowers");
+            entity.HasOne(flower => flower.FlowerIn)
                 .WithMany()
-                .HasForeignKey(product => product.CategoryId)
+                .HasForeignKey(flower => flower.FlowerInId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(flower => flower.Color)
+                .WithMany()
+                .HasForeignKey(flower => flower.ColorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<Bouquet>(entity =>
+        {
+            entity.ToTable("Bouquets");
+            entity.HasMany(bouquet => bouquet.FlowerIns)
+                .WithOne(item => item.Bouquet)
+                .HasForeignKey(item => item.BouquetId);
+            entity.HasMany(bouquet => bouquet.Colors)
+                .WithOne(item => item.Bouquet)
+                .HasForeignKey(item => item.BouquetId);
+        });
+
+        builder.Entity<BouquetFlowerIn>(entity =>
+        {
+            entity.ToTable("BouquetFlowerIns");
+            entity.HasKey(item => new { item.BouquetId, item.FlowerInId });
+            entity.HasOne(item => item.FlowerIn)
+                .WithMany()
+                .HasForeignKey(item => item.FlowerInId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<BouquetColor>(entity =>
+        {
+            entity.ToTable("BouquetColors");
+            entity.HasKey(item => new { item.BouquetId, item.ColorId });
+            entity.HasOne(item => item.Color)
+                .WithMany()
+                .HasForeignKey(item => item.ColorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<Gift>(entity =>
+        {
+            entity.ToTable("Gifts");
+            entity.HasOne(gift => gift.Category)
+                .WithMany()
+                .HasForeignKey(gift => gift.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -67,12 +134,20 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<CartItem>(entity =>
         {
-            entity.HasOne(item => item.Product)
+            entity.Ignore(item => item.ProductId);
+            entity.HasIndex(item => new { item.CartId, item.BouquetId, item.FlowerId, item.GiftId }).IsUnique();
+            entity.HasOne(item => item.Bouquet)
                 .WithMany()
-                .HasForeignKey(item => item.ProductId)
+                .HasForeignKey(item => item.BouquetId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasIndex(item => new { item.CartId, item.ProductId }).IsUnique();
+            entity.HasOne(item => item.Flower)
+                .WithMany()
+                .HasForeignKey(item => item.FlowerId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(item => item.Gift)
+                .WithMany()
+                .HasForeignKey(item => item.GiftId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<Order>(entity =>
@@ -88,8 +163,22 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<OrderItem>(entity =>
         {
+            entity.Ignore(item => item.ProductId);
+            entity.Property(item => item.ProductType).HasMaxLength(32).IsRequired();
             entity.Property(item => item.ProductName).HasMaxLength(150).IsRequired();
             entity.Property(item => item.UnitPrice).HasPrecision(18, 2);
+            entity.HasOne(item => item.Bouquet)
+                .WithMany()
+                .HasForeignKey(item => item.BouquetId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(item => item.Flower)
+                .WithMany()
+                .HasForeignKey(item => item.FlowerId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(item => item.Gift)
+                .WithMany()
+                .HasForeignKey(item => item.GiftId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<Delivery>(entity =>
@@ -111,35 +200,6 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
                 .HasForeignKey<Payment>(payment => payment.OrderId);
         });
 
-        builder.Entity<Reservation>(entity =>
-        {
-            entity.Property(reservation => reservation.CustomerId).HasMaxLength(450).IsRequired();
-            entity.Property(reservation => reservation.Status).HasConversion<string>().HasMaxLength(32);
-            entity.HasOne(reservation => reservation.Product)
-                .WithMany()
-                .HasForeignKey(reservation => reservation.ProductId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        builder.Entity<CustomBouquet>(entity =>
-        {
-            entity.Property(bouquet => bouquet.CustomerId).HasMaxLength(450).IsRequired();
-            entity.Property(bouquet => bouquet.Name).HasMaxLength(150).IsRequired();
-            entity.Property(bouquet => bouquet.TotalPrice).HasPrecision(18, 2);
-            entity.HasMany(bouquet => bouquet.Items)
-                .WithOne(item => item.CustomBouquet)
-                .HasForeignKey(item => item.CustomBouquetId);
-        });
-
-        builder.Entity<CustomBouquetItem>(entity =>
-        {
-            entity.Property(item => item.UnitPrice).HasPrecision(18, 2);
-            entity.HasOne(item => item.Product)
-                .WithMany()
-                .HasForeignKey(item => item.ProductId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-
         builder.Entity<SupportRequest>(entity =>
         {
             entity.Property(request => request.CustomerId).HasMaxLength(450).IsRequired();
@@ -154,6 +214,45 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(promotion => promotion.Description).HasMaxLength(1000);
             entity.Property(promotion => promotion.DiscountPercent).HasPrecision(5, 2);
             entity.Property(promotion => promotion.IsDeleted).HasDefaultValue(false);
+            entity.HasMany(promotion => promotion.Bouquets)
+                .WithOne(item => item.Promotion)
+                .HasForeignKey(item => item.PromotionId);
+            entity.HasMany(promotion => promotion.Flowers)
+                .WithOne(item => item.Promotion)
+                .HasForeignKey(item => item.PromotionId);
+            entity.HasMany(promotion => promotion.Gifts)
+                .WithOne(item => item.Promotion)
+                .HasForeignKey(item => item.PromotionId);
+        });
+
+        builder.Entity<PromotionBouquet>(entity =>
+        {
+            entity.ToTable("PromotionBouquets");
+            entity.HasKey(item => new { item.PromotionId, item.BouquetId });
+            entity.HasOne(item => item.Bouquet)
+                .WithMany()
+                .HasForeignKey(item => item.BouquetId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<PromotionFlower>(entity =>
+        {
+            entity.ToTable("PromotionFlowers");
+            entity.HasKey(item => new { item.PromotionId, item.FlowerId });
+            entity.HasOne(item => item.Flower)
+                .WithMany()
+                .HasForeignKey(item => item.FlowerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<PromotionGift>(entity =>
+        {
+            entity.ToTable("PromotionGifts");
+            entity.HasKey(item => new { item.PromotionId, item.GiftId });
+            entity.HasOne(item => item.Gift)
+                .WithMany()
+                .HasForeignKey(item => item.GiftId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

@@ -12,7 +12,6 @@ public class ReferenceDataService : IReferenceDataService
 
         result.AddRange(Build<OrderStatus>("order"));
         result.AddRange(Build<PaymentStatus>("payment"));
-        result.AddRange(Build<ReservationStatus>("reservation"));
         result.AddRange(Build<SupportRequestStatus>("support"));
 
         result.AddRange(new[]

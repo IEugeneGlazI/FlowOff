@@ -59,8 +59,17 @@ public class AuthService : IAuthService
         var encodedToken = EncodeToken(token);
         await _emailSender.SendAsync(
             user.Email!,
-            "Flowoff password reset",
-            $"Use this token to reset your password via API or future frontend form. Email: {user.Email}; Token: {encodedToken}",
+            "Восстановление пароля Flowoff",
+            $"""
+            <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.6;color:#1f2a23">
+              <h2 style="margin-bottom:12px;">Восстановление пароля</h2>
+              <p>Мы получили запрос на смену пароля для аккаунта <strong>{user.Email}</strong>.</p>
+              <p>Пока на фронтенде нет отдельной формы сброса, поэтому для dev-режима используй этот токен:</p>
+              <div style="padding:12px 16px;border-radius:12px;background:#f3f7f4;border:1px solid #d7e4da;word-break:break-all;">
+                {encodedToken}
+              </div>
+            </div>
+            """,
             cancellationToken);
 
         return new ForgotPasswordResponseDto
@@ -167,8 +176,21 @@ public class AuthService : IAuthService
 
         await _emailSender.SendAsync(
             user.Email!,
-            "Flowoff email confirmation",
-            $"Confirm your email using this link: {confirmationUrl}",
+            "Подтверждение регистрации Flowoff",
+            $"""
+            <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.6;color:#1f2a23">
+              <h2 style="margin-bottom:12px;">Подтверди регистрацию</h2>
+              <p>Спасибо за регистрацию в <strong>Flowoff</strong>.</p>
+              <p>Чтобы активировать аккаунт, перейди по ссылке:</p>
+              <p style="margin:20px 0;">
+                <a href="{confirmationUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#6a9c7b;color:#ffffff;text-decoration:none;font-weight:600;">
+                  Подтвердить почту
+                </a>
+              </p>
+              <p>Если кнопка не открывается, используй эту ссылку:</p>
+              <p><a href="{confirmationUrl}">{confirmationUrl}</a></p>
+            </div>
+            """,
             cancellationToken);
     }
 

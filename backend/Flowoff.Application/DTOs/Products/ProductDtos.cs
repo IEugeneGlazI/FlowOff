@@ -7,6 +7,8 @@ public sealed class ProductFilterDto
 {
     public ProductType? Type { get; init; }
     public Guid? CategoryId { get; init; }
+    public Guid? ColorId { get; init; }
+    public Guid? FlowerInId { get; init; }
 }
 
 public sealed class ProductDto
@@ -15,11 +17,18 @@ public sealed class ProductDto
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
     public decimal Price { get; init; }
-    public int StockQuantity { get; init; }
+    public bool IsVisible { get; init; }
     public string Type { get; init; } = string.Empty;
-    public bool IsShowcase { get; init; }
-    public Guid CategoryId { get; init; }
+    public Guid? CategoryId { get; init; }
     public string? CategoryName { get; init; }
+    public Guid? FlowerInId { get; init; }
+    public string? FlowerInName { get; init; }
+    public Guid? ColorId { get; init; }
+    public string? ColorName { get; init; }
+    public IReadOnlyCollection<Guid> FlowerInIds { get; init; } = [];
+    public IReadOnlyCollection<string> FlowerInNames { get; init; } = [];
+    public IReadOnlyCollection<Guid> ColorIds { get; init; } = [];
+    public IReadOnlyCollection<string> ColorNames { get; init; } = [];
 }
 
 public sealed class CreateProductRequestDto
@@ -34,16 +43,16 @@ public sealed class CreateProductRequestDto
     [Range(0.01, 1000000)]
     public decimal Price { get; init; }
 
-    [Range(0, 100000)]
-    public int StockQuantity { get; init; }
+    public bool IsVisible { get; init; } = true;
 
     [Required]
     public ProductType Type { get; init; }
 
-    [Required]
-    public Guid CategoryId { get; init; }
-
-    public bool IsShowcase { get; init; }
+    public Guid? CategoryId { get; init; }
+    public Guid? FlowerInId { get; init; }
+    public Guid? ColorId { get; init; }
+    public IReadOnlyCollection<Guid> FlowerInIds { get; init; } = [];
+    public IReadOnlyCollection<Guid> ColorIds { get; init; } = [];
 }
 
 public sealed class UpdateProductRequestDto
@@ -58,14 +67,11 @@ public sealed class UpdateProductRequestDto
     [Range(0.01, 1000000)]
     public decimal Price { get; init; }
 
-    [Range(0, 100000)]
-    public int StockQuantity { get; init; }
+    public bool IsVisible { get; init; } = true;
 
-    public bool IsShowcase { get; init; }
-}
-
-public sealed class UpdateProductStockRequestDto
-{
-    [Range(0, 100000)]
-    public int StockQuantity { get; init; }
+    public Guid? CategoryId { get; init; }
+    public Guid? FlowerInId { get; init; }
+    public Guid? ColorId { get; init; }
+    public IReadOnlyCollection<Guid> FlowerInIds { get; init; } = [];
+    public IReadOnlyCollection<Guid> ColorIds { get; init; } = [];
 }

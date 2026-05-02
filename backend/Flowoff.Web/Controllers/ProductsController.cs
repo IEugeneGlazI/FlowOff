@@ -23,13 +23,17 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<IReadOnlyCollection<ProductDto>>> GetCatalog(
         [FromQuery] ProductType? type,
         [FromQuery] Guid? categoryId,
+        [FromQuery] Guid? colorId,
+        [FromQuery] Guid? flowerInId,
         CancellationToken cancellationToken)
     {
         var result = await _productService.GetCatalogAsync(
             new ProductFilterDto
             {
                 Type = type,
-                CategoryId = categoryId
+                CategoryId = categoryId,
+                ColorId = colorId,
+                FlowerInId = flowerInId
             },
             cancellationToken);
 
@@ -61,14 +65,6 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<ProductDto>> Update(Guid id, UpdateProductRequestDto request, CancellationToken cancellationToken)
     {
         return Ok(await _productService.UpdateAsync(id, request, cancellationToken));
-    }
-
-    [HttpPatch("{id:guid}/stock")]
-    [Authorize(Roles = nameof(UserRole.Florist) + "," + nameof(UserRole.Administrator))]
-    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<ProductDto>> UpdateStock(Guid id, UpdateProductStockRequestDto request, CancellationToken cancellationToken)
-    {
-        return Ok(await _productService.UpdateStockAsync(id, request, cancellationToken));
     }
 
     [HttpDelete("{id:guid}")]

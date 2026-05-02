@@ -31,8 +31,7 @@ export function ProductPage() {
       await addItem(product.id, quantity);
       setFeedback('Товар добавлен в корзину.');
     } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : 'Не удалось добавить товар в корзину.';
+      const message = error instanceof ApiError ? error.message : 'Не удалось добавить товар в корзину.';
       setFeedback(message);
     }
   }
@@ -40,6 +39,9 @@ export function ProductPage() {
   if (!product) {
     return <div className="panel">Загружаем карточку товара...</div>;
   }
+
+  const typeLabel =
+    product.type === 'Flower' ? 'Цветок' : product.type === 'Gift' ? 'Подарок' : 'Букет';
 
   return (
     <div className="details-layout">
@@ -51,7 +53,7 @@ export function ProductPage() {
 
         <div className="details-header">
           <div>
-            <span className="type-badge">{product.type === 'Flower' ? 'Цветок' : 'Букет'}</span>
+            <span className="type-badge">{typeLabel}</span>
             <h1>{product.name}</h1>
             <p className="details-description">
               {product.description || 'Подробное описание для этой позиции пока не добавлено.'}
@@ -65,12 +67,12 @@ export function ProductPage() {
 
         <div className="details-specs">
           <div>
-            <span className="spec-label">Остаток</span>
-            <strong>{product.stockQuantity}</strong>
+            <span className="spec-label">Тип</span>
+            <strong>{typeLabel}</strong>
           </div>
           <div>
-            <span className="spec-label">Витринная позиция</span>
-            <strong>{product.isShowcase ? 'Да' : 'Нет'}</strong>
+            <span className="spec-label">Категория</span>
+            <strong>{product.categoryName || product.flowerInName || 'Каталог Flowoff'}</strong>
           </div>
         </div>
       </div>
@@ -82,21 +84,12 @@ export function ProductPage() {
             -
           </button>
           <span>{quantity}</span>
-          <button
-            type="button"
-            className="icon-button"
-            onClick={() => setQuantity((value) => Math.min(product.stockQuantity || 1, value + 1))}
-          >
+          <button type="button" className="icon-button" onClick={() => setQuantity((value) => value + 1)}>
             +
           </button>
         </div>
 
-        <button
-          type="button"
-          className="primary-button wide-button"
-          disabled={product.stockQuantity === 0}
-          onClick={() => void handleAddToCart()}
-        >
+        <button type="button" className="primary-button wide-button" onClick={() => void handleAddToCart()}>
           <ShoppingBag size={16} />
           Добавить
         </button>
