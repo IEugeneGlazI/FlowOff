@@ -50,7 +50,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   async function addItem(productId: string, quantity: number) {
     if (!session?.token) {
-      throw new ApiError('Чтобы добавить товар в корзину, нужно войти как покупатель.', 401);
+      throw new ApiError('Чтобы добавить товар в корзину, нужно войти в аккаунт.', 401);
     }
 
     const result = await apiRequest<Cart>('/Cart/items', {
@@ -63,7 +63,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   async function updateItem(productId: string, quantity: number) {
     if (!session?.token) {
-      throw new ApiError('Чтобы изменить корзину, нужно войти как покупатель.', 401);
+      throw new ApiError('Чтобы изменить корзину, нужно войти в аккаунт.', 401);
     }
 
     const result = quantity === 0

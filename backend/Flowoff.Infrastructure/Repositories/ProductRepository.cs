@@ -106,11 +106,25 @@ public class ProductRepository : IProductRepository
         return results.OrderBy(product => product.Name).ToArray();
     }
 
-    public async Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken, bool includeHidden = false)
+    public async Task<Product?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken,
+        bool includeHidden = false,
+        bool asTracking = true)
     {
         var allowHidden = includeHidden;
+        var bouquetsQuery = _dbContext.Bouquets.AsQueryable();
+        var flowersQuery = _dbContext.Flowers.AsQueryable();
+        var giftsQuery = _dbContext.Gifts.AsQueryable();
 
-        Product? product = await _dbContext.Bouquets
+        if (!asTracking)
+        {
+            bouquetsQuery = bouquetsQuery.AsNoTracking();
+            flowersQuery = flowersQuery.AsNoTracking();
+            giftsQuery = giftsQuery.AsNoTracking();
+        }
+
+        Product? product = await bouquetsQuery
             .Include(bouquet => bouquet.FlowerIns)
             .ThenInclude(item => item.FlowerIn)
             .Include(bouquet => bouquet.Colors)
@@ -124,7 +138,7 @@ public class ProductRepository : IProductRepository
             return product;
         }
 
-        product = await _dbContext.Flowers
+        product = await flowersQuery
             .Include(flower => flower.FlowerIn)
             .Include(flower => flower.Color)
             .FirstOrDefaultAsync(
@@ -136,7 +150,7 @@ public class ProductRepository : IProductRepository
             return product;
         }
 
-        return await _dbContext.Gifts
+        return await giftsQuery
             .Include(gift => gift.Category)
             .FirstOrDefaultAsync(
                 gift => gift.Id == id && !gift.IsDeleted && (allowHidden || gift.IsVisible),

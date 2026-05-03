@@ -11,7 +11,11 @@ public interface IProductRepository
         Guid? colorId,
         Guid? flowerInId,
         CancellationToken cancellationToken);
-    Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken, bool includeHidden = false);
+    Task<Product?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken,
+        bool includeHidden = false,
+        bool asTracking = true);
     Task AddAsync(Product product, CancellationToken cancellationToken);
     Task<bool> CategoryExistsAsync(Guid categoryId, CancellationToken cancellationToken);
     Task<bool> ColorExistsAsync(Guid colorId, CancellationToken cancellationToken);

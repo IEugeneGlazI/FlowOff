@@ -1,5 +1,6 @@
 export type CartItem = {
   productId: string;
+  productType: 'Flower' | 'Bouquet' | 'Gift';
   productName: string;
   unitPrice: number;
   quantity: number;
@@ -24,6 +25,7 @@ export type Order = {
   paymentStatus?: string | null;
   items: {
     productId: string;
+    productType: 'Flower' | 'Bouquet' | 'Gift';
     productName: string;
     unitPrice: number;
     quantity: number;

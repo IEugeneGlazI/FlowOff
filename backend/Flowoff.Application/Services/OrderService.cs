@@ -59,7 +59,10 @@ public class OrderService : IOrderService
 
         foreach (var item in request.Items)
         {
-            var product = await _productRepository.GetByIdAsync(item.ProductId, cancellationToken);
+            var product = await _productRepository.GetByIdAsync(
+                item.ProductId,
+                cancellationToken,
+                asTracking: false);
             if (product is null)
             {
                 throw new InvalidOperationException($"Product {item.ProductId} not found.");

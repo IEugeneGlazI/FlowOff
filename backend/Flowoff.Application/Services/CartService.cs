@@ -23,12 +23,13 @@ public class CartService : ICartService
     public async Task<CartDto> AddItemAsync(AddCartItemRequestDto request, CancellationToken cancellationToken)
     {
         var customerId = GetRequiredCustomerId();
-        var product = await _productRepository.GetByIdAsync(request.ProductId, cancellationToken)
+        var product = await _productRepository.GetByIdAsync(
+            request.ProductId,
+            cancellationToken,
+            asTracking: false)
             ?? throw new InvalidOperationException("Product not found.");
 
-        var cart = await _cartRepository.GetOrCreateAsync(customerId, cancellationToken);
-        cart.AddItem(product, request.Quantity);
-        await _cartRepository.SaveChangesAsync(cancellationToken);
+        var cart = await _cartRepository.AddItemAsync(customerId, product, request.Quantity, cancellationToken);
 
         return await MapAsync(cart, cancellationToken);
     }
@@ -42,7 +43,20 @@ public class CartService : ICartService
 
     public async Task<CartDto> GetMyCartAsync(CancellationToken cancellationToken)
     {
-        var cart = await _cartRepository.GetOrCreateAsync(GetRequiredCustomerId(), cancellationToken);
+        var customerId = GetRequiredCustomerId();
+        var cart = await _cartRepository.GetByCustomerIdAsync(customerId, cancellationToken);
+
+        if (cart is null)
+        {
+            return new CartDto
+            {
+                Id = Guid.Empty,
+                CustomerId = customerId,
+                TotalAmount = 0,
+                Items = []
+            };
+        }
+
         return await MapAsync(cart, cancellationToken);
     }
 
@@ -78,7 +92,11 @@ public class CartService : ICartService
 
         foreach (var item in cart.Items)
         {
-            var product = await _productRepository.GetByIdAsync(item.ProductId, cancellationToken, includeHidden: true);
+            var product = await _productRepository.GetByIdAsync(
+                item.ProductId,
+                cancellationToken,
+                includeHidden: true,
+                asTracking: false);
             if (product is null)
             {
                 continue;
@@ -87,6 +105,7 @@ public class CartService : ICartService
             items.Add(new CartItemDto
             {
                 ProductId = item.ProductId,
+                ProductType = product.Type.ToString(),
                 ProductName = product.Name,
                 UnitPrice = product.Price,
                 Quantity = item.Quantity,

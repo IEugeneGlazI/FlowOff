@@ -27,7 +27,7 @@ function getProductPlaceholderImage(product: Product) {
   }
 
   if (product.type === 'Gift') {
-    return 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0ea?auto=format&fit=crop&w=1200&q=80';
+    return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=1200&q=80';
   }
 
   return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1200&q=80';

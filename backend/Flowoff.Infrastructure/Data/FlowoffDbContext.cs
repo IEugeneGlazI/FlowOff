@@ -135,7 +135,15 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<CartItem>(entity =>
         {
             entity.Ignore(item => item.ProductId);
-            entity.HasIndex(item => new { item.CartId, item.BouquetId, item.FlowerId, item.GiftId }).IsUnique();
+            entity.HasIndex(item => new { item.CartId, item.BouquetId })
+                .IsUnique()
+                .HasFilter("[BouquetId] IS NOT NULL");
+            entity.HasIndex(item => new { item.CartId, item.FlowerId })
+                .IsUnique()
+                .HasFilter("[FlowerId] IS NOT NULL");
+            entity.HasIndex(item => new { item.CartId, item.GiftId })
+                .IsUnique()
+                .HasFilter("[GiftId] IS NOT NULL");
             entity.HasOne(item => item.Bouquet)
                 .WithMany()
                 .HasForeignKey(item => item.BouquetId)

@@ -57,6 +57,13 @@ public class AuthService : IAuthService
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var encodedToken = EncodeToken(token);
+        var resetUrl = BuildFrontendUrl("/account", new Dictionary<string, string?>
+        {
+            ["mode"] = "reset",
+            ["email"] = user.Email,
+            ["token"] = encodedToken
+        });
+
         await _emailSender.SendAsync(
             user.Email!,
             "Восстановление пароля Flowoff",
@@ -64,10 +71,15 @@ public class AuthService : IAuthService
             <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.6;color:#1f2a23">
               <h2 style="margin-bottom:12px;">Восстановление пароля</h2>
               <p>Мы получили запрос на смену пароля для аккаунта <strong>{user.Email}</strong>.</p>
-              <p>Пока на фронтенде нет отдельной формы сброса, поэтому для dev-режима используй этот токен:</p>
-              <div style="padding:12px 16px;border-radius:12px;background:#f3f7f4;border:1px solid #d7e4da;word-break:break-all;">
-                {encodedToken}
-              </div>
+              <p>Чтобы задать новый пароль, перейдите по ссылке:</p>
+              <p style="margin:20px 0;">
+                <a href="{resetUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#6a9c7b;color:#ffffff;text-decoration:none;font-weight:600;">
+                  Сбросить пароль
+                </a>
+              </p>
+              <p>Если кнопка не открывается, используйте эту ссылку:</p>
+              <p><a href="{resetUrl}">{resetUrl}</a></p>
+              <p style="margin-top:16px;color:#5a665f;font-size:14px;">Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо.</p>
             </div>
             """,
             cancellationToken);
@@ -168,7 +180,7 @@ public class AuthService : IAuthService
     {
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var encodedToken = EncodeToken(token);
-        var confirmationUrl = BuildUrl("Auth/confirm-email", new Dictionary<string, string?>
+        var confirmationUrl = BuildApiUrl("Auth/confirm-email", new Dictionary<string, string?>
         {
             ["userId"] = user.Id,
             ["token"] = encodedToken
@@ -179,27 +191,35 @@ public class AuthService : IAuthService
             "Подтверждение регистрации Flowoff",
             $"""
             <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.6;color:#1f2a23">
-              <h2 style="margin-bottom:12px;">Подтверди регистрацию</h2>
+              <h2 style="margin-bottom:12px;">Подтвердите регистрацию</h2>
               <p>Спасибо за регистрацию в <strong>Flowoff</strong>.</p>
-              <p>Чтобы активировать аккаунт, перейди по ссылке:</p>
+              <p>Чтобы активировать аккаунт, перейдите по ссылке:</p>
               <p style="margin:20px 0;">
                 <a href="{confirmationUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#6a9c7b;color:#ffffff;text-decoration:none;font-weight:600;">
                   Подтвердить почту
                 </a>
               </p>
-              <p>Если кнопка не открывается, используй эту ссылку:</p>
+              <p>Если кнопка не открывается, используйте эту ссылку:</p>
               <p><a href="{confirmationUrl}">{confirmationUrl}</a></p>
             </div>
             """,
             cancellationToken);
     }
 
-    private string BuildUrl(string path, IDictionary<string, string?> query)
+    private string BuildApiUrl(string path, IDictionary<string, string?> query)
     {
         var baseUrl = _configuration["ApplicationUrls:ApiBaseUrl"]?.TrimEnd('/')
-            ?? "https://localhost:7225";
+            ?? "http://localhost:5277";
 
         return QueryHelpers.AddQueryString($"{baseUrl}/api/{path}", query);
+    }
+
+    private string BuildFrontendUrl(string path, IDictionary<string, string?> query)
+    {
+        var baseUrl = _configuration["ApplicationUrls:FrontendBaseUrl"]?.TrimEnd('/')
+            ?? "http://127.0.0.1:5173";
+
+        return QueryHelpers.AddQueryString($"{baseUrl}{path}", query);
     }
 
     private static string EncodeToken(string token)

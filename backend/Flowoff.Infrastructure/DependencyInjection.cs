@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Flowoff.Infrastructure;
@@ -21,6 +22,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+        services.Configure<DaDataOptions>(configuration.GetSection("DaData"));
 
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
@@ -84,6 +86,11 @@ public static class DependencyInjection
         services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<ISupportRequestService, SupportRequestService>();
         services.AddScoped<IUserManagementService, UserManagementService>();
+        services.AddHttpClient<IAddressSuggestionService, DaDataAddressSuggestionService>((provider, client) =>
+        {
+            var options = provider.GetRequiredService<IOptions<DaDataOptions>>().Value;
+            client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/'));
+        });
 
         return services;
     }

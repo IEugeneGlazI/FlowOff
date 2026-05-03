@@ -22,6 +22,10 @@ function translateApiMessage(message: string) {
     [/^Invalid credentials\.?$/i, 'Неверный email или пароль.'],
     [/^Email confirmation is required before login\.?$/i, 'Сначала подтвердите email, затем выполните вход.'],
     [/^User not found\.?$/i, 'Пользователь не найден.'],
+    [/^Password has been reset successfully\.?$/i, 'Пароль успешно обновлен.'],
+    [/^If the account exists, a password reset email has been sent\.?$/i, 'Если аккаунт существует, письмо для восстановления пароля уже отправлено.'],
+    [/^If the account exists and is not confirmed, an email has been sent\.?$/i, 'Если аккаунт существует и почта еще не подтверждена, письмо уже отправлено.'],
+    [/^Registration completed\. Please confirm your email before login\.?$/i, 'Регистрация завершена. Подтвердите email перед входом.'],
     [/Passwords must have at least one non alphanumeric character/i, 'Пароль должен содержать хотя бы один специальный символ.'],
     [/Passwords must have at least one digit/i, 'Пароль должен содержать хотя бы одну цифру.'],
     [/Passwords must have at least one uppercase/i, 'Пароль должен содержать хотя бы одну заглавную букву.'],
@@ -56,7 +60,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       body,
     });
   } catch {
-    throw new ApiError('Не удалось соединиться с сервером. Проверь, что backend запущен и CORS настроен.', 0);
+    throw new ApiError('Не удалось соединиться с сервером. Проверьте, что backend запущен и CORS настроен.', 0);
   }
 
   if (!response.ok) {

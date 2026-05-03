@@ -21,6 +21,7 @@ import {
   Typography,
   alpha,
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LoaderCircle, Plus, Search } from 'lucide-react';
 import type { Category, ColorReference, FlowerInReference, Product, Promotion } from '../../entities/catalog';
@@ -79,10 +80,14 @@ function getProductPlaceholderImage(product: Product) {
   }
 
   if (product.type === 'Gift') {
-    return 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0ea?auto=format&fit=crop&w=900&q=80';
+    return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=900&q=80';
   }
 
   return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=900&q=80';
+}
+
+function normalizeMultiValue(value: string | string[]) {
+  return typeof value === 'string' ? value.split(',').filter(Boolean) : value;
 }
 
 export function StorefrontPage() {
@@ -95,11 +100,11 @@ export function StorefrontPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [priceRange, setPriceRange] = useState<PriceRange>([0, 25000]);
-  const [selectedBouquetColorId, setSelectedBouquetColorId] = useState('');
-  const [selectedBouquetFlowerInId, setSelectedBouquetFlowerInId] = useState('');
-  const [selectedFlowerInId, setSelectedFlowerInId] = useState('');
-  const [selectedFlowerColorId, setSelectedFlowerColorId] = useState('');
-  const [selectedGiftCategoryId, setSelectedGiftCategoryId] = useState('');
+  const [selectedBouquetColorIds, setSelectedBouquetColorIds] = useState<string[]>([]);
+  const [selectedBouquetFlowerInIds, setSelectedBouquetFlowerInIds] = useState<string[]>([]);
+  const [selectedFlowerInIds, setSelectedFlowerInIds] = useState<string[]>([]);
+  const [selectedFlowerColorIds, setSelectedFlowerColorIds] = useState<string[]>([]);
+  const [selectedGiftCategoryIds, setSelectedGiftCategoryIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const { addItem } = useCart();
@@ -135,19 +140,6 @@ export function StorefrontPage() {
       try {
         const nextProducts = await getProducts({
           type: activeTab === 'bouquets' ? 'Bouquet' : activeTab === 'flowers' ? 'Flower' : 'Gift',
-          colorId:
-            activeTab === 'bouquets' && selectedBouquetColorId
-              ? selectedBouquetColorId
-              : activeTab === 'flowers' && selectedFlowerColorId
-                ? selectedFlowerColorId
-                : null,
-          flowerInId:
-            activeTab === 'bouquets' && selectedBouquetFlowerInId
-              ? selectedBouquetFlowerInId
-              : activeTab === 'flowers' && selectedFlowerInId
-                ? selectedFlowerInId
-                : null,
-          categoryId: activeTab === 'gifts' && selectedGiftCategoryId ? selectedGiftCategoryId : null,
         });
 
         setProducts(nextProducts);
@@ -164,14 +156,7 @@ export function StorefrontPage() {
     }
 
     void loadProducts();
-  }, [
-    activeTab,
-    selectedBouquetColorId,
-    selectedBouquetFlowerInId,
-    selectedFlowerInId,
-    selectedFlowerColorId,
-    selectedGiftCategoryId,
-  ]);
+  }, [activeTab]);
 
   const priceBounds = useMemo<PriceRange>(() => {
     if (products.length === 0) {
@@ -189,18 +174,63 @@ export function StorefrontPage() {
       const blob = toSearchBlob(product);
       const matchesSearch = !needle || blob.includes(needle);
       const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
-      return matchesSearch && matchesPrice;
+
+      if (!matchesSearch || !matchesPrice) {
+        return false;
+      }
+
+      if (activeTab === 'bouquets') {
+        const matchesColors =
+          selectedBouquetColorIds.length === 0 ||
+          selectedBouquetColorIds.some((id) => product.colorIds?.includes(id));
+        const matchesFlowerIns =
+          selectedBouquetFlowerInIds.length === 0 ||
+          selectedBouquetFlowerInIds.some((id) => product.flowerInIds?.includes(id));
+
+        return matchesColors && matchesFlowerIns;
+      }
+
+      if (activeTab === 'flowers') {
+        const matchesFlowerType =
+          selectedFlowerInIds.length === 0 ||
+          (product.flowerInId ? selectedFlowerInIds.includes(product.flowerInId) : false);
+        const matchesColor =
+          selectedFlowerColorIds.length === 0 ||
+          (product.colorId ? selectedFlowerColorIds.includes(product.colorId) : false);
+
+        return matchesFlowerType && matchesColor;
+      }
+
+      const matchesCategory =
+        selectedGiftCategoryIds.length === 0 ||
+        (product.categoryId ? selectedGiftCategoryIds.includes(product.categoryId) : false);
+
+      return matchesCategory;
     });
-  }, [priceRange, products, search]);
+  }, [
+    activeTab,
+    priceRange,
+    products,
+    search,
+    selectedBouquetColorIds,
+    selectedBouquetFlowerInIds,
+    selectedFlowerColorIds,
+    selectedFlowerInIds,
+    selectedGiftCategoryIds,
+  ]);
 
   useEffect(() => {
     setSearch('');
-    setSelectedBouquetColorId('');
-    setSelectedBouquetFlowerInId('');
-    setSelectedFlowerInId('');
-    setSelectedFlowerColorId('');
-    setSelectedGiftCategoryId('');
+    setSelectedBouquetColorIds([]);
+    setSelectedBouquetFlowerInIds([]);
+    setSelectedFlowerInIds([]);
+    setSelectedFlowerColorIds([]);
+    setSelectedGiftCategoryIds([]);
   }, [activeTab]);
+
+  useEffect(() => {
+    setPriceRange(priceBounds);
+  }, [priceBounds]);
 
   async function handleAddToCart(productId: string) {
     try {
@@ -221,11 +251,59 @@ export function StorefrontPage() {
   function resetFilters() {
     setSearch('');
     setPriceRange(priceBounds);
-    setSelectedBouquetColorId('');
-    setSelectedBouquetFlowerInId('');
-    setSelectedFlowerInId('');
-    setSelectedFlowerColorId('');
-    setSelectedGiftCategoryId('');
+    setSelectedBouquetColorIds([]);
+    setSelectedBouquetFlowerInIds([]);
+    setSelectedFlowerInIds([]);
+    setSelectedFlowerColorIds([]);
+    setSelectedGiftCategoryIds([]);
+  }
+
+  function handleMinPriceInput(value: string) {
+    if (value === '') {
+      setPriceRange([priceBounds[0], priceRange[1]]);
+      return;
+    }
+
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) {
+      return;
+    }
+
+    const nextMin = Math.max(priceBounds[0], Math.min(parsed, priceRange[1]));
+    setPriceRange([nextMin, priceRange[1]]);
+  }
+
+  function handleMaxPriceInput(value: string) {
+    if (value === '') {
+      setPriceRange([priceRange[0], priceBounds[1]]);
+      return;
+    }
+
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) {
+      return;
+    }
+
+    const nextMax = Math.min(priceBounds[1], Math.max(parsed, priceRange[0]));
+    setPriceRange([priceRange[0], nextMax]);
+  }
+
+  function handleMultipleChange(
+    event: SelectChangeEvent<string[]>,
+    setter: React.Dispatch<React.SetStateAction<string[]>>,
+  ) {
+    setter(normalizeMultiValue(event.target.value));
+  }
+
+  function renderSelectedNames(selectedIds: string[], source: Array<{ id: string; name: string }>, emptyLabel: string) {
+    if (selectedIds.length === 0) {
+      return emptyLabel;
+    }
+
+    return source
+      .filter((item) => selectedIds.includes(item.id))
+      .map((item) => item.name)
+      .join(', ');
   }
 
   function renderTabFilters() {
@@ -235,12 +313,13 @@ export function StorefrontPage() {
           <FormControl fullWidth>
             <InputLabel id="bouquet-color-label">Цвета в составе</InputLabel>
             <Select
+              multiple
               labelId="bouquet-color-label"
-              value={selectedBouquetColorId}
+              value={selectedBouquetColorIds}
               input={<OutlinedInput label="Цвета в составе" />}
-              onChange={(event) => setSelectedBouquetColorId(event.target.value)}
+              renderValue={(selected) => renderSelectedNames(selected, colors, 'Все цвета')}
+              onChange={(event) => handleMultipleChange(event, setSelectedBouquetColorIds)}
             >
-              <MenuItem value="">Все цвета</MenuItem>
               {colors.map((color) => (
                 <MenuItem key={color.id} value={color.id}>
                   {color.name}
@@ -252,12 +331,13 @@ export function StorefrontPage() {
           <FormControl fullWidth>
             <InputLabel id="bouquet-flowerin-label">Цветки в составе</InputLabel>
             <Select
+              multiple
               labelId="bouquet-flowerin-label"
-              value={selectedBouquetFlowerInId}
+              value={selectedBouquetFlowerInIds}
               input={<OutlinedInput label="Цветки в составе" />}
-              onChange={(event) => setSelectedBouquetFlowerInId(event.target.value)}
+              renderValue={(selected) => renderSelectedNames(selected, flowerIns, 'Все цветки')}
+              onChange={(event) => handleMultipleChange(event, setSelectedBouquetFlowerInIds)}
             >
-              <MenuItem value="">Все цветки</MenuItem>
               {flowerIns.map((flowerIn) => (
                 <MenuItem key={flowerIn.id} value={flowerIn.id}>
                   {flowerIn.name}
@@ -275,12 +355,13 @@ export function StorefrontPage() {
           <FormControl fullWidth>
             <InputLabel id="flower-type-label">Тип цветка</InputLabel>
             <Select
+              multiple
               labelId="flower-type-label"
-              value={selectedFlowerInId}
+              value={selectedFlowerInIds}
               input={<OutlinedInput label="Тип цветка" />}
-              onChange={(event) => setSelectedFlowerInId(event.target.value)}
+              renderValue={(selected) => renderSelectedNames(selected, flowerIns, 'Все типы')}
+              onChange={(event) => handleMultipleChange(event, setSelectedFlowerInIds)}
             >
-              <MenuItem value="">Все типы</MenuItem>
               {flowerIns.map((flowerIn) => (
                 <MenuItem key={flowerIn.id} value={flowerIn.id}>
                   {flowerIn.name}
@@ -292,12 +373,13 @@ export function StorefrontPage() {
           <FormControl fullWidth>
             <InputLabel id="flower-color-label">Цвет цветка</InputLabel>
             <Select
+              multiple
               labelId="flower-color-label"
-              value={selectedFlowerColorId}
+              value={selectedFlowerColorIds}
               input={<OutlinedInput label="Цвет цветка" />}
-              onChange={(event) => setSelectedFlowerColorId(event.target.value)}
+              renderValue={(selected) => renderSelectedNames(selected, colors, 'Все цвета')}
+              onChange={(event) => handleMultipleChange(event, setSelectedFlowerColorIds)}
             >
-              <MenuItem value="">Все цвета</MenuItem>
               {colors.map((color) => (
                 <MenuItem key={color.id} value={color.id}>
                   {color.name}
@@ -313,12 +395,13 @@ export function StorefrontPage() {
       <FormControl fullWidth>
         <InputLabel id="gift-category-label">Категория подарка</InputLabel>
         <Select
+          multiple
           labelId="gift-category-label"
-          value={selectedGiftCategoryId}
+          value={selectedGiftCategoryIds}
           input={<OutlinedInput label="Категория подарка" />}
-          onChange={(event) => setSelectedGiftCategoryId(event.target.value)}
+          renderValue={(selected) => renderSelectedNames(selected, categories, 'Все подарки')}
+          onChange={(event) => handleMultipleChange(event, setSelectedGiftCategoryIds)}
         >
-          <MenuItem value="">Все подарки</MenuItem>
           {categories.map((category) => (
             <MenuItem key={category.id} value={category.id}>
               {category.name}
@@ -349,38 +432,75 @@ export function StorefrontPage() {
         sx={{
           overflow: 'hidden',
           background: `
-            linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(246,251,247,0.82) 100%)
+            linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(246,251,247,0.84) 100%)
           `,
-          backdropFilter: 'blur(14px)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(24,38,31,0.06)',
         }}
       >
-        <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+        <CardContent sx={{ p: { xs: 2, md: 2.75 }, display: 'grid', gap: 2.25 }}>
           <Grid container spacing={2} sx={{ alignItems: 'center' }}>
-            <Grid size={{ xs: 12, md: 3.5 }}>
-              <TextField
-                fullWidth
-                label="Поиск"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={
-                  activeTab === 'bouquets'
-                    ? 'Свадебный, нежный, пионовый'
-                    : activeTab === 'flowers'
-                      ? 'Роза, тюльпан, орхидея'
-                      : 'Ваза, сладости, свечи'
-                }
-                slotProps={{
-                  input: {
-                    startAdornment: <Search size={16} style={{ marginRight: 8, opacity: 0.55 }} />,
-                  },
-                }}
-              />
+            <Grid size={{ xs: 12, md: 8.5 }}>
+              <Box sx={{ display: 'grid', gap: 0.75 }}>
+                <TextField
+                  fullWidth
+                  label="Поиск"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder={
+                    activeTab === 'bouquets'
+                      ? 'Свадебный, нежный, пионовый'
+                      : activeTab === 'flowers'
+                        ? 'Роза, тюльпан, орхидея'
+                        : 'Ваза, сладости, свечи'
+                  }
+                  slotProps={{
+                    input: {
+                      startAdornment: <Search size={16} style={{ marginRight: 8, opacity: 0.55 }} />,
+                    },
+                  }}
+                />
+              </Box>
             </Grid>
 
             <Grid size={{ xs: 12, md: 3.5 }}>
-              <Box sx={{ px: { xs: 0.5, md: 1 } }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                  Диапазон цены
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyItems: { xs: 'stretch', md: 'end' },
+                  justifyContent: { xs: 'stretch', md: 'flex-end' },
+                }}
+              >
+                <Button
+                  variant="text"
+                  color="inherit"
+                  onClick={resetFilters}
+                  sx={{
+                    minHeight: 48,
+                    px: 2.25,
+                    bgcolor: alpha('#ffffff', 0.52),
+                    width: { xs: '100%', md: 'fit-content' },
+                  }}
+                >
+                  Сбросить фильтры
+                </Button>
+              </Box>
+            </Grid>
+          </Grid>
+
+          <Grid container spacing={2.25} sx={{ alignItems: 'stretch' }}>
+            <Grid size={{ xs: 12, lg: 5 }}>
+              <Box
+                sx={{
+                  height: '100%',
+                  p: { xs: 1.5, md: 1.75 },
+                  borderRadius: 2.5,
+                  bgcolor: alpha('#ffffff', 0.54),
+                  border: '1px solid rgba(24,38,31,0.05)',
+                }}
+              >
+                <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
+                  Цена
                 </Typography>
                 <Slider
                   value={priceRange}
@@ -390,30 +510,44 @@ export function StorefrontPage() {
                   valueLabelDisplay="auto"
                   valueLabelFormat={(value) => `${value} ₽`}
                   color="primary"
+                  sx={{ mt: 1.25 }}
                 />
-                <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {formatCurrency(priceRange[0])}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {formatCurrency(priceRange[1])}
-                  </Typography>
+                <Stack direction="row" spacing={1.25} sx={{ mt: 1.25 }}>
+                  <TextField
+                    fullWidth
+                    label="От"
+                    type="number"
+                    value={priceRange[0]}
+                    onChange={(event) => handleMinPriceInput(event.target.value)}
+                  />
+                  <TextField
+                    fullWidth
+                    label="До"
+                    type="number"
+                    value={priceRange[1]}
+                    onChange={(event) => handleMaxPriceInput(event.target.value)}
+                  />
                 </Stack>
               </Box>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 4 }}>{renderTabFilters()}</Grid>
-
-            <Grid size={{ xs: 12, md: 1 }}>
-              <Button
-                variant="text"
-                color="inherit"
-                onClick={resetFilters}
-                fullWidth
-                sx={{ minHeight: 48, bgcolor: alpha('#ffffff', 0.42) }}
+            <Grid size={{ xs: 12, lg: 7 }}>
+              <Box
+                sx={{
+                  height: '100%',
+                  p: { xs: 1.5, md: 1.75 },
+                  borderRadius: 2.5,
+                  bgcolor: alpha('#ffffff', 0.54),
+                  border: '1px solid rgba(24,38,31,0.05)',
+                  display: 'grid',
+                  gap: 1.1,
+                }}
               >
-                Сбросить
-              </Button>
+                <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
+                  Фильтры
+                </Typography>
+                <Box sx={{ width: '100%' }}>{renderTabFilters()}</Box>
+              </Box>
             </Grid>
           </Grid>
         </CardContent>
@@ -426,9 +560,7 @@ export function StorefrontPage() {
               <Card
                 sx={{
                   height: '100%',
-                  background: `
-                    linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(220,239,228,0.74) 100%)
-                  `,
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(220,239,228,0.74) 100%)',
                 }}
               >
                 <CardContent sx={{ display: 'grid', gap: 1.5, minHeight: 172 }}>
@@ -586,6 +718,25 @@ export function StorefrontPage() {
                             sx={{ bgcolor: alpha('#ffffff', 0.74) }}
                           />
                         ) : null}
+                        {product.type === 'Bouquet'
+                          ? (product.flowerInNames ?? []).map((flowerInName) => (
+                              <Chip
+                                key={`${product.id}-${flowerInName}`}
+                                size="small"
+                                variant="outlined"
+                                label={flowerInName}
+                                sx={{ bgcolor: alpha('#ffffff', 0.74) }}
+                              />
+                            ))
+                          : null}
+                        {product.flowerInName && product.type === 'Flower' ? (
+                          <Chip
+                            size="small"
+                            variant="outlined"
+                            label={product.flowerInName}
+                            sx={{ bgcolor: alpha('#ffffff', 0.74) }}
+                          />
+                        ) : null}
                         {(product.colorNames ?? []).map((colorName) => (
                           <Chip
                             key={`${product.id}-${colorName}`}
@@ -595,11 +746,11 @@ export function StorefrontPage() {
                             sx={{ bgcolor: alpha('#ffffff', 0.74) }}
                           />
                         ))}
-                        {product.flowerInName && product.type === 'Flower' ? (
+                        {product.colorName && product.type === 'Flower' ? (
                           <Chip
                             size="small"
                             variant="outlined"
-                            label={product.flowerInName}
+                            label={product.colorName}
                             sx={{ bgcolor: alpha('#ffffff', 0.74) }}
                           />
                         ) : null}

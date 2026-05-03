@@ -23,6 +23,7 @@ public sealed class UpdateCartItemRequestDto
 public sealed class CartItemDto
 {
     public Guid ProductId { get; init; }
+    public string ProductType { get; init; } = string.Empty;
     public string ProductName { get; init; } = string.Empty;
     public decimal UnitPrice { get; init; }
     public int Quantity { get; init; }

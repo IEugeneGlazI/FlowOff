@@ -21,12 +21,20 @@ type LoginPayload = {
   password: string;
 };
 
+type ResetPasswordPayload = {
+  email: string;
+  token: string;
+  newPassword: string;
+};
+
 type AuthContextValue = {
   session: AuthSession | null;
   error: string | null;
   isSubmitting: boolean;
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<string>;
+  forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (payload: ResetPasswordPayload) => Promise<string>;
   logout: () => void;
   clearError: () => void;
 };
@@ -55,6 +63,28 @@ function readStoredSession(): AuthSession | null {
   }
 }
 
+function getErrorMessage(requestError: unknown, fallback: string) {
+  return requestError instanceof ApiError ? requestError.message : fallback;
+}
+
+function getSuccessMessage(message: string, fallback: string) {
+  const normalized = message.trim();
+
+  if (/^Registration completed\. Please confirm your email before login\.?$/i.test(normalized)) {
+    return 'Регистрация завершена. Подтвердите email перед входом.';
+  }
+
+  if (/^If the account exists, a password reset email has been sent\.?$/i.test(normalized)) {
+    return 'Если аккаунт существует, письмо для восстановления пароля уже отправлено.';
+  }
+
+  if (/^Password has been reset successfully\.?$/i.test(normalized)) {
+    return 'Пароль успешно обновлен.';
+  }
+
+  return normalized || fallback;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(() => readStoredSession());
   const [error, setError] = useState<string | null>(null);
@@ -80,9 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       setSession(result);
     } catch (requestError) {
-      const message =
-        requestError instanceof ApiError ? requestError.message : 'Не удалось выполнить вход.';
-      setError(message);
+      setError(getErrorMessage(requestError, 'Не удалось выполнить вход.'));
       throw requestError;
     } finally {
       setIsSubmitting(false);
@@ -98,11 +126,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      return result.message;
+      return getSuccessMessage(result.message, 'Регистрация завершена. Подтвердите email перед входом.');
     } catch (requestError) {
-      const message =
-        requestError instanceof ApiError ? requestError.message : 'Не удалось создать аккаунт.';
-      setError(message);
+      setError(getErrorMessage(requestError, 'Не удалось создать аккаунт.'));
+      throw requestError;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function forgotPassword(email: string) {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const result = await apiRequest<{ message: string }>('/Auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+      return getSuccessMessage(result.message, 'Если аккаунт существует, письмо для восстановления пароля уже отправлено.');
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, 'Не удалось отправить письмо для восстановления пароля.'));
+      throw requestError;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function resetPassword(payload: ResetPasswordPayload) {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const result = await apiRequest<{ message: string }>('/Auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return getSuccessMessage(result.message, 'Пароль успешно обновлен.');
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, 'Не удалось сбросить пароль.'));
       throw requestError;
     } finally {
       setIsSubmitting(false);
@@ -121,6 +183,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isSubmitting,
       login,
       register,
+      forgotPassword,
+      resetPassword,
       logout,
       clearError: () => setError(null),
     }),

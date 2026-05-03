@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
   Alert,
@@ -8,35 +8,103 @@ import {
   CardContent,
   IconButton,
   InputAdornment,
+  Link,
   Stack,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react';
 import { useAuth } from '../../features/auth/AuthContext';
 
-type Mode = 'login' | 'register';
+type Mode = 'login' | 'register' | 'forgot' | 'reset';
+
+const modeTitles: Record<Mode, string> = {
+  login: 'Добро пожаловать обратно',
+  register: 'Создайте аккаунт для расширения возможностей',
+  forgot: 'Восстановление пароля',
+  reset: 'Новый пароль',
+};
+
+const modeDescriptions: Record<Mode, string> = {
+  login: 'Войдите, чтобы управлять корзиной, оформлять заказы и смотреть историю покупок.',
+  register: 'После регистрации вы сможете собирать корзину и оформлять заказы.',
+  forgot: 'Введите email, и мы отправим вам письмо со ссылкой для сброса пароля.',
+  reset: 'Задайте новый пароль для вашего аккаунта.',
+};
 
 export function AccountPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { login, register, error, isSubmitting, clearError } = useAuth();
+  const { login, register, forgotPassword, resetPassword, error, isSubmitting, clearError } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const rawMode = searchParams.get('mode');
+    const nextMode: Mode =
+      rawMode === 'register' || rawMode === 'forgot' || rawMode === 'reset' || rawMode === 'login' ? rawMode : 'login';
+
+    setMode(nextMode);
+
+    const emailFromQuery = searchParams.get('email');
+    const tokenFromQuery = searchParams.get('token');
+
+    if (emailFromQuery) {
+      setEmail(emailFromQuery);
+    }
+
+    if (tokenFromQuery) {
+      setResetToken(tokenFromQuery);
+    }
+  }, [searchParams]);
+
   const passwordMismatch = useMemo(
-    () => mode === 'register' && confirmPassword.length > 0 && password !== confirmPassword,
+    () =>
+      (mode === 'register' || mode === 'reset') &&
+      confirmPassword.length > 0 &&
+      password !== confirmPassword,
     [mode, password, confirmPassword],
   );
+
+  function switchMode(nextMode: Mode, options?: { preserveFeedback?: boolean }) {
+    setMode(nextMode);
+
+    if (!options?.preserveFeedback) {
+      setFeedback(null);
+    }
+
+    setLocalError(null);
+    clearError();
+
+    const nextParams = new URLSearchParams();
+
+    if (nextMode !== 'login') {
+      nextParams.set('mode', nextMode);
+    }
+
+    if (nextMode === 'reset') {
+      if (email) {
+        nextParams.set('email', email);
+      }
+
+      if (resetToken) {
+        nextParams.set('token', resetToken);
+      }
+    }
+
+    setSearchParams(nextParams, { replace: true });
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,7 +112,7 @@ export function AccountPage() {
     setLocalError(null);
     clearError();
 
-    if (mode === 'register') {
+    if (mode === 'register' || mode === 'reset') {
       if (password !== confirmPassword) {
         setLocalError('Пароли не совпадают.');
         return;
@@ -56,6 +124,11 @@ export function AccountPage() {
       }
     }
 
+    if (mode === 'reset' && !resetToken.trim()) {
+      setLocalError('Вставьте токен из письма или откройте ссылку из письма повторно.');
+      return;
+    }
+
     try {
       if (mode === 'login') {
         await login({ email, password });
@@ -63,18 +136,41 @@ export function AccountPage() {
         return;
       }
 
-      const message = await register({ email, password, fullName });
+      if (mode === 'register') {
+        const message = await register({ email, password, fullName });
+        setFeedback(message);
+        setPassword('');
+        setConfirmPassword('');
+        switchMode('login', { preserveFeedback: true });
+        return;
+      }
+
+      if (mode === 'forgot') {
+        const message = await forgotPassword(email);
+        setFeedback(message);
+        switchMode('reset', { preserveFeedback: true });
+        return;
+      }
+
+      const message = await resetPassword({
+        email,
+        token: resetToken,
+        newPassword: password,
+      });
+
       setFeedback(message);
-      setMode('login');
       setPassword('');
       setConfirmPassword('');
+      setResetToken('');
+      switchMode('login', { preserveFeedback: true });
     } catch {
-      // The error is already set in AuthContext.
+      // Error state is already handled in AuthContext.
     }
   }
 
   const passwordInputType = showPassword ? 'text' : 'password';
   const confirmPasswordInputType = showConfirmPassword ? 'text' : 'password';
+  const showAuthToggle = mode === 'login' || mode === 'register';
 
   return (
     <Box
@@ -98,43 +194,40 @@ export function AccountPage() {
         <CardContent sx={{ p: { xs: 3, md: 4 } }}>
           <Stack spacing={3}>
             <Box>
-              <Typography variant="h2" sx={{ mb: 1 }}>
-                {mode === 'login' ? 'Добро пожаловать обратно' : 'Создай аккаунт для заказов и брони'}
+              <Typography variant="h2" sx={{ mb: 1, textAlign: 'center' }}>
+                {modeTitles[mode]}
               </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {mode === 'login'
-                  ? 'Войди, чтобы управлять корзиной, оформлять заказы и смотреть историю покупок.'
-                  : 'После регистрации ты сможешь собирать корзину, оформлять заказы и бронировать витринные букеты.'}
+              <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center' }}>
+                {modeDescriptions[mode]}
               </Typography>
             </Box>
 
-            <ToggleButtonGroup
-              color="primary"
-              value={mode}
-              exclusive
-              onChange={(_, nextMode: Mode | null) => {
-                if (nextMode) {
-                  setMode(nextMode);
-                  setFeedback(null);
-                  setLocalError(null);
-                  clearError();
-                }
-              }}
-              fullWidth
-              sx={{
-                bgcolor: 'rgba(255,255,255,0.68)',
-                borderRadius: 999,
-                p: 0.5,
-                '& .MuiToggleButton-root': {
-                  border: 0,
+            {showAuthToggle ? (
+              <ToggleButtonGroup
+                color="primary"
+                value={mode}
+                exclusive
+                onChange={(_, nextMode: Mode | null) => {
+                  if (nextMode === 'login' || nextMode === 'register') {
+                    switchMode(nextMode);
+                  }
+                }}
+                fullWidth
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.68)',
                   borderRadius: 999,
-                  minHeight: 44,
-                },
-              }}
-            >
-              <ToggleButton value="login">Вход</ToggleButton>
-              <ToggleButton value="register">Регистрация</ToggleButton>
-            </ToggleButtonGroup>
+                  p: 0.5,
+                  '& .MuiToggleButton-root': {
+                    border: 0,
+                    borderRadius: 999,
+                    minHeight: 44,
+                  },
+                }}
+              >
+                <ToggleButton value="login">Вход</ToggleButton>
+                <ToggleButton value="register">Регистрация</ToggleButton>
+              </ToggleButtonGroup>
+            ) : null}
 
             <form className="account-form" onSubmit={(event) => void handleSubmit(event)}>
               <Stack spacing={2}>
@@ -175,38 +268,40 @@ export function AccountPage() {
                   }}
                 />
 
-                <TextField
-                  label="Пароль"
-                  type={passwordInputType}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                  fullWidth
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockKeyhole size={16} style={{ opacity: 0.55 }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-                            onClick={() => setShowPassword((value) => !value)}
-                            edge="end"
-                          >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-
-                {mode === 'register' ? (
+                {mode !== 'forgot' ? (
                   <TextField
-                    label="Повтори пароль"
+                    label={mode === 'reset' ? 'Новый пароль' : 'Пароль'}
+                    type={passwordInputType}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    required
+                    fullWidth
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockKeyhole size={16} style={{ opacity: 0.55 }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                              onClick={() => setShowPassword((value) => !value)}
+                              edge="end"
+                            >
+                              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  />
+                ) : null}
+
+                {mode === 'register' || mode === 'reset' ? (
+                  <TextField
+                    label="Повторите пароль"
                     type={confirmPasswordInputType}
                     value={confirmPassword}
                     onChange={(event) => setConfirmPassword(event.target.value)}
@@ -238,10 +333,45 @@ export function AccountPage() {
                 ) : null}
 
                 <Button type="submit" variant="contained" color="primary" size="large" disabled={isSubmitting} fullWidth>
-                  {isSubmitting ? 'Отправляем...' : mode === 'login' ? 'Войти' : 'Создать аккаунт'}
+                  {isSubmitting
+                    ? 'Отправляем...'
+                    : mode === 'login'
+                      ? 'Войти в аккаунт'
+                      : mode === 'register'
+                        ? 'Создать аккаунт'
+                        : mode === 'forgot'
+                          ? 'Отправить письмо'
+                          : 'Сохранить новый пароль'}
                 </Button>
               </Stack>
             </form>
+
+            <Stack spacing={1} sx={{ alignItems: 'center' }}>
+              {mode === 'login' ? (
+                <Link component="button" type="button" underline="hover" onClick={() => switchMode('forgot')}>
+                  Забыли пароль?
+                </Link>
+              ) : null}
+
+              {mode === 'forgot' ? (
+                <Stack spacing={1} sx={{ alignItems: 'center' }}>
+                  <Link component="button" type="button" underline="hover" onClick={() => switchMode('login')}>
+                    Вернуться ко входу
+                  </Link>
+                </Stack>
+              ) : null}
+
+              {mode === 'reset' ? (
+                <Stack spacing={1} sx={{ alignItems: 'center' }}>
+                  <Link component="button" type="button" underline="hover" onClick={() => switchMode('forgot')}>
+                    Отправить письмо еще раз
+                  </Link>
+                  <Link component="button" type="button" underline="hover" onClick={() => switchMode('login')}>
+                    Вернуться ко входу
+                  </Link>
+                </Stack>
+              ) : null}
+            </Stack>
 
             {feedback ? <Alert severity="success">{feedback}</Alert> : null}
             {localError ? <Alert severity="error">{localError}</Alert> : null}
