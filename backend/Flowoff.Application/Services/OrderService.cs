@@ -1,5 +1,6 @@
 using Flowoff.Application.DTOs.Orders;
 using Flowoff.Application.Interfaces;
+using Flowoff.Domain.Common;
 using Flowoff.Domain.Entities;
 using Flowoff.Domain.Enums;
 using Flowoff.Domain.Repositories;
@@ -220,7 +221,7 @@ public class OrderService : IOrderService
             Status = order.Status.ToString(),
             DeliveryMethod = order.DeliveryMethod.ToString(),
             TotalAmount = order.TotalAmount,
-            CreatedAtUtc = order.CreatedAtUtc,
+            CreatedAtUtc = MoscowTime.AsOffset(order.CreatedAtUtc),
             DeliveryAddress = order.Delivery?.Address,
             CourierId = order.Delivery?.CourierId,
             PaymentStatus = order.Payment?.Status.ToString(),

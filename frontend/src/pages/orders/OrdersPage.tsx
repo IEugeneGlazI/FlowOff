@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   alpha,
@@ -60,11 +60,7 @@ const deliveryOrderSteps = [
   'Заказ доставлен',
 ];
 
-const pickupOrderSteps = [
-  'Заказ на рассмотрении',
-  'Заказ собирается',
-  'Заказ готов',
-];
+const pickupOrderSteps = ['Заказ на рассмотрении', 'Заказ собирается', 'Заказ готов'];
 
 function getDeliveryOrderStep(status: string) {
   switch (status) {
@@ -107,6 +103,165 @@ function getPickupOrderStep(status: string) {
   }
 }
 
+function isCompletedOrder(order: Order) {
+  return order.status === 'Delivered' || order.status === 'Cancelled';
+}
+
+function renderOrderCard(order: Order, isMobile: boolean) {
+  const isPickup = order.deliveryMethod === 'Pickup';
+  const activeStep = isPickup ? getPickupOrderStep(order.status) : getDeliveryOrderStep(order.status);
+  const orderSteps = isPickup ? pickupOrderSteps : deliveryOrderSteps;
+
+  return (
+    <Card
+      key={order.id}
+      sx={{
+        background: 'rgba(255,255,255,0.84)',
+        backdropFilter: 'blur(14px)',
+        border: '1px solid rgba(24,38,31,0.08)',
+        boxShadow: '0 22px 60px rgba(38, 54, 45, 0.06)',
+      }}
+    >
+      <CardContent sx={{ p: { xs: 2, md: 2.5 }, display: 'grid', gap: 2 }}>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}
+          sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' } }}
+        >
+          <Box sx={{ display: 'grid', gap: 0.5 }}>
+            <Typography variant="h5">Заказ {order.id.slice(0, 8)}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Оформлен {formatDate(order.createdAtUtc)}
+            </Typography>
+          </Box>
+
+          <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+            <Typography variant="h5">{formatCurrency(order.totalAmount)}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {order.items.length} {order.items.length === 1 ? 'позиция' : order.items.length < 5 ? 'позиции' : 'позиций'}
+            </Typography>
+          </Box>
+        </Stack>
+
+        <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
+          <CardContent sx={{ display: 'grid', gap: 1.5, p: { xs: 1.5, md: 2 } }}>
+            <Stepper activeStep={activeStep} orientation={isMobile ? 'vertical' : 'horizontal'} alternativeLabel={!isMobile}>
+              {orderSteps.map((step) => (
+                <Step key={step}>
+                  <StepLabel>{step}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+          </CardContent>
+        </Card>
+
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+            gap: 1.5,
+          }}
+        >
+          <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
+            <CardContent sx={{ display: 'grid', gap: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                Тип получения
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                {getDeliveryMethodLabel(order.deliveryMethod)}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
+            <CardContent sx={{ display: 'grid', gap: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                Статус оплаты
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                {getPaymentStatusLabel(order.paymentStatus)}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
+            <CardContent sx={{ display: 'grid', gap: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                Адрес
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                {order.deliveryAddress || 'Самовывоз из магазина'}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Divider />
+
+        <Box sx={{ display: 'grid', gap: 1.25 }}>
+          {order.items.map((item, index) => (
+            <Box
+              key={`${item.productId}-${index}`}
+              component={RouterLink}
+              to={`/products/${item.productId}`}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '72px minmax(0, 1fr)',
+                gap: 1.25,
+                alignItems: 'center',
+                color: 'inherit',
+                textDecoration: 'none',
+                p: 1,
+                borderRadius: 2,
+                transition: 'transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease',
+                '&:hover': {
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 12px 28px rgba(31,42,35,0.08)',
+                  backgroundColor: alpha('#ffffff', 0.94),
+                },
+              }}
+            >
+              <Box
+                component="img"
+                src={getProductPlaceholderImage(item.productType)}
+                alt={item.productName}
+                sx={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 2,
+                  objectFit: 'cover',
+                  display: 'block',
+                  bgcolor: '#f3f7f4',
+                  border: '1px solid rgba(24,38,31,0.06)',
+                }}
+              />
+
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1.25}
+                sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, minWidth: 0 }}
+              >
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    {item.productName}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {item.quantity} x {formatCurrency(item.unitPrice)}
+                  </Typography>
+                </Box>
+
+                <Typography variant="body1" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
+                  {formatCurrency(item.unitPrice * item.quantity)}
+                </Typography>
+              </Stack>
+            </Box>
+          ))}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function OrdersPage() {
   const { session } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -125,6 +280,9 @@ export function OrdersPage() {
       .then(setOrders)
       .finally(() => setIsLoading(false));
   }, [session]);
+
+  const activeOrders = useMemo(() => orders.filter((order) => !isCompletedOrder(order)), [orders]);
+  const completedOrders = useMemo(() => orders.filter(isCompletedOrder), [orders]);
 
   if (!session) {
     return (
@@ -195,149 +353,44 @@ export function OrdersPage() {
         </Card>
       ) : null}
 
-      <Box sx={{ display: 'grid', gap: 2 }}>
-        {orders.map((order) => {
-          const isPickup = order.deliveryMethod === 'Pickup';
-          const activeStep = isPickup ? getPickupOrderStep(order.status) : getDeliveryOrderStep(order.status);
-          const orderSteps = isPickup ? pickupOrderSteps : deliveryOrderSteps;
+      <Box sx={{ display: 'grid', gap: 2.5 }}>
+        <Box sx={{ display: 'grid', gap: 1.25 }}>
+          <Box sx={{ display: 'grid', gap: 0.35 }}>
+            <Typography variant="h5">Активные</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Заказы, которые еще находятся в обработке, сборке или доставке.
+            </Typography>
+          </Box>
 
-          return (
-            <Card
-              key={order.id}
-              sx={{
-                background: 'rgba(255,255,255,0.84)',
-                backdropFilter: 'blur(14px)',
-                border: '1px solid rgba(24,38,31,0.08)',
-                boxShadow: '0 22px 60px rgba(38, 54, 45, 0.06)',
-              }}
-            >
-              <CardContent sx={{ p: { xs: 2, md: 2.5 }, display: 'grid', gap: 2 }}>
-                <Stack
-                  direction={{ xs: 'column', md: 'row' }}
-                  spacing={2}
-                  sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' } }}
-                >
-                  <Box sx={{ display: 'grid', gap: 0.5 }}>
-                    <Typography variant="h5">Заказ {order.id.slice(0, 8)}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Оформлен {formatDate(order.createdAtUtc)}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-                    <Typography variant="h5">{formatCurrency(order.totalAmount)}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {order.items.length} {order.items.length === 1 ? 'позиция' : order.items.length < 5 ? 'позиции' : 'позиций'}
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
-                  <CardContent sx={{ display: 'grid', gap: 1.5, p: { xs: 1.5, md: 2 } }}>
-                    <Stepper activeStep={activeStep} orientation={isMobile ? 'vertical' : 'horizontal'} alternativeLabel={!isMobile}>
-                      {orderSteps.map((step) => (
-                        <Step key={step}>
-                          <StepLabel>{step}</StepLabel>
-                        </Step>
-                      ))}
-                    </Stepper>
-                  </CardContent>
-                </Card>
-
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
-                    gap: 1.5,
-                  }}
-                >
-                  <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
-                    <CardContent sx={{ display: 'grid', gap: 0.5 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Тип получения
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                        {getDeliveryMethodLabel(order.deliveryMethod)}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-
-                  <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
-                    <CardContent sx={{ display: 'grid', gap: 0.5 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Статус оплаты
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                        {getPaymentStatusLabel(order.paymentStatus)}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-
-                  <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
-                    <CardContent sx={{ display: 'grid', gap: 0.5 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Адрес
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                        {order.deliveryAddress || 'Самовывоз из магазина'}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Box>
-
-                <Divider />
-
-                <Box sx={{ display: 'grid', gap: 1.25 }}>
-                  {order.items.map((item, index) => (
-                    <Box
-                      key={`${item.productId}-${index}`}
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: '72px minmax(0, 1fr)',
-                        gap: 1.25,
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Box
-                        component="img"
-                        src={getProductPlaceholderImage(item.productType)}
-                        alt={item.productName}
-                        sx={{
-                          width: 72,
-                          height: 72,
-                          borderRadius: 2,
-                          objectFit: 'cover',
-                          display: 'block',
-                          bgcolor: '#f3f7f4',
-                          border: '1px solid rgba(24,38,31,0.06)',
-                        }}
-                      />
-
-                      <Stack
-                        direction={{ xs: 'column', sm: 'row' }}
-                        spacing={1.25}
-                        sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, minWidth: 0 }}
-                      >
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                            {item.productName}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {item.quantity} x {formatCurrency(item.unitPrice)}
-                          </Typography>
-                        </Box>
-
-                        <Typography variant="body1" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
-                          {formatCurrency(item.unitPrice * item.quantity)}
-                        </Typography>
-                      </Stack>
-                    </Box>
-                  ))}
-                </Box>
+          {activeOrders.length === 0 ? (
+            <Card sx={{ backgroundColor: alpha('#ffffff', 0.82), backdropFilter: 'blur(14px)' }}>
+              <CardContent sx={{ minHeight: 112, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+                <Typography>Сейчас нет активных заказов.</Typography>
               </CardContent>
             </Card>
-          );
-        })}
+          ) : null}
+
+          <Box sx={{ display: 'grid', gap: 2 }}>{activeOrders.map((order) => renderOrderCard(order, isMobile))}</Box>
+        </Box>
+
+        <Box sx={{ display: 'grid', gap: 1.25 }}>
+          <Box sx={{ display: 'grid', gap: 0.35 }}>
+            <Typography variant="h5">Завершенные</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Доставленные и закрытые заказы сохраняются здесь.
+            </Typography>
+          </Box>
+
+          {completedOrders.length === 0 ? (
+            <Card sx={{ backgroundColor: alpha('#ffffff', 0.82), backdropFilter: 'blur(14px)' }}>
+              <CardContent sx={{ minHeight: 112, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+                <Typography>Завершенных заказов пока нет.</Typography>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <Box sx={{ display: 'grid', gap: 2 }}>{completedOrders.map((order) => renderOrderCard(order, isMobile))}</Box>
+        </Box>
       </Box>
     </Box>
   );

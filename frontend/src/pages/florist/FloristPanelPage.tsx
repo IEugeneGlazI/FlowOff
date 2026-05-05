@@ -28,6 +28,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { ImagePlus, PackageCheck, PencilLine, Plus, Trash2, X } from 'lucide-react';
 import type { Category, ColorReference, FlowerInReference, Product, ProductType } from '../../entities/catalog';
 import type { Order } from '../../entities/cart';
@@ -910,9 +911,24 @@ export function FloristPanelPage() {
                       {order.items.map((item, index) => (
                         <Stack
                           key={`${item.productId}-${index}`}
+                          component={RouterLink}
+                          to={`/products/${item.productId}`}
                           direction={{ xs: 'column', sm: 'row' }}
                           spacing={1}
-                          sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' } }}
+                          sx={{
+                            justifyContent: 'space-between',
+                            alignItems: { xs: 'flex-start', sm: 'center' },
+                            color: 'inherit',
+                            textDecoration: 'none',
+                            p: 1,
+                            borderRadius: 2,
+                            transition: 'transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease',
+                            '&:hover': {
+                              transform: 'translateY(-1px)',
+                              boxShadow: '0 12px 28px rgba(31,42,35,0.08)',
+                              backgroundColor: 'rgba(255,255,255,0.94)',
+                            },
+                          }}
                         >
                           <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', minWidth: 0 }}>
                             <Box

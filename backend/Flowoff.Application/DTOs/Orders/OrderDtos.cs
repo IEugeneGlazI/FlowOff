@@ -41,7 +41,7 @@ public sealed class OrderDto
     public string Status { get; init; } = string.Empty;
     public string DeliveryMethod { get; init; } = string.Empty;
     public decimal TotalAmount { get; init; }
-    public DateTime CreatedAtUtc { get; init; }
+    public DateTimeOffset CreatedAtUtc { get; init; }
     public string? DeliveryAddress { get; init; }
     public string? CourierId { get; init; }
     public string? PaymentStatus { get; init; }

@@ -305,6 +305,13 @@ export function CartPage() {
                       borderRadius: 2.5,
                       bgcolor: alpha('#f8fbf9', 0.92),
                       borderColor: 'rgba(24,38,31,0.08)',
+                      transition: 'transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 16px 36px rgba(31,42,35,0.10)',
+                        borderColor: 'rgba(24,38,31,0.18)',
+                        bgcolor: alpha('#ffffff', 0.98),
+                      },
                     }}
                   >
                     <CardContent
@@ -316,21 +323,40 @@ export function CartPage() {
                       }}
                     >
                       <Box
-                        component="img"
-                        src={getCartItemPlaceholderImage(item.productType)}
-                        alt={item.productName}
+                        component={RouterLink}
+                        to={`/products/${item.productId}`}
                         sx={{
-                          width: 92,
-                          height: 118,
-                          objectFit: 'cover',
-                          borderRadius: 2,
-                          border: '1px solid rgba(24,38,31,0.08)',
-                          bgcolor: '#f3f7f4',
                           display: { xs: 'none', md: 'block' },
+                          lineHeight: 0,
                         }}
-                      />
+                      >
+                        <Box
+                          component="img"
+                          src={getCartItemPlaceholderImage(item.productType)}
+                          alt={item.productName}
+                          sx={{
+                            width: 92,
+                            height: 118,
+                            objectFit: 'cover',
+                            borderRadius: 2,
+                            border: '1px solid rgba(24,38,31,0.08)',
+                            bgcolor: '#f3f7f4',
+                            display: 'block',
+                          }}
+                        />
+                      </Box>
 
-                      <Box sx={{ display: 'grid', gap: 0.5 }}>
+                      <Box
+                        component={RouterLink}
+                        to={`/products/${item.productId}`}
+                        sx={{
+                          display: 'grid',
+                          gap: 0.5,
+                          color: 'inherit',
+                          textDecoration: 'none',
+                          minWidth: 0,
+                        }}
+                      >
                         <Typography variant="h6">{item.productName}</Typography>
                         <Typography variant="body2" color="text.secondary">
                           {formatCurrency(item.unitPrice)} за единицу

@@ -9,7 +9,7 @@ public class Order : Entity
     public DeliveryMethod DeliveryMethod { get; private set; }
     public OrderStatus Status { get; private set; }
     public decimal TotalAmount { get; private set; }
-    public DateTime CreatedAtUtc { get; private set; } = DateTime.UtcNow;
+    public DateTime CreatedAtUtc { get; private set; } = MoscowTime.Now();
     public ICollection<OrderItem> Items { get; private set; } = [];
     public Delivery? Delivery { get; private set; }
     public Payment? Payment { get; private set; }

@@ -7,10 +7,12 @@ export function formatCurrency(value: number) {
 }
 
 export function formatDate(value: string) {
+  const normalizedValue = /[zZ]|[+-]\d{2}:\d{2}$/.test(value) ? value : `${value}Z`;
+
   return new Intl.DateTimeFormat('ru-RU', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(value));
+  }).format(new Date(normalizedValue));
 }

@@ -335,49 +335,6 @@ export function ProductPage() {
               </Typography>
             </Box>
 
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 1,
-                p: 1,
-                borderRadius: 999,
-                bgcolor: alpha('#f3f7f4', 0.95),
-                border: '1px solid rgba(24,38,31,0.08)',
-              }}
-            >
-              <Button
-                variant="text"
-                color="inherit"
-                onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                sx={{ minWidth: 44, width: 44, height: 44, borderRadius: '50%' }}
-              >
-                <Minus size={16} />
-              </Button>
-
-              <TextField
-                value={quantity}
-                size="small"
-                sx={{
-                  width: 84,
-                  '& .MuiOutlinedInput-input': {
-                    textAlign: 'center',
-                    fontWeight: 600,
-                  },
-                }}
-              />
-
-              <Button
-                variant="text"
-                color="inherit"
-                onClick={() => setQuantity((value) => value + 1)}
-                sx={{ minWidth: 44, width: 44, height: 44, borderRadius: '50%' }}
-              >
-                <Plus size={16} />
-              </Button>
-            </Box>
-
             <Card
               variant="outlined"
               sx={{
@@ -393,17 +350,70 @@ export function ProductPage() {
               </CardContent>
             </Card>
 
-            <Button
-              type="button"
-              variant="contained"
-              color="primary"
-              size="large"
-              startIcon={<ShoppingBag size={18} />}
-              onClick={() => void handleAddToCart()}
-              sx={{ minHeight: 52 }}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
             >
-              В корзину
-            </Button>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1,
+                  p: 1,
+                  flex: '0 0 auto',
+                  width: { xs: 188, sm: 204 },
+                  borderRadius: 999,
+                  bgcolor: alpha('#f3f7f4', 0.95),
+                  border: '1px solid rgba(24,38,31,0.08)',
+                }}
+              >
+                <Button
+                  variant="text"
+                  color="inherit"
+                  onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                  sx={{ minWidth: 44, width: 44, height: 44, borderRadius: '50%' }}
+                >
+                  <Minus size={16} />
+                </Button>
+
+                <TextField
+                  value={quantity}
+                  size="small"
+                  sx={{
+                    width: 84,
+                    '& .MuiOutlinedInput-input': {
+                      textAlign: 'center',
+                      fontWeight: 600,
+                    },
+                  }}
+                />
+
+                <Button
+                  variant="text"
+                  color="inherit"
+                  onClick={() => setQuantity((value) => value + 1)}
+                  sx={{ minWidth: 44, width: 44, height: 44, borderRadius: '50%' }}
+                >
+                  <Plus size={16} />
+                </Button>
+              </Box>
+
+              <Button
+                type="button"
+                variant="contained"
+                color="primary"
+                size="large"
+                startIcon={<ShoppingBag size={18} />}
+                onClick={() => void handleAddToCart()}
+                sx={{ flex: 1, minHeight: 52, borderRadius: 999 }}
+              >
+                В корзину
+              </Button>
+            </Box>
 
           </CardContent>
         </Card>
