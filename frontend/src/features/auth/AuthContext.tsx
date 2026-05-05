@@ -27,6 +27,16 @@ type ResetPasswordPayload = {
   newPassword: string;
 };
 
+type UpdateProfilePayload = {
+  email: string;
+  fullName: string;
+};
+
+type ChangePasswordPayload = {
+  currentPassword: string;
+  newPassword: string;
+};
+
 type AuthContextValue = {
   session: AuthSession | null;
   error: string | null;
@@ -35,6 +45,8 @@ type AuthContextValue = {
   register: (payload: RegisterPayload) => Promise<string>;
   forgotPassword: (email: string) => Promise<string>;
   resetPassword: (payload: ResetPasswordPayload) => Promise<string>;
+  updateProfile: (payload: UpdateProfilePayload) => Promise<string>;
+  changePassword: (payload: ChangePasswordPayload) => Promise<string>;
   logout: () => void;
   clearError: () => void;
 };
@@ -171,6 +183,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function updateProfile(payload: UpdateProfilePayload) {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const result = await apiRequest<AuthSession>('/Auth/profile', {
+        method: 'PUT',
+        token: session?.token,
+        body: JSON.stringify(payload),
+      });
+      setSession(result);
+      return 'Профиль обновлен.';
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, 'Не удалось обновить профиль.'));
+      throw requestError;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function changePassword(payload: ChangePasswordPayload) {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const result = await apiRequest<{ message: string }>('/Auth/change-password', {
+        method: 'POST',
+        token: session?.token,
+        body: JSON.stringify(payload),
+      });
+      return getSuccessMessage(result.message, 'Пароль успешно изменен.');
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, 'Не удалось изменить пароль.'));
+      throw requestError;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   function logout() {
     setSession(null);
     setError(null);
@@ -185,6 +236,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       register,
       forgotPassword,
       resetPassword,
+      updateProfile,
+      changePassword,
       logout,
       clearError: () => setError(null),
     }),

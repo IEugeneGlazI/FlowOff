@@ -51,54 +51,55 @@ function getPaymentStatusLabel(status?: string | null) {
   }
 }
 
-function getOrderStatusText(status: string) {
-  switch (status) {
-    case 'Cancelled':
-      return 'Заказ отменен';
-    case 'PendingPayment':
-      return 'Ожидаем подтверждение и оплату';
-    case 'Paid':
-      return 'Заказ оплачен и ожидает рассмотрения';
-    case 'Accepted':
-      return 'Флорист принял заказ в работу';
-    case 'InAssembly':
-      return 'Флорист собирает заказ';
-    case 'Assembled':
-      return 'Заказ собран и ожидает передачу в доставку';
-    case 'TransferredToCourier':
-      return 'Собранный заказ передан доставщику';
-    case 'InTransit':
-      return 'Заказ уже в пути';
-    case 'Delivered':
-      return 'Заказ доставлен';
-    default:
-      return status;
-  }
-}
-
-const orderSteps = [
+const deliveryOrderSteps = [
   'Заказ на рассмотрении',
   'Заказ собирается',
-  'Заказ передан в доставку',
+  'Заказ передается в доставку',
+  'Заказ принят в доставку',
   'Заказ на полпути',
   'Заказ доставлен',
 ];
 
-function getOrderStep(status: string) {
+const pickupOrderSteps = [
+  'Заказ на рассмотрении',
+  'Заказ собирается',
+  'Заказ готов',
+];
+
+function getDeliveryOrderStep(status: string) {
   switch (status) {
     case 'PendingPayment':
     case 'Paid':
       return 0;
     case 'Accepted':
     case 'InAssembly':
-    case 'Assembled':
       return 1;
-    case 'TransferredToCourier':
+    case 'Assembled':
       return 2;
-    case 'InTransit':
+    case 'TransferredToCourier':
       return 3;
-    case 'Delivered':
+    case 'InTransit':
       return 4;
+    case 'Delivered':
+      return 5;
+    case 'Cancelled':
+      return 0;
+    default:
+      return 0;
+  }
+}
+
+function getPickupOrderStep(status: string) {
+  switch (status) {
+    case 'PendingPayment':
+    case 'Paid':
+      return 0;
+    case 'Accepted':
+    case 'InAssembly':
+      return 1;
+    case 'Assembled':
+    case 'Delivered':
+      return 2;
     case 'Cancelled':
       return 0;
     default:
@@ -196,7 +197,9 @@ export function OrdersPage() {
 
       <Box sx={{ display: 'grid', gap: 2 }}>
         {orders.map((order) => {
-          const activeStep = getOrderStep(order.status);
+          const isPickup = order.deliveryMethod === 'Pickup';
+          const activeStep = isPickup ? getPickupOrderStep(order.status) : getDeliveryOrderStep(order.status);
+          const orderSteps = isPickup ? pickupOrderSteps : deliveryOrderSteps;
 
           return (
             <Card
@@ -231,9 +234,6 @@ export function OrdersPage() {
 
                 <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
                   <CardContent sx={{ display: 'grid', gap: 1.5, p: { xs: 1.5, md: 2 } }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {getOrderStatusText(order.status)}
-                    </Typography>
                     <Stepper activeStep={activeStep} orientation={isMobile ? 'vertical' : 'horizontal'} alternativeLabel={!isMobile}>
                       {orderSteps.map((step) => (
                         <Step key={step}>

@@ -34,7 +34,10 @@ public class Order : Entity
 
     public void AllowPickupPayment()
     {
-        Status = OrderStatus.Accepted;
+        if (DeliveryMethod != DeliveryMethod.Pickup)
+        {
+            throw new InvalidOperationException("Pickup payment is available for pickup orders only.");
+        }
     }
 
     public void SetAssemblyStatus(OrderStatus status)
@@ -52,7 +55,7 @@ public class Order : Entity
             throw new InvalidOperationException("Invalid assembly status.");
         }
 
-        if (Status == OrderStatus.PendingPayment)
+        if (Status == OrderStatus.PendingPayment && DeliveryMethod != DeliveryMethod.Pickup)
         {
             throw new InvalidOperationException("Paid or pickup orders only can enter assembly workflow.");
         }

@@ -1,6 +1,19 @@
 import type { Category, ColorReference, FlowerInReference, Product, ProductType, Promotion } from '../../entities/catalog';
 import { apiRequest } from '../../shared/api';
 
+type ProductMutationPayload = {
+  name: string;
+  description?: string | null;
+  price: number;
+  isVisible: boolean;
+  type?: ProductType;
+  categoryId?: string | null;
+  flowerInId?: string | null;
+  colorId?: string | null;
+  flowerInIds?: string[];
+  colorIds?: string[];
+};
+
 export async function getCategories() {
   return apiRequest<Category[]>('/Categories');
 }
@@ -22,6 +35,8 @@ export async function getProducts(filter: {
   categoryId?: string | null;
   colorId?: string | null;
   flowerInId?: string | null;
+  includeHidden?: boolean;
+  token?: string | null;
 }) {
   const params = new URLSearchParams();
 
@@ -41,10 +56,37 @@ export async function getProducts(filter: {
     params.set('flowerInId', filter.flowerInId);
   }
 
+  if (filter.includeHidden) {
+    params.set('includeHidden', 'true');
+  }
+
   const query = params.toString();
-  return apiRequest<Product[]>(`/Products${query ? `?${query}` : ''}`);
+  return apiRequest<Product[]>(`/Products${query ? `?${query}` : ''}`, { token: filter.token });
 }
 
 export async function getProductById(productId: string) {
   return apiRequest<Product>(`/Products/${productId}`);
+}
+
+export async function createProduct(payload: ProductMutationPayload, token: string) {
+  return apiRequest<Product>('/Products', {
+    method: 'POST',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateProduct(productId: string, payload: ProductMutationPayload, token: string) {
+  return apiRequest<Product>(`/Products/${productId}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteProduct(productId: string, token: string) {
+  return apiRequest<void>(`/Products/${productId}`, {
+    method: 'DELETE',
+    token,
+  });
 }

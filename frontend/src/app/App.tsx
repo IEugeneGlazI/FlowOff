@@ -5,6 +5,7 @@ import { ProductPage } from '../pages/product/ProductPage';
 import { CartPage } from '../pages/cart/CartPage';
 import { AccountPage } from '../pages/account/AccountPage';
 import { OrdersPage } from '../pages/orders/OrdersPage';
+import { FloristPanelPage } from '../pages/florist/FloristPanelPage';
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
         <Route path="/cart" element={<CartPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/florist" element={<FloristPanelPage />} />
         <Route path="*" element={<Navigate to="/bouquets" replace />} />
       </Route>
     </Routes>

@@ -398,7 +398,7 @@ export function ProductPage() {
               onClick={() => void handleAddToCart()}
               sx={{ minHeight: 52 }}
             >
-              Добавить
+              В корзину
             </Button>
 
           </CardContent>

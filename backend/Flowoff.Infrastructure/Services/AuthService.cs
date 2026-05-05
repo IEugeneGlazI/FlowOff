@@ -11,6 +11,7 @@ namespace Flowoff.Infrastructure.Services;
 
 public class AuthService : IAuthService
 {
+    private readonly ICurrentUserService _currentUserService;
     private readonly IEmailSender _emailSender;
     private readonly IConfiguration _configuration;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
@@ -20,12 +21,24 @@ public class AuthService : IAuthService
         UserManager<ApplicationUser> userManager,
         IJwtTokenGenerator jwtTokenGenerator,
         IEmailSender emailSender,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ICurrentUserService currentUserService)
     {
         _userManager = userManager;
         _jwtTokenGenerator = jwtTokenGenerator;
         _emailSender = emailSender;
         _configuration = configuration;
+        _currentUserService = currentUserService;
+    }
+
+    public async Task ChangePasswordAsync(ChangePasswordRequestDto request, CancellationToken cancellationToken)
+    {
+        var user = await GetCurrentUserAsync();
+        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
+        }
     }
 
     public async Task ConfirmEmailAsync(ConfirmEmailRequestDto request, CancellationToken cancellationToken)
@@ -107,6 +120,32 @@ public class AuthService : IAuthService
         if (!await _userManager.IsEmailConfirmedAsync(user))
         {
             throw new InvalidOperationException("Email confirmation is required before login.");
+        }
+
+        return _jwtTokenGenerator.Generate(user.Id, user.Email!, user.FullName, user.Role.ToString());
+    }
+
+    public async Task<AuthResponseDto> UpdateProfileAsync(UpdateProfileRequestDto request, CancellationToken cancellationToken)
+    {
+        var user = await GetCurrentUserAsync();
+
+        var normalizedEmail = request.Email.Trim();
+        var normalizedFullName = request.FullName.Trim();
+
+        var existingUser = await _userManager.FindByEmailAsync(normalizedEmail);
+        if (existingUser is not null && existingUser.Id != user.Id && !existingUser.IsDeleted)
+        {
+            throw new InvalidOperationException("Email is already registered.");
+        }
+
+        user.Email = normalizedEmail;
+        user.UserName = normalizedEmail;
+        user.FullName = normalizedFullName;
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
         }
 
         return _jwtTokenGenerator.Generate(user.Id, user.Email!, user.FullName, user.Role.ToString());
@@ -231,5 +270,21 @@ public class AuthService : IAuthService
     {
         var bytes = WebEncoders.Base64UrlDecode(token);
         return Encoding.UTF8.GetString(bytes);
+    }
+
+    private async Task<ApplicationUser> GetCurrentUserAsync()
+    {
+        if (!_currentUserService.IsAuthenticated || string.IsNullOrWhiteSpace(_currentUserService.UserId))
+        {
+            throw new InvalidOperationException("Authenticated user is required.");
+        }
+
+        var user = await _userManager.FindByIdAsync(_currentUserService.UserId);
+        if (user is null || user.IsDeleted)
+        {
+            throw new InvalidOperationException("User not found.");
+        }
+
+        return user;
     }
 }

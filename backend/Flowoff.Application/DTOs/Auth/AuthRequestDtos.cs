@@ -64,6 +64,27 @@ public sealed class ResendConfirmationEmailRequestDto
     public string Email { get; init; } = string.Empty;
 }
 
+public sealed class UpdateProfileRequestDto
+{
+    [Required]
+    [EmailAddress]
+    public string Email { get; init; } = string.Empty;
+
+    [Required]
+    [MaxLength(100)]
+    public string FullName { get; init; } = string.Empty;
+}
+
+public sealed class ChangePasswordRequestDto
+{
+    [Required]
+    public string CurrentPassword { get; init; } = string.Empty;
+
+    [Required]
+    [MinLength(6)]
+    public string NewPassword { get; init; } = string.Empty;
+}
+
 public sealed class RegisterResponseDto
 {
     public string Message { get; init; } = string.Empty;

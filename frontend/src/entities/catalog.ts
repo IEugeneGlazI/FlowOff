@@ -21,6 +21,7 @@ export type Product = {
   name: string;
   description?: string | null;
   price: number;
+  isVisible: boolean;
   type: ProductType;
   categoryId?: string | null;
   categoryName?: string | null;

@@ -10,6 +10,7 @@ public interface IProductRepository
         Guid? categoryId,
         Guid? colorId,
         Guid? flowerInId,
+        bool includeHidden,
         CancellationToken cancellationToken);
     Task<Product?> GetByIdAsync(
         Guid id,

@@ -40,6 +40,7 @@ public class ProductRepository : IProductRepository
         Guid? categoryId,
         Guid? colorId,
         Guid? flowerInId,
+        bool includeHidden,
         CancellationToken cancellationToken)
     {
         var results = new List<Product>();
@@ -52,7 +53,7 @@ public class ProductRepository : IProductRepository
                 .ThenInclude(item => item.FlowerIn)
                 .Include(bouquet => bouquet.Colors)
                 .ThenInclude(item => item.Color)
-                .Where(bouquet => !bouquet.IsDeleted && bouquet.IsVisible);
+                .Where(bouquet => !bouquet.IsDeleted && (includeHidden || bouquet.IsVisible));
 
             if (colorId.HasValue)
             {
@@ -73,7 +74,7 @@ public class ProductRepository : IProductRepository
                 .AsNoTracking()
                 .Include(flower => flower.FlowerIn)
                 .Include(flower => flower.Color)
-                .Where(flower => !flower.IsDeleted && flower.IsVisible);
+                .Where(flower => !flower.IsDeleted && (includeHidden || flower.IsVisible));
 
             if (colorId.HasValue)
             {
@@ -93,7 +94,7 @@ public class ProductRepository : IProductRepository
             var giftsQuery = _dbContext.Gifts
                 .AsNoTracking()
                 .Include(gift => gift.Category)
-                .Where(gift => !gift.IsDeleted && gift.IsVisible);
+                .Where(gift => !gift.IsDeleted && (includeHidden || gift.IsVisible));
 
             if (categoryId.HasValue)
             {

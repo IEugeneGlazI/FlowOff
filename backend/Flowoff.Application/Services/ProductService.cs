@@ -36,13 +36,14 @@ public class ProductService : IProductService
         return product is null ? null : Map(product);
     }
 
-    public async Task<IReadOnlyCollection<ProductDto>> GetCatalogAsync(ProductFilterDto filter, CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<ProductDto>> GetCatalogAsync(ProductFilterDto filter, CancellationToken cancellationToken, bool includeHidden = false)
     {
         var products = await _productRepository.GetAllAsync(
             filter.Type,
             filter.CategoryId,
             filter.ColorId,
             filter.FlowerInId,
+            includeHidden,
             cancellationToken);
 
         return products.Select(Map).ToArray();

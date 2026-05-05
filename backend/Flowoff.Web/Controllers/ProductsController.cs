@@ -25,8 +25,15 @@ public class ProductsController : ControllerBase
         [FromQuery] Guid? categoryId,
         [FromQuery] Guid? colorId,
         [FromQuery] Guid? flowerInId,
+        [FromQuery] bool includeHidden,
         CancellationToken cancellationToken)
     {
+        if (includeHidden && !(User.Identity?.IsAuthenticated == true
+            && (User.IsInRole(nameof(UserRole.Florist)) || User.IsInRole(nameof(UserRole.Administrator)))))
+        {
+            return Forbid();
+        }
+
         var result = await _productService.GetCatalogAsync(
             new ProductFilterDto
             {
@@ -35,7 +42,8 @@ public class ProductsController : ControllerBase
                 ColorId = colorId,
                 FlowerInId = flowerInId
             },
-            cancellationToken);
+            cancellationToken,
+            includeHidden);
 
         return Ok(result);
     }

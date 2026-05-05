@@ -1,5 +1,6 @@
 using Flowoff.Application.DTOs.Auth;
 using Flowoff.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Flowoff.Web.Controllers;
@@ -29,6 +30,24 @@ public class AuthController : ControllerBase
     {
         var result = await _authService.LoginAsync(request, cancellationToken);
         return Ok(result);
+    }
+
+    [Authorize]
+    [HttpPut("profile")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AuthResponseDto>> UpdateProfile(UpdateProfileRequestDto request, CancellationToken cancellationToken)
+    {
+        var result = await _authService.UpdateProfileAsync(request, cancellationToken);
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequestDto request, CancellationToken cancellationToken)
+    {
+        await _authService.ChangePasswordAsync(request, cancellationToken);
+        return Ok(new { message = "Password changed successfully." });
     }
 
     [HttpGet("confirm-email")]

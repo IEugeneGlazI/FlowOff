@@ -5,8 +5,10 @@ import {
   Box,
   Button,
   Container,
+  IconButton,
   Stack,
   Toolbar,
+  Tooltip,
   Typography,
   alpha,
 } from '@mui/material';
@@ -17,7 +19,7 @@ import { useCart } from '../features/cart/CartContext';
 
 export function AppShell() {
   const location = useLocation();
-  const { session, logout } = useAuth();
+  const { session } = useAuth();
   const { cart } = useCart();
 
   const cartCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
@@ -141,17 +143,31 @@ export function AppShell() {
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               {session ? (
                 <>
-                  <Stack spacing={0} sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {session.fullName}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {session.role}
-                    </Typography>
-                  </Stack>
-                  <Button type="button" variant="text" color="inherit" onClick={logout}>
-                    Выйти
-                  </Button>
+                  {session.role === 'Florist' || session.role === 'Administrator' ? (
+                    <Button
+                      component={NavLink}
+                      to="/florist"
+                      variant={location.pathname.startsWith('/florist') ? 'contained' : 'outlined'}
+                      color={location.pathname.startsWith('/florist') ? 'primary' : 'inherit'}
+                    >
+                      Панель флориста
+                    </Button>
+                  ) : null}
+                  <Tooltip title="Профиль">
+                    <IconButton
+                      component={NavLink}
+                      to="/account"
+                      color="inherit"
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        border: '1px solid rgba(24, 38, 31, 0.08)',
+                        bgcolor: alpha('#ffffff', 0.74),
+                      }}
+                    >
+                      <UserRound size={18} />
+                    </IconButton>
+                  </Tooltip>
                 </>
               ) : (
                 <Button component={NavLink} to="/account" variant="contained" color="primary" startIcon={<UserRound size={16} />}>

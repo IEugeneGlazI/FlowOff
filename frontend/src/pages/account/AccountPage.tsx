@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  Divider,
   IconButton,
   InputAdornment,
   Link,
@@ -16,14 +17,14 @@ import {
   Typography,
 } from '@mui/material';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react';
+import { Eye, EyeOff, LockKeyhole, LogOut, Mail, UserRound } from 'lucide-react';
 import { useAuth } from '../../features/auth/AuthContext';
 
 type Mode = 'login' | 'register' | 'forgot' | 'reset';
 
 const modeTitles: Record<Mode, string> = {
   login: 'Добро пожаловать обратно',
-  register: 'Создайте аккаунт для расширения возможностей',
+  register: 'Создайте аккаунт для заказов и истории покупок',
   forgot: 'Восстановление пароля',
   reset: 'Новый пароль',
 };
@@ -47,8 +48,39 @@ export function AccountPage() {
   const [localError, setLocalError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { login, register, forgotPassword, resetPassword, error, isSubmitting, clearError } = useAuth();
+
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profileFullName, setProfileFullName] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+
+  const {
+    session,
+    login,
+    register,
+    forgotPassword,
+    resetPassword,
+    updateProfile,
+    changePassword,
+    logout,
+    error,
+    isSubmitting,
+    clearError,
+  } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    setProfileEmail(session.email);
+    setProfileFullName(session.fullName);
+  }, [session]);
 
   useEffect(() => {
     const rawMode = searchParams.get('mode');
@@ -70,11 +102,13 @@ export function AccountPage() {
   }, [searchParams]);
 
   const passwordMismatch = useMemo(
-    () =>
-      (mode === 'register' || mode === 'reset') &&
-      confirmPassword.length > 0 &&
-      password !== confirmPassword,
+    () => (mode === 'register' || mode === 'reset') && confirmPassword.length > 0 && password !== confirmPassword,
     [mode, password, confirmPassword],
+  );
+
+  const newPasswordMismatch = useMemo(
+    () => confirmNewPassword.length > 0 && newPassword !== confirmNewPassword,
+    [newPassword, confirmNewPassword],
   );
 
   function switchMode(nextMode: Mode, options?: { preserveFeedback?: boolean }) {
@@ -164,12 +198,238 @@ export function AccountPage() {
       setResetToken('');
       switchMode('login', { preserveFeedback: true });
     } catch {
-      // Error state is already handled in AuthContext.
+      // Error state is handled in AuthContext.
     }
   }
 
-  const passwordInputType = showPassword ? 'text' : 'password';
-  const confirmPasswordInputType = showConfirmPassword ? 'text' : 'password';
+  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFeedback(null);
+    setLocalError(null);
+    clearError();
+
+    try {
+      const message = await updateProfile({
+        email: profileEmail,
+        fullName: profileFullName,
+      });
+      setFeedback(message);
+    } catch {
+      // Error state is handled in AuthContext.
+    }
+  }
+
+  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFeedback(null);
+    setLocalError(null);
+    clearError();
+
+    if (newPassword !== confirmNewPassword) {
+      setLocalError('Пароли не совпадают.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setLocalError('Пароль должен содержать минимум 6 символов.');
+      return;
+    }
+
+    try {
+      const message = await changePassword({
+        currentPassword,
+        newPassword,
+      });
+      setFeedback(message);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch {
+      // Error state is handled in AuthContext.
+    }
+  }
+
+  function renderPasswordField(options: {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    visible: boolean;
+    onToggleVisibility: () => void;
+    helperText?: string;
+    error?: boolean;
+  }) {
+    return (
+      <TextField
+        label={options.label}
+        type={options.visible ? 'text' : 'password'}
+        value={options.value}
+        onChange={(event) => options.onChange(event.target.value)}
+        required
+        fullWidth
+        error={options.error}
+        helperText={options.helperText}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <LockKeyhole size={16} style={{ opacity: 0.55 }} />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label={options.visible ? 'Скрыть пароль' : 'Показать пароль'}
+                  onClick={options.onToggleVisibility}
+                  edge="end"
+                >
+                  {options.visible ? <EyeOff size={18} /> : <Eye size={18} />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          },
+        }}
+      />
+    );
+  }
+
+  if (session) {
+    return (
+      <Box sx={{ display: 'grid', gap: 3 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', md: 'center' },
+            gap: 2,
+            flexDirection: { xs: 'column', md: 'row' },
+          }}
+        >
+          <Box sx={{ display: 'grid', gap: 0.75 }}>
+            <Typography variant="h1">Профиль</Typography>
+            <Typography variant="body1" color="text.secondary">
+              Здесь можно обновить личные данные и сменить пароль.
+            </Typography>
+          </Box>
+
+          <Button
+            type="button"
+            variant="text"
+            color="inherit"
+            startIcon={<LogOut size={16} />}
+            onClick={() => {
+              logout();
+              navigate('/bouquets');
+            }}
+            sx={{ alignSelf: { xs: 'stretch', md: 'center' } }}
+          >
+            Выйти из аккаунта
+          </Button>
+        </Box>
+
+        <Card sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
+          <CardContent sx={{ p: { xs: 2.5, md: 3 }, display: 'grid', gap: 3 }}>
+            <Box sx={{ display: 'grid', gap: 0.75 }}>
+              <Typography variant="h5">Личные данные</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Обновите имя и email, которые используются в аккаунте.
+              </Typography>
+            </Box>
+
+            <form onSubmit={(event) => void handleProfileSubmit(event)}>
+              <Stack spacing={2}>
+                <TextField
+                  label="Имя"
+                  value={profileFullName}
+                  onChange={(event) => setProfileFullName(event.target.value)}
+                  required
+                  fullWidth
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <UserRound size={16} style={{ opacity: 0.55 }} />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+
+                <TextField
+                  label="Email"
+                  type="email"
+                  value={profileEmail}
+                  onChange={(event) => setProfileEmail(event.target.value)}
+                  required
+                  fullWidth
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Mail size={16} style={{ opacity: 0.55 }} />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+
+                <Button type="submit" variant="contained" color="primary" size="large" disabled={isSubmitting}>
+                  {isSubmitting ? 'Сохраняем...' : 'Сохранить изменения'}
+                </Button>
+              </Stack>
+            </form>
+
+            <Divider />
+
+            <Box sx={{ display: 'grid', gap: 0.75 }}>
+              <Typography variant="h5">Смена пароля</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Укажите текущий пароль и задайте новый.
+              </Typography>
+            </Box>
+
+            <form onSubmit={(event) => void handlePasswordSubmit(event)}>
+              <Stack spacing={2}>
+                {renderPasswordField({
+                  label: 'Текущий пароль',
+                  value: currentPassword,
+                  onChange: setCurrentPassword,
+                  visible: showCurrentPassword,
+                  onToggleVisibility: () => setShowCurrentPassword((value) => !value),
+                })}
+
+                {renderPasswordField({
+                  label: 'Новый пароль',
+                  value: newPassword,
+                  onChange: setNewPassword,
+                  visible: showNewPassword,
+                  onToggleVisibility: () => setShowNewPassword((value) => !value),
+                })}
+
+                {renderPasswordField({
+                  label: 'Повторите новый пароль',
+                  value: confirmNewPassword,
+                  onChange: setConfirmNewPassword,
+                  visible: showConfirmNewPassword,
+                  onToggleVisibility: () => setShowConfirmNewPassword((value) => !value),
+                  error: newPasswordMismatch,
+                  helperText: newPasswordMismatch ? 'Пароли не совпадают.' : ' ',
+                })}
+
+                <Button type="submit" variant="outlined" color="inherit" size="large" disabled={isSubmitting}>
+                  {isSubmitting ? 'Обновляем...' : 'Сменить пароль'}
+                </Button>
+              </Stack>
+            </form>
+          </CardContent>
+        </Card>
+
+        {feedback ? <Alert severity="success">{feedback}</Alert> : null}
+        {localError ? <Alert severity="error">{localError}</Alert> : null}
+        {error ? <Alert severity="error">{error}</Alert> : null}
+      </Box>
+    );
+  }
+
   const showAuthToggle = mode === 'login' || mode === 'register';
 
   return (
@@ -185,9 +445,7 @@ export function AccountPage() {
         sx={{
           width: 'min(100%, 560px)',
           overflow: 'hidden',
-          background: `
-            linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(246,251,247,0.88) 100%)
-          `,
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(246,251,247,0.88) 100%)',
           backdropFilter: 'blur(16px)',
         }}
       >
@@ -268,69 +526,27 @@ export function AccountPage() {
                   }}
                 />
 
-                {mode !== 'forgot' ? (
-                  <TextField
-                    label={mode === 'reset' ? 'Новый пароль' : 'Пароль'}
-                    type={passwordInputType}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                    fullWidth
-                    slotProps={{
-                      input: {
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <LockKeyhole size={16} style={{ opacity: 0.55 }} />
-                          </InputAdornment>
-                        ),
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-                              onClick={() => setShowPassword((value) => !value)}
-                              edge="end"
-                            >
-                              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
-                  />
-                ) : null}
+                {mode !== 'forgot'
+                  ? renderPasswordField({
+                      label: mode === 'reset' ? 'Новый пароль' : 'Пароль',
+                      value: password,
+                      onChange: setPassword,
+                      visible: showPassword,
+                      onToggleVisibility: () => setShowPassword((value) => !value),
+                    })
+                  : null}
 
-                {mode === 'register' || mode === 'reset' ? (
-                  <TextField
-                    label="Повторите пароль"
-                    type={confirmPasswordInputType}
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    required
-                    fullWidth
-                    error={passwordMismatch}
-                    helperText={passwordMismatch ? 'Пароли не совпадают.' : ' '}
-                    slotProps={{
-                      input: {
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <LockKeyhole size={16} style={{ opacity: 0.55 }} />
-                          </InputAdornment>
-                        ),
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              aria-label={showConfirmPassword ? 'Скрыть пароль' : 'Показать пароль'}
-                              onClick={() => setShowConfirmPassword((value) => !value)}
-                              edge="end"
-                            >
-                              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
-                  />
-                ) : null}
+                {mode === 'register' || mode === 'reset'
+                  ? renderPasswordField({
+                      label: 'Повторите пароль',
+                      value: confirmPassword,
+                      onChange: setConfirmPassword,
+                      visible: showConfirmPassword,
+                      onToggleVisibility: () => setShowConfirmPassword((value) => !value),
+                      error: passwordMismatch,
+                      helperText: passwordMismatch ? 'Пароли не совпадают.' : ' ',
+                    })
+                  : null}
 
                 <Button type="submit" variant="contained" color="primary" size="large" disabled={isSubmitting} fullWidth>
                   {isSubmitting
@@ -354,11 +570,9 @@ export function AccountPage() {
               ) : null}
 
               {mode === 'forgot' ? (
-                <Stack spacing={1} sx={{ alignItems: 'center' }}>
-                  <Link component="button" type="button" underline="hover" onClick={() => switchMode('login')}>
-                    Вернуться ко входу
-                  </Link>
-                </Stack>
+                <Link component="button" type="button" underline="hover" onClick={() => switchMode('login')}>
+                  Вернуться ко входу
+                </Link>
               ) : null}
 
               {mode === 'reset' ? (
