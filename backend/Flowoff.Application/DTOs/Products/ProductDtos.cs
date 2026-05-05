@@ -16,6 +16,7 @@ public sealed class ProductDto
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
+    public string? ImageUrl { get; init; }
     public decimal Price { get; init; }
     public bool IsVisible { get; init; }
     public string Type { get; init; } = string.Empty;
@@ -40,6 +41,9 @@ public sealed class CreateProductRequestDto
     [MaxLength(2000)]
     public string? Description { get; init; }
 
+    [MaxLength(2000)]
+    public string? ImageUrl { get; init; }
+
     [Range(0.01, 1000000)]
     public decimal Price { get; init; }
 
@@ -63,6 +67,9 @@ public sealed class UpdateProductRequestDto
 
     [MaxLength(2000)]
     public string? Description { get; init; }
+
+    [MaxLength(2000)]
+    public string? ImageUrl { get; init; }
 
     [Range(0.01, 1000000)]
     public decimal Price { get; init; }

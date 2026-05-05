@@ -13,7 +13,6 @@ import {
   MenuItem,
   OutlinedInput,
   Select,
-  Slider,
   Snackbar,
   Stack,
   TextField,
@@ -502,16 +501,6 @@ export function StorefrontPage() {
                 <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
                   Цена
                 </Typography>
-                <Slider
-                  value={priceRange}
-                  min={priceBounds[0]}
-                  max={priceBounds[1]}
-                  onChange={(_, value) => setPriceRange(value as PriceRange)}
-                  valueLabelDisplay="auto"
-                  valueLabelFormat={(value) => `${value} ₽`}
-                  color="primary"
-                  sx={{ mt: 1.25 }}
-                />
                 <Stack direction="row" spacing={1.25} sx={{ mt: 1.25 }}>
                   <TextField
                     fullWidth
@@ -755,6 +744,7 @@ export function StorefrontPage() {
                           />
                         ) : null}
                       </Stack>
+
                     </CardContent>
                   </CardActionArea>
                 </Card>
@@ -791,3 +781,4 @@ export function StorefrontPage() {
     </Box>
   );
 }
+

@@ -1,4 +1,5 @@
 using Flowoff.Domain.Entities;
+using Flowoff.Domain.Enums;
 using Flowoff.Domain.Repositories;
 using Flowoff.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,22 @@ public class OrderRepository : IOrderRepository
             .Include(order => order.Items)
             .Include(order => order.Delivery)
             .Include(order => order.Payment)
+            .OrderByDescending(order => order.CreatedAtUtc)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<Order>> GetAvailableForCourierAsync(CancellationToken cancellationToken)
+    {
+        return await _dbContext.Orders
+            .AsNoTracking()
+            .Include(order => order.Items)
+            .Include(order => order.Delivery)
+            .Include(order => order.Payment)
+            .Where(order =>
+                order.DeliveryMethod == DeliveryMethod.Delivery
+                && order.Status == OrderStatus.Assembled
+                && order.Delivery != null
+                && order.Delivery.CourierId == null)
             .OrderByDescending(order => order.CreatedAtUtc)
             .ToArrayAsync(cancellationToken);
     }

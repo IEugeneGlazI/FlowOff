@@ -45,6 +45,7 @@ function translateApiMessage(message: string) {
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { token, headers, body, ...rest } = options;
+  const isFormDataBody = body instanceof FormData;
 
   let response: Response;
 
@@ -53,7 +54,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       ...rest,
       headers: {
         Accept: 'application/json',
-        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(!isFormDataBody && body ? { 'Content-Type': 'application/json' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },

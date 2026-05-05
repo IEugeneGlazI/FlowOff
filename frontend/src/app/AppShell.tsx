@@ -153,6 +153,16 @@ export function AppShell() {
                       Панель флориста
                     </Button>
                   ) : null}
+                  {session.role === 'Courier' ? (
+                    <Button
+                      component={NavLink}
+                      to="/courier"
+                      variant={location.pathname.startsWith('/courier') ? 'contained' : 'outlined'}
+                      color={location.pathname.startsWith('/courier') ? 'primary' : 'inherit'}
+                    >
+                      Панель доставщика
+                    </Button>
+                  ) : null}
                   <Tooltip title="Профиль">
                     <IconButton
                       component={NavLink}

@@ -4,6 +4,7 @@ import { apiRequest } from '../../shared/api';
 type ProductMutationPayload = {
   name: string;
   description?: string | null;
+  imageUrl?: string | null;
   price: number;
   isVisible: boolean;
   type?: ProductType;
@@ -81,6 +82,17 @@ export async function updateProduct(productId: string, payload: ProductMutationP
     method: 'PUT',
     token,
     body: JSON.stringify(payload),
+  });
+}
+
+export async function uploadProductImage(file: File, token: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return apiRequest<{ imageUrl: string }>('/Products/upload-image', {
+    method: 'POST',
+    token,
+    body: formData,
   });
 }
 

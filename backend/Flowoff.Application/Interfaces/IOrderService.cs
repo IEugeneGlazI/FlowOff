@@ -10,6 +10,8 @@ public interface IOrderService
     Task<OrderDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<OrderDto> UpdateAssemblyStatusAsync(Guid id, UpdateAssemblyStatusRequestDto request, CancellationToken cancellationToken);
     Task<OrderDto> AssignCourierAsync(Guid id, AssignCourierRequestDto request, CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<OrderDto>> GetAvailableForCourierAsync(CancellationToken cancellationToken);
+    Task<OrderDto> AcceptForDeliveryAsync(Guid id, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<OrderDto>> GetAssignedToCourierAsync(CancellationToken cancellationToken);
     Task<OrderDto> UpdateDeliveryStatusAsync(Guid id, UpdateDeliveryStatusRequestDto request, CancellationToken cancellationToken);
 }

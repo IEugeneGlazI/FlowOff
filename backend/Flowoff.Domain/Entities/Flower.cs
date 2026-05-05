@@ -18,11 +18,12 @@ public class Flower : Product
     public Flower(
         string name,
         string? description,
+        string? imageUrl,
         decimal price,
         Guid flowerInId,
         Guid colorId,
         bool isVisible = true)
-        : base(name, description, price, isVisible)
+        : base(name, description, imageUrl, price, isVisible)
     {
         FlowerInId = flowerInId;
         ColorId = colorId;
@@ -31,11 +32,12 @@ public class Flower : Product
     public void UpdateDetails(
         string name,
         string? description,
+        string? imageUrl,
         decimal price,
         Guid flowerInId,
         Guid colorId)
     {
-        base.UpdateDetails(name, description, price);
+        base.UpdateDetails(name, description, imageUrl, price);
         FlowerInId = flowerInId;
         ColorId = colorId;
     }

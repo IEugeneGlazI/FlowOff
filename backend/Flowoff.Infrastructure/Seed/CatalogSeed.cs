@@ -127,6 +127,7 @@ public static class CatalogSeed
             dbContext.Flowers.Add(new Flower(
                 name,
                 description,
+                null,
                 price,
                 flowerTypes[flowerType].Id,
                 colors[color].Id));
@@ -172,6 +173,7 @@ public static class CatalogSeed
             dbContext.Bouquets.Add(new Bouquet(
                 name,
                 description,
+                null,
                 price,
                 flowerInNames.Select(item => flowerTypes[item].Id),
                 colorNames.Select(item => colors[item].Id)));
@@ -209,6 +211,7 @@ public static class CatalogSeed
             dbContext.Gifts.Add(new Gift(
                 name,
                 description,
+                null,
                 price,
                 categories[categoryName].Id));
 

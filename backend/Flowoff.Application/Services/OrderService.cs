@@ -128,6 +128,27 @@ public class OrderService : IOrderService
         return orders.Select(Map).ToArray();
     }
 
+    public async Task<IReadOnlyCollection<OrderDto>> GetAvailableForCourierAsync(CancellationToken cancellationToken)
+    {
+        var orders = await _orderRepository.GetAvailableForCourierAsync(cancellationToken);
+        return orders.Select(Map).ToArray();
+    }
+
+    public async Task<OrderDto> AcceptForDeliveryAsync(Guid id, CancellationToken cancellationToken)
+    {
+        if (!_currentUserService.IsAuthenticated || string.IsNullOrWhiteSpace(_currentUserService.UserId))
+        {
+            throw new InvalidOperationException("Authenticated courier is required.");
+        }
+
+        var order = await _orderRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException("Order not found.");
+
+        order.AssignCourier(_currentUserService.UserId);
+        await _orderRepository.SaveChangesAsync(cancellationToken);
+        return Map(order);
+    }
+
     public async Task<OrderDto> UpdateAssemblyStatusAsync(Guid id, UpdateAssemblyStatusRequestDto request, CancellationToken cancellationToken)
     {
         var order = await _orderRepository.GetByIdAsync(id, cancellationToken)

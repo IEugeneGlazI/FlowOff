@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import {
   Alert,
   Box,
@@ -13,19 +13,22 @@ import {
   Divider,
   FormControl,
   FormControlLabel,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
-  ToggleButton,
-  ToggleButtonGroup,
+  Snackbar,
   Stack,
   Switch,
   Tab,
   Tabs,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import { PackageCheck, PencilLine, Plus, Trash2 } from 'lucide-react';
+import { ImagePlus, PackageCheck, PencilLine, Plus, Trash2, X } from 'lucide-react';
 import type { Category, ColorReference, FlowerInReference, Product, ProductType } from '../../entities/catalog';
 import type { Order } from '../../entities/cart';
 import { useAuth } from '../../features/auth/AuthContext';
@@ -37,6 +40,7 @@ import {
   getFlowerIns,
   getProducts,
   updateProduct,
+  uploadProductImage,
 } from '../../features/catalog/catalogApi';
 import { apiRequest, ApiError } from '../../shared/api';
 import { formatCurrency, formatDate } from '../../shared/format';
@@ -48,6 +52,7 @@ type ProductFormState = {
   type: ProductType;
   name: string;
   description: string;
+  imageUrl: string;
   price: string;
   isVisible: boolean;
   categoryId: string;
@@ -57,10 +62,16 @@ type ProductFormState = {
   colorIds: string[];
 };
 
+type FeedbackState = {
+  severity: 'success' | 'error';
+  message: string;
+};
+
 const emptyProductForm: ProductFormState = {
   type: 'Bouquet',
   name: '',
   description: '',
+  imageUrl: '',
   price: '',
   isVisible: true,
   categoryId: '',
@@ -84,6 +95,17 @@ function getProductPlaceholderImage(productType: ProductType) {
   }
 
   return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=900&q=80';
+}
+
+function getProductTypeLabel(productType: ProductType) {
+  switch (productType) {
+    case 'Flower':
+      return 'Цветы';
+    case 'Gift':
+      return 'Подарки';
+    default:
+      return 'Букеты';
+  }
 }
 
 function getOrderStageLabel(order: Order) {
@@ -118,7 +140,9 @@ function getOrderStageLabel(order: Order) {
 }
 
 export function FloristPanelPage() {
+  const productImageInputRef = useRef<HTMLInputElement | null>(null);
   const { session } = useAuth();
+
   const [tab, setTab] = useState<FloristTab>('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -126,7 +150,7 @@ export function FloristPanelPage() {
   const [colors, setColors] = useState<ColorReference[]>([]);
   const [flowerIns, setFlowerIns] = useState<FlowerInReference[]>([]);
   const [productForm, setProductForm] = useState<ProductFormState>(emptyProductForm);
-  const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -134,6 +158,8 @@ export function FloristPanelPage() {
   const [productSearch, setProductSearch] = useState('');
   const [productTypeFilter, setProductTypeFilter] = useState<ProductType | 'All'>('All');
   const [productVisibilityFilter, setProductVisibilityFilter] = useState<'All' | 'Visible' | 'Hidden'>('All');
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [productImagePreviewUrl, setProductImagePreviewUrl] = useState<string | null>(null);
 
   const token = session?.token ?? null;
   const isFlorist = session?.role === 'Florist' || session?.role === 'Administrator';
@@ -193,6 +219,8 @@ export function FloristPanelPage() {
 
   function openCreateProductDialog() {
     resetProductForm();
+    setSelectedImageFile(null);
+    setProductImagePreviewUrl(null);
     setIsProductDialogOpen(true);
   }
 
@@ -210,6 +238,7 @@ export function FloristPanelPage() {
       type: product.type,
       name: product.name,
       description: product.description ?? '',
+      imageUrl: product.imageUrl ?? '',
       price: String(product.price),
       isVisible: product.isVisible,
       categoryId: product.categoryId ?? '',
@@ -218,13 +247,38 @@ export function FloristPanelPage() {
       flowerInIds: product.flowerInIds ?? [],
       colorIds: product.colorIds ?? [],
     });
+    setSelectedImageFile(null);
+    setProductImagePreviewUrl(product.imageUrl ?? null);
     setIsProductDialogOpen(true);
   }
 
-  function buildProductPayload() {
+  function handleProductImageSelection(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setSelectedImageFile(file);
+
+    if (!file) {
+      setProductImagePreviewUrl(productForm.imageUrl || null);
+      return;
+    }
+
+    setProductImagePreviewUrl(URL.createObjectURL(file));
+  }
+
+  function clearSelectedProductImage() {
+    setSelectedImageFile(null);
+    setProductImagePreviewUrl(null);
+    setProductForm((current) => ({ ...current, imageUrl: '' }));
+
+    if (productImageInputRef.current) {
+      productImageInputRef.current.value = '';
+    }
+  }
+
+  function buildProductPayload(imageUrlOverride?: string | null) {
     return {
       name: productForm.name.trim(),
       description: productForm.description.trim() || null,
+      imageUrl: imageUrlOverride ?? (productForm.imageUrl.trim() || null),
       price: Number(productForm.price),
       isVisible: productForm.isVisible,
       type: productForm.type,
@@ -247,7 +301,14 @@ export function FloristPanelPage() {
     setIsSaving(true);
 
     try {
-      const payload = buildProductPayload();
+      let imageUrl = productForm.imageUrl.trim() || null;
+
+      if (selectedImageFile) {
+        const uploadedImage = await uploadProductImage(selectedImageFile, token);
+        imageUrl = uploadedImage.imageUrl;
+      }
+
+      const payload = buildProductPayload(imageUrl);
 
       if (isEditing && productForm.id) {
         await updateProduct(productForm.id, payload, token);
@@ -258,6 +319,8 @@ export function FloristPanelPage() {
       }
 
       resetProductForm(productForm.type);
+      setSelectedImageFile(null);
+      setProductImagePreviewUrl(null);
       setIsProductDialogOpen(false);
       await loadProducts();
     } catch (error) {
@@ -301,6 +364,7 @@ export function FloristPanelPage() {
         {
           name: product.name,
           description: product.description ?? null,
+          imageUrl: product.imageUrl ?? null,
           price: product.price,
           isVisible: !product.isVisible,
           categoryId: product.categoryId ?? null,
@@ -336,6 +400,7 @@ export function FloristPanelPage() {
         token,
         body: JSON.stringify({ status }),
       });
+
       setFeedback({
         severity: 'success',
         message: status === 'Accepted' ? 'Заказ принят в сборку.' : 'Заказ переведен к передаче в доставку.',
@@ -359,10 +424,20 @@ export function FloristPanelPage() {
               : productVisibilityFilter === 'Visible'
                 ? product.isVisible
                 : !product.isVisible;
+
           return matchesType && matchesSearch && matchesVisibility;
         })
         .sort((left, right) => Number(right.isVisible) - Number(left.isVisible) || left.name.localeCompare(right.name)),
     [productSearch, productTypeFilter, productVisibilityFilter, products],
+  );
+
+  const productImageById = useMemo(
+    () =>
+      products.reduce<Record<string, string>>((accumulator, product) => {
+        accumulator[product.id] = product.imageUrl || getProductPlaceholderImage(product.type);
+        return accumulator;
+      }, {}),
+    [products],
   );
 
   const visibleOrders = useMemo(
@@ -388,8 +463,6 @@ export function FloristPanelPage() {
           Управляйте товарами, их видимостью и этапами сборки заказов.
         </Typography>
       </Box>
-
-      {feedback ? <Alert severity={feedback.severity}>{feedback.message}</Alert> : null}
 
       <Card sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
         <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
@@ -432,6 +505,7 @@ export function FloristPanelPage() {
                     flexShrink: 0,
                   }}
                 />
+
                 <ToggleButtonGroup
                   value={productTypeFilter}
                   exclusive
@@ -453,6 +527,7 @@ export function FloristPanelPage() {
                   <ToggleButton value="Flower">Цветы</ToggleButton>
                   <ToggleButton value="Gift">Подарки</ToggleButton>
                 </ToggleButtonGroup>
+
                 <ToggleButtonGroup
                   value={productVisibilityFilter}
                   exclusive
@@ -503,7 +578,7 @@ export function FloristPanelPage() {
                         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', minWidth: 0 }}>
                           <Box
                             component="img"
-                            src={getProductPlaceholderImage(product.type)}
+                            src={product.imageUrl || getProductPlaceholderImage(product.type)}
                             alt={product.name}
                             sx={{
                               width: 64,
@@ -519,21 +594,24 @@ export function FloristPanelPage() {
                           <Box sx={{ display: 'grid', gap: 0.4, minWidth: 0 }}>
                             <Typography variant="h6">{product.name}</Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {product.type} • {formatCurrency(product.price)}
+                              {getProductTypeLabel(product.type)} • {formatCurrency(product.price)}
                             </Typography>
                           </Box>
                         </Stack>
 
                         <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
-                          <Chip
-                            label={product.isVisible ? 'Виден на сайте' : 'Скрыт с сайта'}
-                            color={product.isVisible ? 'success' : 'default'}
-                            variant="outlined"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              void handleVisibilityToggle(product);
-                            }}
-                          />
+                          <Tooltip title={product.isVisible ? 'При нажатии товар будет скрыт с сайта' : 'При нажатии товар снова станет виден на сайте'}>
+                            <Chip
+                              label={product.isVisible ? 'Виден на сайте' : 'Скрыт с сайта'}
+                              color={product.isVisible ? 'success' : 'default'}
+                              variant="outlined"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void handleVisibilityToggle(product);
+                              }}
+                            />
+                          </Tooltip>
+
                           <Button
                             variant="text"
                             color="inherit"
@@ -545,6 +623,7 @@ export function FloristPanelPage() {
                           >
                             Изменить
                           </Button>
+
                           <Button
                             variant="text"
                             color="inherit"
@@ -612,6 +691,56 @@ export function FloristPanelPage() {
                       },
                     }}
                   />
+
+                  <Stack spacing={1.25}>
+                    <input
+                      ref={productImageInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      hidden
+                      onChange={handleProductImageSelection}
+                    />
+
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'center' } }}>
+                      <Box
+                        component="img"
+                        src={productImagePreviewUrl || productForm.imageUrl || getProductPlaceholderImage(productForm.type)}
+                        alt={productForm.name || 'Изображение товара'}
+                        sx={{
+                          width: 112,
+                          height: 112,
+                          borderRadius: 2,
+                          objectFit: 'cover',
+                          border: '1px solid rgba(24,38,31,0.08)',
+                          bgcolor: '#f3f7f4',
+                          flexShrink: 0,
+                        }}
+                      />
+
+                      <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          color="inherit"
+                          startIcon={<ImagePlus size={16} />}
+                          onClick={() => productImageInputRef.current?.click()}
+                        >
+                          {productForm.imageUrl || selectedImageFile ? 'Заменить изображение' : 'Добавить изображение'}
+                        </Button>
+
+                        {productForm.imageUrl || selectedImageFile ? (
+                          <IconButton aria-label="Очистить изображение" onClick={clearSelectedProductImage}>
+                            <X size={16} />
+                          </IconButton>
+                        ) : null}
+                      </Stack>
+                    </Stack>
+
+                    <Typography variant="body2" color="text.secondary">
+                      Поддерживаются JPG, PNG и WEBP до 5 МБ.
+                    </Typography>
+                  </Stack>
+
                   <TextField
                     label="Цена"
                     type="number"
@@ -785,9 +914,25 @@ export function FloristPanelPage() {
                           spacing={1}
                           sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' } }}
                         >
-                          <Typography variant="body2">
-                            {item.productName} x {item.quantity}
-                          </Typography>
+                          <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', minWidth: 0 }}>
+                            <Box
+                              component="img"
+                              src={productImageById[item.productId] || getProductPlaceholderImage(item.productType)}
+                              alt={item.productName}
+                              sx={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 1.5,
+                                objectFit: 'cover',
+                                display: 'block',
+                                flexShrink: 0,
+                                border: '1px solid rgba(31, 42, 35, 0.08)',
+                              }}
+                            />
+                            <Typography variant="body2" sx={{ minWidth: 0 }}>
+                              {item.productName} x {item.quantity}
+                            </Typography>
+                          </Stack>
                           <Typography variant="body2" color="text.secondary">
                             {formatCurrency(item.unitPrice * item.quantity)}
                           </Typography>
@@ -820,7 +965,21 @@ export function FloristPanelPage() {
           </CardContent>
         </Card>
       )}
+
+      <Snackbar
+        open={Boolean(feedback)}
+        autoHideDuration={3200}
+        onClose={() => setFeedback(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity={feedback?.severity ?? 'success'}
+          onClose={() => setFeedback(null)}
+          sx={{ borderRadius: 2, minWidth: 320, boxShadow: '0 18px 40px rgba(31,42,35,0.18)' }}
+        >
+          {feedback?.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
-

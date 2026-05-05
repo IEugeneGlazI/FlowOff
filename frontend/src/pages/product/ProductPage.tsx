@@ -22,6 +22,10 @@ import { ApiError } from '../../shared/api';
 import { formatCurrency } from '../../shared/format';
 
 function getProductPlaceholderImage(product: Product) {
+  if (product.imageUrl) {
+    return product.imageUrl;
+  }
+
   if (product.type === 'Flower') {
     return 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1200&q=80';
   }

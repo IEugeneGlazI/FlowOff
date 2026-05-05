@@ -3,10 +3,6 @@
   "WorkspaceRootPath": "D:\\Study\\Flowoff\\backend\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{6C042DBA-3E4E-420C-9254-35ACB8D7C442}|Flowoff.Infrastructure\\Flowoff.Infrastructure.csproj|d:\\study\\flowoff\\backend\\flowoff.infrastructure\\seed\\catalogseed.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{6C042DBA-3E4E-420C-9254-35ACB8D7C442}|Flowoff.Infrastructure\\Flowoff.Infrastructure.csproj|solutionrelative:flowoff.infrastructure\\seed\\catalogseed.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{816B94F5-4211-4435-9318-E2C608630447}|Flowoff.Web\\Flowoff.Web.csproj|d:\\study\\flowoff\\backend\\flowoff.web\\flowoff.web.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
       "RelativeMoniker": "D:0:0:{816B94F5-4211-4435-9318-E2C608630447}|Flowoff.Web\\Flowoff.Web.csproj|solutionrelative:flowoff.web\\flowoff.web.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     }
@@ -23,19 +19,6 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "CatalogSeed.cs",
-              "DocumentMoniker": "D:\\Study\\Flowoff\\backend\\Flowoff.Infrastructure\\Seed\\CatalogSeed.cs",
-              "RelativeDocumentMoniker": "Flowoff.Infrastructure\\Seed\\CatalogSeed.cs",
-              "ToolTip": "D:\\Study\\Flowoff\\backend\\Flowoff.Infrastructure\\Seed\\CatalogSeed.cs",
-              "RelativeToolTip": "Flowoff.Infrastructure\\Seed\\CatalogSeed.cs",
-              "ViewState": "AgIAAIUAAAAAAAAAAAAswJUAAAAIAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-04T20:45:10.759Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
               "Title": "Flowoff.Web.csproj",
               "DocumentMoniker": "D:\\Study\\Flowoff\\backend\\Flowoff.Web\\Flowoff.Web.csproj",
               "RelativeDocumentMoniker": "Flowoff.Web\\Flowoff.Web.csproj",
@@ -43,7 +26,8 @@
               "RelativeToolTip": "Flowoff.Web\\Flowoff.Web.csproj",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-04-30T07:05:06.606Z"
+              "WhenOpened": "2026-04-30T07:05:06.606Z",
+              "EditorCaption": ""
             }
           ]
         }

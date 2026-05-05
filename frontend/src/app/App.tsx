@@ -6,6 +6,7 @@ import { CartPage } from '../pages/cart/CartPage';
 import { AccountPage } from '../pages/account/AccountPage';
 import { OrdersPage } from '../pages/orders/OrdersPage';
 import { FloristPanelPage } from '../pages/florist/FloristPanelPage';
+import { CourierPanelPage } from '../pages/courier/CourierPanelPage';
 
 export function App() {
   return (
@@ -20,6 +21,7 @@ export function App() {
         <Route path="/account" element={<AccountPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/florist" element={<FloristPanelPage />} />
+        <Route path="/courier" element={<CourierPanelPage />} />
         <Route path="*" element={<Navigate to="/bouquets" replace />} />
       </Route>
     </Routes>

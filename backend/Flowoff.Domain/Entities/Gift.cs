@@ -16,10 +16,11 @@ public class Gift : Product
     public Gift(
         string name,
         string? description,
+        string? imageUrl,
         decimal price,
         Guid categoryId,
         bool isVisible = true)
-        : base(name, description, price, isVisible)
+        : base(name, description, imageUrl, price, isVisible)
     {
         CategoryId = categoryId;
     }
@@ -27,10 +28,11 @@ public class Gift : Product
     public void UpdateDetails(
         string name,
         string? description,
+        string? imageUrl,
         decimal price,
         Guid categoryId)
     {
-        base.UpdateDetails(name, description, price);
+        base.UpdateDetails(name, description, imageUrl, price);
         CategoryId = categoryId;
     }
 }

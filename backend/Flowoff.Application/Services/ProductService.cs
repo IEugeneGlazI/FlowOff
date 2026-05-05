@@ -30,9 +30,9 @@ public class ProductService : IProductService
         await _productRepository.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<ProductDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ProductDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken, bool includeHidden = false)
     {
-        var product = await _productRepository.GetByIdAsync(id, cancellationToken);
+        var product = await _productRepository.GetByIdAsync(id, cancellationToken, includeHidden);
         return product is null ? null : Map(product);
     }
 
@@ -62,6 +62,7 @@ public class ProductService : IProductService
                 bouquet.UpdateDetails(
                     request.Name,
                     request.Description,
+                    request.ImageUrl,
                     request.Price,
                     request.FlowerInIds,
                     request.ColorIds);
@@ -76,6 +77,7 @@ public class ProductService : IProductService
                 flower.UpdateDetails(
                     request.Name,
                     request.Description,
+                    request.ImageUrl,
                     request.Price,
                     flowerInId,
                     colorId);
@@ -87,6 +89,7 @@ public class ProductService : IProductService
                 gift.UpdateDetails(
                     request.Name,
                     request.Description,
+                    request.ImageUrl,
                     request.Price,
                     categoryId);
                 break;
@@ -128,6 +131,7 @@ public class ProductService : IProductService
         return new Bouquet(
             request.Name,
             request.Description,
+            request.ImageUrl,
             request.Price,
             request.FlowerInIds,
             request.ColorIds,
@@ -147,6 +151,7 @@ public class ProductService : IProductService
         return new Flower(
             request.Name,
             request.Description,
+            request.ImageUrl,
             request.Price,
             flowerInId,
             colorId,
@@ -163,6 +168,7 @@ public class ProductService : IProductService
         return new Gift(
             request.Name,
             request.Description,
+            request.ImageUrl,
             request.Price,
             categoryId,
             request.IsVisible);
@@ -217,6 +223,7 @@ public class ProductService : IProductService
                 Id = bouquet.Id,
                 Name = bouquet.Name,
                 Description = bouquet.Description,
+                ImageUrl = bouquet.ImageUrl,
                 Price = bouquet.Price,
                 IsVisible = bouquet.IsVisible,
                 Type = bouquet.Type.ToString(),
@@ -230,6 +237,7 @@ public class ProductService : IProductService
                 Id = flower.Id,
                 Name = flower.Name,
                 Description = flower.Description,
+                ImageUrl = flower.ImageUrl,
                 Price = flower.Price,
                 IsVisible = flower.IsVisible,
                 Type = flower.Type.ToString(),
@@ -247,6 +255,7 @@ public class ProductService : IProductService
                 Id = gift.Id,
                 Name = gift.Name,
                 Description = gift.Description,
+                ImageUrl = gift.ImageUrl,
                 Price = gift.Price,
                 IsVisible = gift.IsVisible,
                 Type = gift.Type.ToString(),

@@ -16,11 +16,12 @@ public class Bouquet : Product
     public Bouquet(
         string name,
         string? description,
+        string? imageUrl,
         decimal price,
         IEnumerable<Guid> flowerInIds,
         IEnumerable<Guid> colorIds,
         bool isVisible = true)
-        : base(name, description, price, isVisible)
+        : base(name, description, imageUrl, price, isVisible)
     {
         ReplaceFlowerIns(flowerInIds);
         ReplaceColors(colorIds);
@@ -29,11 +30,12 @@ public class Bouquet : Product
     public void UpdateDetails(
         string name,
         string? description,
+        string? imageUrl,
         decimal price,
         IEnumerable<Guid> flowerInIds,
         IEnumerable<Guid> colorIds)
     {
-        base.UpdateDetails(name, description, price);
+        base.UpdateDetails(name, description, imageUrl, price);
         ReplaceFlowerIns(flowerInIds);
         ReplaceColors(colorIds);
     }

@@ -65,6 +65,7 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
             entity.UseTpcMappingStrategy();
             entity.Property(product => product.Name).HasMaxLength(150).IsRequired();
             entity.Property(product => product.Description).HasMaxLength(2000);
+            entity.Property(product => product.ImageUrl).HasMaxLength(2000);
             entity.Property(product => product.Price).HasPrecision(18, 2);
             entity.Property(product => product.IsVisible).HasDefaultValue(true);
             entity.Property(product => product.IsDeleted).HasDefaultValue(false);

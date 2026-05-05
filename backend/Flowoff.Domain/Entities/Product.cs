@@ -7,6 +7,7 @@ public abstract class Product : Entity
 {
     public string Name { get; protected set; } = string.Empty;
     public string? Description { get; protected set; }
+    public string? ImageUrl { get; protected set; }
     public decimal Price { get; protected set; }
     public bool IsVisible { get; protected set; } = true;
     public bool IsDeleted { get; protected set; }
@@ -17,20 +18,22 @@ public abstract class Product : Entity
     {
     }
 
-    protected Product(string name, string? description, decimal price, bool isVisible = true)
+    protected Product(string name, string? description, string? imageUrl, decimal price, bool isVisible = true)
     {
         Name = name;
         Description = description;
+        ImageUrl = imageUrl;
         Price = price;
         IsVisible = isVisible;
     }
 
-    public virtual void UpdateDetails(string name, string? description, decimal price)
+    public virtual void UpdateDetails(string name, string? description, string? imageUrl, decimal price)
     {
         EnsureNotDeleted();
 
         Name = name;
         Description = description;
+        ImageUrl = imageUrl;
         Price = price;
     }
 

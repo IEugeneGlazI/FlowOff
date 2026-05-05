@@ -10,11 +10,22 @@ namespace Flowoff.Web.Controllers;
 [Route("api/[controller]")]
 public class ProductsController : ControllerBase
 {
-    private readonly IProductService _productService;
+    private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp"
+    };
 
-    public ProductsController(IProductService productService)
+    private const long MaxImageSizeInBytes = 5 * 1024 * 1024;
+    private readonly IProductService _productService;
+    private readonly IWebHostEnvironment _environment;
+
+    public ProductsController(IProductService productService, IWebHostEnvironment environment)
     {
         _productService = productService;
+        _environment = environment;
     }
 
     [HttpGet]
@@ -67,12 +78,67 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = createdProduct.Id }, createdProduct);
     }
 
+    [HttpPost("upload-image")]
+    [Authorize(Roles = nameof(UserRole.Florist) + "," + nameof(UserRole.Administrator))]
+    [ProducesResponseType(typeof(UploadProductImageResponseDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UploadProductImageResponseDto>> UploadImage(IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file.Length == 0)
+        {
+            return BadRequest(new { error = "Файл изображения пустой." });
+        }
+
+        if (file.Length > MaxImageSizeInBytes)
+        {
+            return BadRequest(new { error = "Размер изображения не должен превышать 5 МБ." });
+        }
+
+        var extension = Path.GetExtension(file.FileName);
+        if (string.IsNullOrWhiteSpace(extension) || !AllowedImageExtensions.Contains(extension))
+        {
+            return BadRequest(new { error = "Разрешены только изображения JPG, PNG и WEBP." });
+        }
+
+        var webRootPath = _environment.WebRootPath;
+        if (string.IsNullOrWhiteSpace(webRootPath))
+        {
+            webRootPath = Path.Combine(_environment.ContentRootPath, "wwwroot");
+        }
+
+        var uploadsDirectory = Path.Combine(webRootPath, "uploads", "products");
+        Directory.CreateDirectory(uploadsDirectory);
+
+        var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+        var filePath = Path.Combine(uploadsDirectory, fileName);
+
+        await using (var stream = System.IO.File.Create(filePath))
+        {
+            await file.CopyToAsync(stream, cancellationToken);
+        }
+
+        var imageUrl = $"{Request.Scheme}://{Request.Host}/uploads/products/{fileName}";
+        return Ok(new UploadProductImageResponseDto(imageUrl));
+    }
+
     [HttpPut("{id:guid}")]
     [Authorize(Roles = nameof(UserRole.Florist) + "," + nameof(UserRole.Administrator))]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProductDto>> Update(Guid id, UpdateProductRequestDto request, CancellationToken cancellationToken)
     {
-        return Ok(await _productService.UpdateAsync(id, request, cancellationToken));
+        var existingProduct = await _productService.GetByIdAsync(id, cancellationToken, includeHidden: true);
+        if (existingProduct is null)
+        {
+            return NotFound();
+        }
+
+        var updatedProduct = await _productService.UpdateAsync(id, request, cancellationToken);
+
+        if (!string.Equals(existingProduct.ImageUrl, updatedProduct.ImageUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            TryDeleteLocalProductImage(existingProduct.ImageUrl);
+        }
+
+        return Ok(updatedProduct);
     }
 
     [HttpDelete("{id:guid}")]
@@ -80,7 +146,63 @@ public class ProductsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
+        var existingProduct = await _productService.GetByIdAsync(id, cancellationToken, includeHidden: true);
+        if (existingProduct is null)
+        {
+            return NotFound();
+        }
+
         await _productService.DeleteAsync(id, cancellationToken);
+        TryDeleteLocalProductImage(existingProduct.ImageUrl);
         return NoContent();
     }
+
+    private void TryDeleteLocalProductImage(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return;
+        }
+
+        var relativePath = TryGetLocalImagePath(imageUrl);
+        if (relativePath is null)
+        {
+            return;
+        }
+
+        var webRootPath = _environment.WebRootPath;
+        if (string.IsNullOrWhiteSpace(webRootPath))
+        {
+            webRootPath = Path.Combine(_environment.ContentRootPath, "wwwroot");
+        }
+
+        var uploadsRoot = Path.GetFullPath(Path.Combine(webRootPath, "uploads", "products"));
+        var filePath = Path.GetFullPath(Path.Combine(webRootPath, relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar)));
+
+        if (!filePath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (System.IO.File.Exists(filePath))
+        {
+            System.IO.File.Delete(filePath);
+        }
+    }
+
+    private static string? TryGetLocalImagePath(string imageUrl)
+    {
+        if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var absoluteUri))
+        {
+            return absoluteUri.AbsolutePath.StartsWith("/uploads/products/", StringComparison.OrdinalIgnoreCase)
+                ? absoluteUri.AbsolutePath
+                : null;
+        }
+
+        return imageUrl.StartsWith("/uploads/products/", StringComparison.OrdinalIgnoreCase)
+            ? imageUrl
+            : null;
+    }
+
+    public sealed record UploadProductImageResponseDto(string ImageUrl);
 }

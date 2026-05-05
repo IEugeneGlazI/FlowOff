@@ -20,6 +20,7 @@ export type Product = {
   id: string;
   name: string;
   description?: string | null;
+  imageUrl?: string | null;
   price: number;
   isVisible: boolean;
   type: ProductType;
