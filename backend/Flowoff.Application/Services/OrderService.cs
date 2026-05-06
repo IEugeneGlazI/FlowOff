@@ -178,6 +178,16 @@ public class OrderService : IOrderService
         return Map(order);
     }
 
+    public async Task<OrderDto> CompletePickupAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var order = await _orderRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException("Order not found.");
+
+        order.CompletePickup();
+        await _orderRepository.SaveChangesAsync(cancellationToken);
+        return Map(order);
+    }
+
     public async Task<OrderDto> UpdateDeliveryStatusAsync(Guid id, UpdateDeliveryStatusRequestDto request, CancellationToken cancellationToken)
     {
         if (!_currentUserService.IsAuthenticated || string.IsNullOrWhiteSpace(_currentUserService.UserId))
@@ -201,7 +211,8 @@ public class OrderService : IOrderService
         var allowedDeliveryStatuses = new[]
         {
             OrderStatus.InTransit,
-            OrderStatus.Delivered
+            OrderStatus.Delivered,
+            OrderStatus.ReceivedByCustomer
         };
 
         if (!allowedDeliveryStatuses.Contains(status))

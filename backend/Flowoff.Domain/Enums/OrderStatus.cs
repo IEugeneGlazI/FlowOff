@@ -10,5 +10,6 @@ public enum OrderStatus
     TransferredToCourier = 6,
     InTransit = 7,
     Delivered = 8,
-    Cancelled = 9
+    Cancelled = 9,
+    ReceivedByCustomer = 10
 }

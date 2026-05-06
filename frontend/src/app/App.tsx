@@ -4,6 +4,7 @@ import { StorefrontPage } from '../pages/storefront/StorefrontPage';
 import { ProductPage } from '../pages/product/ProductPage';
 import { CartPage } from '../pages/cart/CartPage';
 import { AccountPage } from '../pages/account/AccountPage';
+import { ConfirmEmailPage } from '../pages/account/ConfirmEmailPage';
 import { OrdersPage } from '../pages/orders/OrdersPage';
 import { FloristPanelPage } from '../pages/florist/FloristPanelPage';
 import { CourierPanelPage } from '../pages/courier/CourierPanelPage';
@@ -11,6 +12,7 @@ import { CourierPanelPage } from '../pages/courier/CourierPanelPage';
 export function App() {
   return (
     <Routes>
+      <Route path="/confirm-email" element={<ConfirmEmailPage />} />
       <Route element={<AppShell />}>
         <Route index element={<Navigate to="/bouquets" replace />} />
         <Route path="/bouquets" element={<StorefrontPage />} />

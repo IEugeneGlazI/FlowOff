@@ -68,7 +68,8 @@ public class Order : Entity
         var allowedStatuses = new[]
         {
             OrderStatus.InTransit,
-            OrderStatus.Delivered
+            OrderStatus.Delivered,
+            OrderStatus.ReceivedByCustomer
         };
 
         if (!allowedStatuses.Contains(status))
@@ -86,7 +87,40 @@ public class Order : Entity
             Delivery.MarkDelivered();
         }
 
+        if (status == OrderStatus.ReceivedByCustomer)
+        {
+            if (Status != OrderStatus.Delivered)
+            {
+                throw new InvalidOperationException("Order can be marked as received by customer only after delivery.");
+            }
+
+            if (Payment?.Status == PaymentStatus.Pending)
+            {
+                Payment.MarkPaid();
+            }
+        }
+
         Status = status;
+    }
+
+    public void CompletePickup()
+    {
+        if (DeliveryMethod != DeliveryMethod.Pickup)
+        {
+            throw new InvalidOperationException("Only pickup orders can be completed by florist.");
+        }
+
+        if (Status != OrderStatus.Assembled)
+        {
+            throw new InvalidOperationException("Pickup order can be completed only after assembly is finished.");
+        }
+
+        if (Payment?.Status == PaymentStatus.Pending)
+        {
+            Payment.MarkPaid();
+        }
+
+        Status = OrderStatus.ReceivedByCustomer;
     }
 
     public void AttachDelivery(Delivery delivery)
@@ -112,6 +146,6 @@ public class Order : Entity
         }
 
         Delivery.AssignCourier(courierId);
-        Status = OrderStatus.TransferredToCourier;
+        Status = OrderStatus.InTransit;
     }
 }

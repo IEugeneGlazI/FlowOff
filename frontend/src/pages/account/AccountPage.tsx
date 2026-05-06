@@ -24,7 +24,7 @@ type Mode = 'login' | 'register' | 'forgot' | 'reset';
 
 const modeTitles: Record<Mode, string> = {
   login: 'Добро пожаловать обратно',
-  register: 'Создайте аккаунт для заказов и истории покупок',
+  register: 'Создайте аккаунт для расширения возможностей',
   forgot: 'Восстановление пароля',
   reset: 'Новый пароль',
 };
@@ -84,13 +84,18 @@ export function AccountPage() {
 
   useEffect(() => {
     const rawMode = searchParams.get('mode');
+    const tokenFromQuery = searchParams.get('token');
+    const canOpenResetMode = Boolean(tokenFromQuery?.trim());
     const nextMode: Mode =
-      rawMode === 'register' || rawMode === 'forgot' || rawMode === 'reset' || rawMode === 'login' ? rawMode : 'login';
+      rawMode === 'register' || rawMode === 'forgot' || rawMode === 'login'
+        ? rawMode
+        : rawMode === 'reset' && canOpenResetMode
+          ? 'reset'
+          : 'login';
 
     setMode(nextMode);
 
     const emailFromQuery = searchParams.get('email');
-    const tokenFromQuery = searchParams.get('token');
 
     if (emailFromQuery) {
       setEmail(emailFromQuery);
@@ -98,6 +103,8 @@ export function AccountPage() {
 
     if (tokenFromQuery) {
       setResetToken(tokenFromQuery);
+    } else {
+      setResetToken('');
     }
   }, [searchParams]);
 
@@ -112,7 +119,9 @@ export function AccountPage() {
   );
 
   function switchMode(nextMode: Mode, options?: { preserveFeedback?: boolean }) {
-    setMode(nextMode);
+    const targetMode = nextMode === 'reset' && !resetToken.trim() ? 'forgot' : nextMode;
+
+    setMode(targetMode);
 
     if (!options?.preserveFeedback) {
       setFeedback(null);
@@ -123,11 +132,11 @@ export function AccountPage() {
 
     const nextParams = new URLSearchParams();
 
-    if (nextMode !== 'login') {
-      nextParams.set('mode', nextMode);
+    if (targetMode !== 'login') {
+      nextParams.set('mode', targetMode);
     }
 
-    if (nextMode === 'reset') {
+    if (targetMode === 'reset') {
       if (email) {
         nextParams.set('email', email);
       }
@@ -159,7 +168,7 @@ export function AccountPage() {
     }
 
     if (mode === 'reset' && !resetToken.trim()) {
-      setLocalError('Вставьте токен из письма или откройте ссылку из письма повторно.');
+      setLocalError('Откройте ссылку из письма перед изменением пароля.');
       return;
     }
 
@@ -182,7 +191,6 @@ export function AccountPage() {
       if (mode === 'forgot') {
         const message = await forgotPassword(email);
         setFeedback(message);
-        switchMode('reset', { preserveFeedback: true });
         return;
       }
 

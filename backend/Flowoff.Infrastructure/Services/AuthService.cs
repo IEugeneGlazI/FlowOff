@@ -219,7 +219,7 @@ public class AuthService : IAuthService
     {
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var encodedToken = EncodeToken(token);
-        var confirmationUrl = BuildApiUrl("Auth/confirm-email", new Dictionary<string, string?>
+        var confirmationUrl = BuildFrontendUrl("/confirm-email", new Dictionary<string, string?>
         {
             ["userId"] = user.Id,
             ["token"] = encodedToken

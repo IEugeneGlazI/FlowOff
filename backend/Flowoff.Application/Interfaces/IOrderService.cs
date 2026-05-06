@@ -9,6 +9,7 @@ public interface IOrderService
     Task<IReadOnlyCollection<OrderDto>> GetAllAsync(CancellationToken cancellationToken);
     Task<OrderDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<OrderDto> UpdateAssemblyStatusAsync(Guid id, UpdateAssemblyStatusRequestDto request, CancellationToken cancellationToken);
+    Task<OrderDto> CompletePickupAsync(Guid id, CancellationToken cancellationToken);
     Task<OrderDto> AssignCourierAsync(Guid id, AssignCourierRequestDto request, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<OrderDto>> GetAvailableForCourierAsync(CancellationToken cancellationToken);
     Task<OrderDto> AcceptForDeliveryAsync(Guid id, CancellationToken cancellationToken);

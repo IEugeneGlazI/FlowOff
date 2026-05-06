@@ -44,6 +44,13 @@ public class FloristOrdersController : ControllerBase
         return Ok(await _orderService.UpdateAssemblyStatusAsync(id, request, cancellationToken));
     }
 
+    [HttpPatch("{id:guid}/complete-pickup")]
+    [ProducesResponseType(typeof(OrderDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<OrderDto>> CompletePickup(Guid id, CancellationToken cancellationToken)
+    {
+        return Ok(await _orderService.CompletePickupAsync(id, cancellationToken));
+    }
+
     [HttpPatch("{id:guid}/assign-courier")]
     [ProducesResponseType(typeof(OrderDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<OrderDto>> AssignCourier(

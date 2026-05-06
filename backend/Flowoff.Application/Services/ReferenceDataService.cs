@@ -21,7 +21,8 @@ public class ReferenceDataService : IReferenceDataService
             new StatusReferenceItemDto { Group = "assembly", Key = OrderStatus.Assembled.ToString() },
             new StatusReferenceItemDto { Group = "assembly", Key = OrderStatus.TransferredToCourier.ToString() },
             new StatusReferenceItemDto { Group = "delivery", Key = OrderStatus.InTransit.ToString() },
-            new StatusReferenceItemDto { Group = "delivery", Key = OrderStatus.Delivered.ToString() }
+            new StatusReferenceItemDto { Group = "delivery", Key = OrderStatus.Delivered.ToString() },
+            new StatusReferenceItemDto { Group = "delivery", Key = OrderStatus.ReceivedByCustomer.ToString() }
         });
 
         return Task.FromResult<IReadOnlyCollection<StatusReferenceItemDto>>(result);

@@ -185,8 +185,8 @@ export function CartPage() {
             p: { xs: 3, md: 5 },
           }}
         >
-          <Box sx={{ maxWidth: 560, textAlign: 'center', display: 'grid', gap: 2.25 }}>
-            <Typography variant="h1" sx={{ fontSize: { xs: '2rem', md: '2.5rem' } }}>
+          <Box sx={{ maxWidth: 520, textAlign: 'center', display: 'grid', gap: 2.25 }}>
+            <Typography variant="h1" sx={{ fontSize: { xs: '2rem', md: '2.4rem' } }}>
               Корзина доступна после входа
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
@@ -232,7 +232,7 @@ export function CartPage() {
         <Typography variant="body1" color="text.secondary">
           {hasItems
             ? `В корзине ${cart?.items.length ?? 0} ${cart?.items.length === 1 ? 'позиция' : 'позиций'}.`
-            : 'Выберите товары, которые хотите оформить в заказ.'}
+            : 'Выберите товары, которые хотите приобрести.'}
         </Typography>
       </Box>
 

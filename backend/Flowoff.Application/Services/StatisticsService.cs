@@ -26,7 +26,7 @@ public class StatisticsService : IStatisticsService
         return new DashboardStatisticsDto
         {
             TotalOrders = orders.Count,
-            DeliveredOrders = orders.Count(order => order.Status == OrderStatus.Delivered),
+            DeliveredOrders = orders.Count(order => order.Status == OrderStatus.Delivered || order.Status == OrderStatus.ReceivedByCustomer),
             Revenue = orders
                 .Where(order => order.Payment?.Status == PaymentStatus.Paid)
                 .Sum(order => order.TotalAmount),

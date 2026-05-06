@@ -331,7 +331,7 @@ export function ProductPage() {
             <Box sx={{ display: 'grid', gap: 0.75 }}>
               <Typography variant="h5">Добавить в корзину</Typography>
               <Typography variant="body2" color="text.secondary">
-                Выбери количество и добавь позицию в заказ.
+                Выберите количество и добавьте позицию в заказ.
               </Typography>
             </Box>
 

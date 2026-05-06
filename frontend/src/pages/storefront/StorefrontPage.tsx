@@ -310,12 +310,12 @@ export function StorefrontPage() {
       return (
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <FormControl fullWidth>
-            <InputLabel id="bouquet-color-label">Цвета в составе</InputLabel>
+            <InputLabel id="bouquet-color-label">Цвет букета</InputLabel>
             <Select
               multiple
               labelId="bouquet-color-label"
               value={selectedBouquetColorIds}
-              input={<OutlinedInput label="Цвета в составе" />}
+              input={<OutlinedInput label="Цвет букета" />}
               renderValue={(selected) => renderSelectedNames(selected, colors, 'Все цвета')}
               onChange={(event) => handleMultipleChange(event, setSelectedBouquetColorIds)}
             >
@@ -328,12 +328,12 @@ export function StorefrontPage() {
           </FormControl>
 
           <FormControl fullWidth>
-            <InputLabel id="bouquet-flowerin-label">Цветки в составе</InputLabel>
+            <InputLabel id="bouquet-flowerin-label">Цветы в составе</InputLabel>
             <Select
               multiple
               labelId="bouquet-flowerin-label"
               value={selectedBouquetFlowerInIds}
-              input={<OutlinedInput label="Цветки в составе" />}
+              input={<OutlinedInput label="Цветы в составе" />}
               renderValue={(selected) => renderSelectedNames(selected, flowerIns, 'Все цветки')}
               onChange={(event) => handleMultipleChange(event, setSelectedBouquetFlowerInIds)}
             >
@@ -498,7 +498,7 @@ export function StorefrontPage() {
                   border: '1px solid rgba(24,38,31,0.05)',
                 }}
               >
-                <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
+                 <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
                   Цена
                 </Typography>
                 <Stack direction="row" spacing={1.25} sx={{ mt: 1.25 }}>
@@ -532,7 +532,7 @@ export function StorefrontPage() {
                   gap: 1.1,
                 }}
               >
-                <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
+                 <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
                   Фильтры
                 </Typography>
                 <Box sx={{ width: '100%' }}>{renderTabFilters()}</Box>

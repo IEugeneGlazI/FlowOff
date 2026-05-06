@@ -24,4 +24,10 @@ public class Payment : Entity
         Status = status;
         PaidAtUtc = status == PaymentStatus.Paid ? DateTime.UtcNow : null;
     }
+
+    public void MarkPaid()
+    {
+        Status = PaymentStatus.Paid;
+        PaidAtUtc = DateTime.UtcNow;
+    }
 }

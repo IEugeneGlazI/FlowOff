@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import {
   Alert,
@@ -47,6 +47,7 @@ import { apiRequest, ApiError } from '../../shared/api';
 import { formatCurrency, formatDate } from '../../shared/format';
 
 type FloristTab = 'products' | 'orders';
+type FloristOrdersTab = 'assembly' | 'accepted';
 
 type ProductFormState = {
   id?: string;
@@ -116,8 +117,10 @@ function getOrderStageLabel(order: Order) {
       case 'InAssembly':
         return 'Заказ собирается';
       case 'Assembled':
+        return 'Заказ готов к выдаче';
+      case 'ReceivedByCustomer':
       case 'Delivered':
-        return 'Заказ готов';
+        return 'Заказ принят покупателем';
       default:
         return 'Заказ на рассмотрении';
     }
@@ -132,9 +135,11 @@ function getOrderStageLabel(order: Order) {
     case 'TransferredToCourier':
       return 'Заказ принят в доставку';
     case 'InTransit':
-      return 'Заказ на полпути';
+      return 'Заказ в пути';
     case 'Delivered':
       return 'Заказ доставлен';
+    case 'ReceivedByCustomer':
+      return 'Заказ принят покупателем';
     default:
       return 'Заказ на рассмотрении';
   }
@@ -145,6 +150,7 @@ export function FloristPanelPage() {
   const { session } = useAuth();
 
   const [tab, setTab] = useState<FloristTab>('products');
+  const [ordersTab, setOrdersTab] = useState<FloristOrdersTab>('assembly');
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -404,11 +410,35 @@ export function FloristPanelPage() {
 
       setFeedback({
         severity: 'success',
-        message: status === 'Accepted' ? 'Заказ принят в сборку.' : 'Заказ переведен к передаче в доставку.',
+        message: status === 'Accepted' ? 'Заказ принят в сборку.' : 'Сборка заказа завершена.',
       });
       await loadOrders();
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Не удалось обновить статус заказа.';
+      setFeedback({ severity: 'error', message });
+    }
+  }
+
+  async function handleCompletePickup(orderId: string) {
+    if (!token) {
+      return;
+    }
+
+    setFeedback(null);
+
+    try {
+      await apiRequest(`/florist/orders/${orderId}/complete-pickup`, {
+        method: 'PATCH',
+        token,
+      });
+
+      setFeedback({
+        severity: 'success',
+        message: 'Заказ отмечен как забранный покупателем.',
+      });
+      await loadOrders();
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Не удалось завершить заказ с самовывозом.';
       setFeedback({ severity: 'error', message });
     }
   }
@@ -441,10 +471,17 @@ export function FloristPanelPage() {
     [products],
   );
 
-  const visibleOrders = useMemo(
-    () => orders.filter((order) => !['TransferredToCourier', 'InTransit', 'Delivered', 'Cancelled'].includes(order.status)),
+  const assemblyOrders = useMemo(
+    () => orders.filter((order) => ['PendingPayment', 'Paid'].includes(order.status)),
     [orders],
   );
+
+  const acceptedOrders = useMemo(
+    () => orders.filter((order) => ['Accepted', 'InAssembly', 'Assembled'].includes(order.status)),
+    [orders],
+  );
+
+  const visibleOrders = ordersTab === 'assembly' ? assemblyOrders : acceptedOrders;
 
   if (!session || !isFlorist) {
     return (
@@ -882,11 +919,18 @@ export function FloristPanelPage() {
         <Card sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
           <CardContent sx={{ p: { xs: 2, md: 2.5 }, display: 'grid', gap: 2 }}>
             <Box sx={{ display: 'grid', gap: 0.5 }}>
-              <Typography variant="h5">Заказы для сборки</Typography>
+              <Typography variant="h5">{ordersTab === 'assembly' ? 'Заказы для сборки' : 'Принятые заказы'}</Typography>
               <Typography variant="body2" color="text.secondary">
-                Флорист может принять заказ в сборку и отметить завершение сборки.
+                {ordersTab === 'assembly'
+                  ? 'Здесь находятся заказы, которые флорист может принять в сборку.'
+                  : 'Здесь находятся заказы, уже принятые флористом в работу.'}
               </Typography>
             </Box>
+
+            <Tabs value={ordersTab} onChange={(_, value: FloristOrdersTab) => setOrdersTab(value)} sx={{ minHeight: 48 }}>
+              <Tab value="assembly" label="Заказы для сборки" />
+              <Tab value="accepted" label="Принятые заказы" />
+            </Tabs>
 
             {isLoadingOrders ? <Typography>Загружаем заказы...</Typography> : null}
 
@@ -961,12 +1005,17 @@ export function FloristPanelPage() {
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
                       {['PendingPayment', 'Paid'].includes(order.status) ? (
                         <Button variant="contained" onClick={() => void handleAssemblyStatusChange(order.id, 'Accepted')}>
-                          Принять в сборку
+                          Принять заказ
                         </Button>
                       ) : null}
                       {['Accepted', 'InAssembly'].includes(order.status) ? (
-                        <Button variant="outlined" color="inherit" onClick={() => void handleAssemblyStatusChange(order.id, 'Assembled')}>
-                          Отметить завершение сборки
+                        <Button variant="contained" color="primary" onClick={() => void handleAssemblyStatusChange(order.id, 'Assembled')}>
+                          Отметить: Заказ собран
+                        </Button>
+                      ) : null}
+                      {order.deliveryMethod === 'Pickup' && order.status === 'Assembled' ? (
+                        <Button variant="outlined" color="inherit" onClick={() => void handleCompletePickup(order.id)}>
+                          Отметить: Заказ принят покупателем
                         </Button>
                       ) : null}
                     </Stack>
@@ -975,7 +1024,11 @@ export function FloristPanelPage() {
               ))}
 
               {!isLoadingOrders && visibleOrders.length === 0 ? (
-                <Typography color="text.secondary">Сейчас нет заказов, которые ожидают действий флориста.</Typography>
+                <Typography color="text.secondary">
+                  {ordersTab === 'assembly'
+                    ? 'Сейчас нет заказов, которые ожидают принятия в сборку.'
+                    : 'Сейчас нет заказов, которые уже приняты в работу флористом.'}
+                </Typography>
               ) : null}
             </Box>
           </CardContent>

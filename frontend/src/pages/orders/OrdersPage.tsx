@@ -11,6 +11,8 @@ import {
   Step,
   StepLabel,
   Stepper,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
   useMediaQuery,
   useTheme,
@@ -21,6 +23,8 @@ import type { ProductType } from '../../entities/catalog';
 import { useAuth } from '../../features/auth/AuthContext';
 import { apiRequest } from '../../shared/api';
 import { formatCurrency, formatDate } from '../../shared/format';
+
+type OrdersView = 'active' | 'completed';
 
 function getProductPlaceholderImage(productType: ProductType) {
   if (productType === 'Flower') {
@@ -56,11 +60,11 @@ const deliveryOrderSteps = [
   'Заказ собирается',
   'Заказ передается в доставку',
   'Заказ принят в доставку',
-  'Заказ на полпути',
+  'Заказ в пути',
   'Заказ доставлен',
 ];
 
-const pickupOrderSteps = ['Заказ на рассмотрении', 'Заказ собирается', 'Заказ готов'];
+const pickupOrderSteps = ['Заказ на рассмотрении', 'Заказ собирается', 'Заказ готов к выдаче'];
 
 function getDeliveryOrderStep(status: string) {
   switch (status) {
@@ -77,6 +81,7 @@ function getDeliveryOrderStep(status: string) {
     case 'InTransit':
       return 4;
     case 'Delivered':
+    case 'ReceivedByCustomer':
       return 5;
     case 'Cancelled':
       return 0;
@@ -95,6 +100,7 @@ function getPickupOrderStep(status: string) {
       return 1;
     case 'Assembled':
     case 'Delivered':
+    case 'ReceivedByCustomer':
       return 2;
     case 'Cancelled':
       return 0;
@@ -104,13 +110,22 @@ function getPickupOrderStep(status: string) {
 }
 
 function isCompletedOrder(order: Order) {
-  return order.status === 'Delivered' || order.status === 'Cancelled';
+  return ['ReceivedByCustomer', 'Cancelled'].includes(order.status) || (order.deliveryMethod === 'Pickup' && order.status === 'Delivered');
+}
+
+function isLastStepCompleted(order: Order) {
+  if (order.deliveryMethod === 'Pickup') {
+    return ['Delivered', 'ReceivedByCustomer'].includes(order.status);
+  }
+
+  return order.status === 'ReceivedByCustomer';
 }
 
 function renderOrderCard(order: Order, isMobile: boolean) {
   const isPickup = order.deliveryMethod === 'Pickup';
   const activeStep = isPickup ? getPickupOrderStep(order.status) : getDeliveryOrderStep(order.status);
   const orderSteps = isPickup ? pickupOrderSteps : deliveryOrderSteps;
+  const lastStepCompleted = isLastStepCompleted(order);
 
   return (
     <Card
@@ -146,8 +161,8 @@ function renderOrderCard(order: Order, isMobile: boolean) {
         <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
           <CardContent sx={{ display: 'grid', gap: 1.5, p: { xs: 1.5, md: 2 } }}>
             <Stepper activeStep={activeStep} orientation={isMobile ? 'vertical' : 'horizontal'} alternativeLabel={!isMobile}>
-              {orderSteps.map((step) => (
-                <Step key={step}>
+              {orderSteps.map((step, index) => (
+                <Step key={step} completed={lastStepCompleted && index === orderSteps.length - 1 ? true : undefined}>
                   <StepLabel>{step}</StepLabel>
                 </Step>
               ))}
@@ -266,6 +281,7 @@ export function OrdersPage() {
   const { session } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [view, setView] = useState<OrdersView>('active');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -283,6 +299,7 @@ export function OrdersPage() {
 
   const activeOrders = useMemo(() => orders.filter((order) => !isCompletedOrder(order)), [orders]);
   const completedOrders = useMemo(() => orders.filter(isCompletedOrder), [orders]);
+  const visibleOrders = view === 'active' ? activeOrders : completedOrders;
 
   if (!session) {
     return (
@@ -294,13 +311,13 @@ export function OrdersPage() {
       >
         <CardContent
           sx={{
-            minHeight: 320,
+            minHeight: 340,
             display: 'grid',
             placeItems: 'center',
             p: { xs: 3, md: 5 },
           }}
         >
-          <Box sx={{ maxWidth: 520, textAlign: 'center', display: 'grid', gap: 2 }}>
+          <Box sx={{ maxWidth: 520, textAlign: 'center', display: 'grid', gap: 2.25 }}>
             <Typography variant="h1" sx={{ fontSize: { xs: '2rem', md: '2.4rem' } }}>
               История заказов доступна после входа
             </Typography>
@@ -308,18 +325,11 @@ export function OrdersPage() {
               Войдите в аккаунт, чтобы видеть оформленные заказы, способ получения и текущий этап доставки.
             </Typography>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ justifyContent: 'center', pt: 1 }}>
-              <Button
-                component={RouterLink}
-                to="/account"
-                variant="contained"
-                color="primary"
-                size="large"
-                startIcon={<Lock size={16} />}
-              >
-                Перейти ко входу
+              <Button component={RouterLink} to="/account" variant="contained" color="primary" startIcon={<Lock size={16} />}>
+                Войти в аккаунт
               </Button>
               <Button component={RouterLink} to="/bouquets" variant="text" color="inherit" size="large">
-                Вернуться в каталог
+                Вернуться к каталогу
               </Button>
             </Stack>
           </Box>
@@ -333,65 +343,62 @@ export function OrdersPage() {
       <Box sx={{ display: 'grid', gap: 0.75 }}>
         <Typography variant="h1">Мои заказы</Typography>
         <Typography variant="body1" color="text.secondary">
-          Здесь можно быстро посмотреть состав заказа, тип получения и текущий статус доставки.
+          Отслеживайте этапы сборки, доставки и самовывоза в одном месте.
         </Typography>
       </Box>
 
-      {isLoading ? (
-        <Card sx={{ backgroundColor: alpha('#ffffff', 0.82), backdropFilter: 'blur(14px)' }}>
-          <CardContent>
-            <Typography>Загружаем заказы...</Typography>
-          </CardContent>
-        </Card>
-      ) : null}
+      <Card sx={{ backgroundColor: alpha('#ffffff', 0.82), backdropFilter: 'blur(14px)' }}>
+        <CardContent sx={{ p: { xs: 2, md: 2.5 }, display: 'grid', gap: 2 }}>
+          <ToggleButtonGroup
+            value={view}
+            exclusive
+            onChange={(_, value: OrdersView | null) => {
+              if (value) {
+                setView(value);
+              }
+            }}
+            sx={{
+              width: 'fit-content',
+              flexWrap: 'wrap',
+              '& .MuiToggleButton-root': {
+                px: 2.25,
+              },
+            }}
+          >
+            <ToggleButton value="active">Активные</ToggleButton>
+            <ToggleButton value="completed">Завершенные</ToggleButton>
+          </ToggleButtonGroup>
 
-      {!isLoading && orders.length === 0 ? (
-        <Card sx={{ backgroundColor: alpha('#ffffff', 0.82), backdropFilter: 'blur(14px)' }}>
-          <CardContent sx={{ minHeight: 148, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-            <Typography>Пока нет оформленных заказов.</Typography>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Box sx={{ display: 'grid', gap: 2.5 }}>
-        <Box sx={{ display: 'grid', gap: 1.25 }}>
-          <Box sx={{ display: 'grid', gap: 0.35 }}>
-            <Typography variant="h5">Активные</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Заказы, которые еще находятся в обработке, сборке или доставке.
-            </Typography>
-          </Box>
-
-          {activeOrders.length === 0 ? (
+          {isLoading ? (
             <Card sx={{ backgroundColor: alpha('#ffffff', 0.82), backdropFilter: 'blur(14px)' }}>
               <CardContent sx={{ minHeight: 112, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-                <Typography>Сейчас нет активных заказов.</Typography>
+                <Typography color="text.secondary">Загружаем заказы...</Typography>
               </CardContent>
             </Card>
           ) : null}
 
-          <Box sx={{ display: 'grid', gap: 2 }}>{activeOrders.map((order) => renderOrderCard(order, isMobile))}</Box>
-        </Box>
-
-        <Box sx={{ display: 'grid', gap: 1.25 }}>
-          <Box sx={{ display: 'grid', gap: 0.35 }}>
-            <Typography variant="h5">Завершенные</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Доставленные и закрытые заказы сохраняются здесь.
-            </Typography>
-          </Box>
-
-          {completedOrders.length === 0 ? (
+          {!isLoading && visibleOrders.length === 0 ? (
             <Card sx={{ backgroundColor: alpha('#ffffff', 0.82), backdropFilter: 'blur(14px)' }}>
-              <CardContent sx={{ minHeight: 112, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-                <Typography>Завершенных заказов пока нет.</Typography>
+              <CardContent sx={{ minHeight: 148, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+                <Box sx={{ display: 'grid', gap: 0.75 }}>
+                  <Typography variant="h5">{view === 'active' ? 'Нет активных заказов' : 'Нет завершенных заказов'}</Typography>
+                  <Typography color="text.secondary">
+                    {view === 'active'
+                      ? 'Как только вы оформите заказ, он появится здесь.'
+                      : 'Завершенные заказы будут сохранены в этом разделе.'}
+                  </Typography>
+                </Box>
               </CardContent>
             </Card>
           ) : null}
 
-          <Box sx={{ display: 'grid', gap: 2 }}>{completedOrders.map((order) => renderOrderCard(order, isMobile))}</Box>
-        </Box>
-      </Box>
+          {!isLoading && visibleOrders.length > 0 ? (
+            <Box sx={{ display: 'grid', gap: 2 }}>
+              {visibleOrders.map((order) => renderOrderCard(order, isMobile))}
+            </Box>
+          ) : null}
+        </CardContent>
+      </Card>
     </Box>
   );
 }
