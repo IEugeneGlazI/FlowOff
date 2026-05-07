@@ -27,4 +27,14 @@ public class CategoryRepository : ICategoryRepository
     {
         return _dbContext.Categories.FirstOrDefaultAsync(category => category.Id == id && !category.IsDeleted, cancellationToken);
     }
+
+    public async Task AddAsync(Category category, CancellationToken cancellationToken)
+    {
+        await _dbContext.Categories.AddAsync(category, cancellationToken);
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        return _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

@@ -13,7 +13,7 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { Bike, PackageCheck } from 'lucide-react';
 import type { Order } from '../../entities/cart';
 import { useAuth } from '../../features/auth/AuthContext';
@@ -54,6 +54,7 @@ function getProductPlaceholderImage(productType: Order['items'][number]['product
 
 export function CourierPanelPage() {
   const { session } = useAuth();
+  const location = useLocation();
   const token = session?.token ?? null;
   const isCourier = session?.role === 'Courier';
 
@@ -209,6 +210,7 @@ export function CourierPanelPage() {
                           key={`${item.productId}-${index}`}
                           component={RouterLink}
                           to={`/products/${item.productId}`}
+                          state={{ returnTo: location.pathname + location.search, returnLabel: 'Назад в панель доставщика' }}
                           direction={{ xs: 'column', sm: 'row' }}
                           spacing={1}
                           sx={{
@@ -305,6 +307,7 @@ export function CourierPanelPage() {
                           key={`${item.productId}-${index}`}
                           component={RouterLink}
                           to={`/products/${item.productId}`}
+                          state={{ returnTo: location.pathname + location.search, returnLabel: 'Назад в панель доставщика' }}
                           direction={{ xs: 'column', sm: 'row' }}
                           spacing={1}
                           sx={{

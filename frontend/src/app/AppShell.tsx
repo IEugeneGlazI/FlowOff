@@ -143,7 +143,7 @@ export function AppShell() {
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               {session ? (
                 <>
-                  {session.role === 'Florist' || session.role === 'Administrator' ? (
+                  {session.role === 'Florist' ? (
                     <Button
                       component={NavLink}
                       to="/florist"
@@ -161,6 +161,16 @@ export function AppShell() {
                       color={location.pathname.startsWith('/courier') ? 'primary' : 'inherit'}
                     >
                       Панель доставщика
+                    </Button>
+                  ) : null}
+                  {session.role === 'Administrator' ? (
+                    <Button
+                      component={NavLink}
+                      to="/admin"
+                      variant={location.pathname.startsWith('/admin') ? 'contained' : 'outlined'}
+                      color={location.pathname.startsWith('/admin') ? 'primary' : 'inherit'}
+                    >
+                      Панель администратора
                     </Button>
                   ) : null}
                   <Tooltip title="Профиль">

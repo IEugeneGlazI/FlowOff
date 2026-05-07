@@ -22,4 +22,19 @@ public class FlowerInRepository : IFlowerInRepository
             .OrderBy(item => item.Name)
             .ToArrayAsync(cancellationToken);
     }
+
+    public Task<FlowerIn?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return _dbContext.FlowerIns.FirstOrDefaultAsync(item => item.Id == id && !item.IsDeleted, cancellationToken);
+    }
+
+    public async Task AddAsync(FlowerIn flowerIn, CancellationToken cancellationToken)
+    {
+        await _dbContext.FlowerIns.AddAsync(flowerIn, cancellationToken);
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        return _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

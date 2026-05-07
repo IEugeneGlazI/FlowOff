@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -13,7 +13,7 @@ import {
   Typography,
   alpha,
 } from '@mui/material';
-import { Link as RouterLink, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Minus, Plus, ShoppingBag } from 'lucide-react';
 import type { Product } from '../../entities/catalog';
 import { getProductById } from '../../features/catalog/catalogApi';
@@ -55,11 +55,21 @@ type FeedbackState = {
 
 export function ProductPage() {
   const { productId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const { addItem } = useCart();
+  const returnTo =
+    typeof location.state === 'object' && location.state && 'returnTo' in location.state && typeof location.state.returnTo === 'string'
+      ? location.state.returnTo
+      : null;
+  const returnLabel =
+    typeof location.state === 'object' && location.state && 'returnLabel' in location.state && typeof location.state.returnLabel === 'string'
+      ? location.state.returnLabel
+      : null;
 
   useEffect(() => {
     if (!productId) {
@@ -173,14 +183,16 @@ export function ProductPage() {
       }}
     >
       <Button
-        component={RouterLink}
-        to={product.type === 'Flower' ? '/flowers' : product.type === 'Gift' ? '/gifts' : '/bouquets'}
+        type="button"
         variant="text"
         color="inherit"
         startIcon={<ArrowLeft size={16} />}
+        onClick={() =>
+          navigate(returnTo ?? (product.type === 'Flower' ? '/flowers' : product.type === 'Gift' ? '/gifts' : '/bouquets'))
+        }
         sx={{ width: 'fit-content', px: 0 }}
       >
-        Назад к каталогу
+        {returnLabel ?? 'Назад к каталогу'}
       </Button>
 
       <Box

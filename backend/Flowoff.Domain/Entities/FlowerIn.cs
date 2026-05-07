@@ -17,6 +17,11 @@ public class FlowerIn : Entity
         Name = name;
     }
 
+    public void Update(string name)
+    {
+        Name = name;
+    }
+
     public void SoftDelete()
     {
         if (IsDeleted)

@@ -68,6 +68,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICourierDirectoryService, CourierDirectoryService>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<IOrderNotificationService, OrderNotificationService>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IReferenceDataService, ReferenceDataService>();

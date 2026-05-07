@@ -1,4 +1,5 @@
 using Flowoff.Domain.Repositories;
+using Flowoff.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,4 +27,46 @@ public class ColorsController : ControllerBase
             color.Name
         }));
     }
+
+    [HttpPost]
+    [Authorize(Roles = nameof(UserRole.Administrator))]
+    public async Task<IActionResult> Create(UpdateColorRequest request, CancellationToken cancellationToken)
+    {
+        var color = new Flowoff.Domain.Entities.Color(request.Name.Trim());
+        await _colorRepository.AddAsync(color, cancellationToken);
+        await _colorRepository.SaveChangesAsync(cancellationToken);
+        return Ok(new { color.Id, color.Name });
+    }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = nameof(UserRole.Administrator))]
+    public async Task<IActionResult> Update(Guid id, UpdateColorRequest request, CancellationToken cancellationToken)
+    {
+        var color = await _colorRepository.GetByIdAsync(id, cancellationToken);
+        if (color is null)
+        {
+            return NotFound();
+        }
+
+        color.Update(request.Name.Trim());
+        await _colorRepository.SaveChangesAsync(cancellationToken);
+        return Ok(new { color.Id, color.Name });
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = nameof(UserRole.Administrator))]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var color = await _colorRepository.GetByIdAsync(id, cancellationToken);
+        if (color is null)
+        {
+            return NotFound();
+        }
+
+        color.SoftDelete();
+        await _colorRepository.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+
+    public sealed record UpdateColorRequest(string Name);
 }

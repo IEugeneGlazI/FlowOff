@@ -11,6 +11,7 @@ public class OrderService : IOrderService
 {
     private readonly ICourierDirectoryService _courierDirectoryService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IOrderNotificationService _orderNotificationService;
     private readonly IOrderRepository _orderRepository;
     private readonly IProductRepository _productRepository;
 
@@ -18,12 +19,14 @@ public class OrderService : IOrderService
         IOrderRepository orderRepository,
         IProductRepository productRepository,
         ICurrentUserService currentUserService,
-        ICourierDirectoryService courierDirectoryService)
+        ICourierDirectoryService courierDirectoryService,
+        IOrderNotificationService orderNotificationService)
     {
         _orderRepository = orderRepository;
         _productRepository = productRepository;
         _currentUserService = currentUserService;
         _courierDirectoryService = courierDirectoryService;
+        _orderNotificationService = orderNotificationService;
     }
 
     public async Task<OrderDto> AssignCourierAsync(Guid id, AssignCourierRequestDto request, CancellationToken cancellationToken)
@@ -36,6 +39,7 @@ public class OrderService : IOrderService
 
         order.AssignCourier(courier.Id);
         await _orderRepository.SaveChangesAsync(cancellationToken);
+        await _orderNotificationService.NotifyTransferredToDeliveryAsync(order, cancellationToken);
         return Map(order);
     }
 
@@ -147,6 +151,7 @@ public class OrderService : IOrderService
 
         order.AssignCourier(_currentUserService.UserId);
         await _orderRepository.SaveChangesAsync(cancellationToken);
+        await _orderNotificationService.NotifyTransferredToDeliveryAsync(order, cancellationToken);
         return Map(order);
     }
 
@@ -175,6 +180,12 @@ public class OrderService : IOrderService
 
         order.SetAssemblyStatus(status);
         await _orderRepository.SaveChangesAsync(cancellationToken);
+
+        if (status == OrderStatus.Assembled && order.DeliveryMethod == DeliveryMethod.Pickup)
+        {
+            await _orderNotificationService.NotifyPickupReadyAsync(order, cancellationToken);
+        }
+
         return Map(order);
     }
 
@@ -222,6 +233,12 @@ public class OrderService : IOrderService
 
         order.SetDeliveryStatus(status);
         await _orderRepository.SaveChangesAsync(cancellationToken);
+
+        if (status == OrderStatus.Delivered)
+        {
+            await _orderNotificationService.NotifyDeliveredAsync(order, cancellationToken);
+        }
+
         return Map(order);
     }
 

@@ -596,7 +596,15 @@ export function StorefrontPage() {
                   }}
                 >
                   <CardActionArea
-                    onClick={() => navigate(`/products/${product.id}`)}
+                    onClick={() =>
+                      navigate(`/products/${product.id}`, {
+                        state: {
+                          returnTo: location.pathname + location.search,
+                          returnLabel:
+                            activeTab === 'flowers' ? 'Назад к цветам' : activeTab === 'gifts' ? 'Назад к подаркам' : 'Назад к букетам',
+                        },
+                      })
+                    }
                     sx={{
                       height: '100%',
                       display: 'block',

@@ -80,21 +80,14 @@ public class AuthService : IAuthService
         await _emailSender.SendAsync(
             user.Email!,
             "Восстановление пароля Flowoff",
-            $"""
-            <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.6;color:#1f2a23">
-              <h2 style="margin-bottom:12px;">Восстановление пароля</h2>
-              <p>Мы получили запрос на смену пароля для аккаунта <strong>{user.Email}</strong>.</p>
-              <p>Чтобы задать новый пароль, перейдите по ссылке:</p>
-              <p style="margin:20px 0;">
-                <a href="{resetUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#6a9c7b;color:#ffffff;text-decoration:none;font-weight:600;">
-                  Сбросить пароль
-                </a>
-              </p>
-              <p>Если кнопка не открывается, используйте эту ссылку:</p>
-              <p><a href="{resetUrl}">{resetUrl}</a></p>
-              <p style="margin-top:16px;color:#5a665f;font-size:14px;">Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо.</p>
-            </div>
-            """,
+            FlowoffEmailTemplate.Build(
+                eyebrow: "Безопасность",
+                title: "Сброс пароля",
+                intro: $"Мы получили запрос на смену пароля для аккаунта {user.Email}.",
+                details: "Если это были вы, перейдите по кнопке ниже и задайте новый пароль.",
+                ctaText: "Сбросить пароль",
+                ctaUrl: resetUrl,
+                footnote: "Если вы не запрашивали смену пароля, просто проигнорируйте это письмо."),
             cancellationToken);
 
         return new ForgotPasswordResponseDto
@@ -228,20 +221,14 @@ public class AuthService : IAuthService
         await _emailSender.SendAsync(
             user.Email!,
             "Подтверждение регистрации Flowoff",
-            $"""
-            <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.6;color:#1f2a23">
-              <h2 style="margin-bottom:12px;">Подтвердите регистрацию</h2>
-              <p>Спасибо за регистрацию в <strong>Flowoff</strong>.</p>
-              <p>Чтобы активировать аккаунт, перейдите по ссылке:</p>
-              <p style="margin:20px 0;">
-                <a href="{confirmationUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#6a9c7b;color:#ffffff;text-decoration:none;font-weight:600;">
-                  Подтвердить почту
-                </a>
-              </p>
-              <p>Если кнопка не открывается, используйте эту ссылку:</p>
-              <p><a href="{confirmationUrl}">{confirmationUrl}</a></p>
-            </div>
-            """,
+            FlowoffEmailTemplate.Build(
+                eyebrow: "Регистрация",
+                title: "Подтвердите почту",
+                intro: "Спасибо, что зарегистрировались в Flowoff.",
+                details: "Чтобы активировать аккаунт и начать оформлять заказы, подтвердите адрес электронной почты.",
+                ctaText: "Подтвердить почту",
+                ctaUrl: confirmationUrl,
+                footnote: "Если вы не создавали аккаунт Flowoff, просто проигнорируйте это письмо."),
             cancellationToken);
     }
 

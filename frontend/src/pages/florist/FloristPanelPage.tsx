@@ -28,7 +28,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { ImagePlus, PackageCheck, PencilLine, Plus, Trash2, X } from 'lucide-react';
 import type { Category, ColorReference, FlowerInReference, Product, ProductType } from '../../entities/catalog';
 import type { Order } from '../../entities/cart';
@@ -48,6 +48,7 @@ import { formatCurrency, formatDate } from '../../shared/format';
 
 type FloristTab = 'products' | 'orders';
 type FloristOrdersTab = 'assembly' | 'accepted';
+type FloristPanelMode = 'florist' | 'admin';
 
 type ProductFormState = {
   id?: string;
@@ -145,11 +146,22 @@ function getOrderStageLabel(order: Order) {
   }
 }
 
-export function FloristPanelPage() {
+export function FloristPanelPage({
+  mode = 'florist',
+  allowedTabs,
+  embedded = false,
+}: {
+  mode?: FloristPanelMode;
+  allowedTabs?: FloristTab[];
+  embedded?: boolean;
+} = {}) {
   const productImageInputRef = useRef<HTMLInputElement | null>(null);
   const { session } = useAuth();
+  const location = useLocation();
+  const availableTabs = allowedTabs ?? (mode === 'admin' ? ['products'] : ['products', 'orders']);
+  const defaultTab = availableTabs[0] ?? 'products';
 
-  const [tab, setTab] = useState<FloristTab>('products');
+  const [tab, setTab] = useState<FloristTab>(defaultTab);
   const [ordersTab, setOrdersTab] = useState<FloristOrdersTab>('assembly');
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -169,8 +181,14 @@ export function FloristPanelPage() {
   const [productImagePreviewUrl, setProductImagePreviewUrl] = useState<string | null>(null);
 
   const token = session?.token ?? null;
-  const isFlorist = session?.role === 'Florist' || session?.role === 'Administrator';
+  const isAllowed = mode === 'admin' ? session?.role === 'Administrator' : session?.role === 'Florist' || session?.role === 'Administrator';
   const isEditing = Boolean(productForm.id);
+
+  useEffect(() => {
+    if (!availableTabs.includes(tab)) {
+      setTab(defaultTab);
+    }
+  }, [availableTabs, defaultTab, tab]);
 
   useEffect(() => {
     void Promise.all([getCategories(), getColors(), getFlowerIns()]).then(([nextCategories, nextColors, nextFlowerIns]) => {
@@ -181,13 +199,15 @@ export function FloristPanelPage() {
   }, []);
 
   useEffect(() => {
-    if (!token || !isFlorist) {
+    if (!token || !isAllowed) {
       return;
     }
 
     void loadProducts();
-    void loadOrders();
-  }, [token, isFlorist]);
+    if (availableTabs.includes('orders')) {
+      void loadOrders();
+    }
+  }, [availableTabs, isAllowed, token]);
 
   async function loadProducts() {
     if (!token) {
@@ -483,11 +503,15 @@ export function FloristPanelPage() {
 
   const visibleOrders = ordersTab === 'assembly' ? assemblyOrders : acceptedOrders;
 
-  if (!session || !isFlorist) {
+  if (!session || !isAllowed) {
     return (
       <Card sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
         <CardContent sx={{ minHeight: 220, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-          <Typography>Панель флориста доступна только для аккаунта флориста.</Typography>
+          <Typography>
+            {mode === 'admin'
+              ? 'Панель администратора доступна только для аккаунта администратора.'
+              : 'Панель флориста доступна только для аккаунта флориста.'}
+          </Typography>
         </CardContent>
       </Card>
     );
@@ -495,21 +519,27 @@ export function FloristPanelPage() {
 
   return (
     <Box sx={{ display: 'grid', gap: 2.5 }}>
-      <Box sx={{ display: 'grid', gap: 0.75 }}>
-        <Typography variant="h1">Панель флориста</Typography>
-        <Typography variant="body1" color="text.secondary">
-          Управляйте товарами, их видимостью и этапами сборки заказов.
-        </Typography>
-      </Box>
+      {!embedded ? (
+        <>
+          <Box sx={{ display: 'grid', gap: 0.75 }}>
+            <Typography variant="h1">{mode === 'admin' ? 'Панель администратора' : 'Панель флориста'}</Typography>
+            <Typography variant="body1" color="text.secondary">
+              {mode === 'admin'
+                ? 'Управляйте товарами и готовьте следующие вкладки администрирования.'
+                : 'Управляйте товарами, их видимостью и этапами сборки заказов.'}
+            </Typography>
+          </Box>
 
-      <Card sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
-        <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
-          <Tabs value={tab} onChange={(_, value: FloristTab) => setTab(value)} sx={{ minHeight: 48 }}>
-            <Tab value="products" label="Товары" />
-            <Tab value="orders" label="Заказы" />
-          </Tabs>
-        </CardContent>
-      </Card>
+          <Card sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
+            <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+              <Tabs value={tab} onChange={(_, value: FloristTab) => setTab(value)} sx={{ minHeight: 48 }}>
+                <Tab value="products" label="Товары" />
+                {availableTabs.includes('orders') ? <Tab value="orders" label="Заказы" /> : null}
+              </Tabs>
+            </CardContent>
+          </Card>
+        </>
+      ) : null}
 
       {tab === 'products' ? (
         <>
@@ -599,10 +629,11 @@ export function FloristPanelPage() {
                       borderRadius: 2,
                       boxShadow: 'none',
                       cursor: 'pointer',
-                      transition: 'transform 160ms ease, box-shadow 160ms ease',
+                      transition: 'transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease',
                       ':hover': {
                         transform: 'translateY(-1px)',
                         boxShadow: '0 14px 32px rgba(38, 54, 45, 0.08)',
+                        borderColor: 'rgba(92, 143, 115, 0.34)',
                       },
                     }}
                     onClick={() => startEditingProduct(product)}
@@ -957,6 +988,10 @@ export function FloristPanelPage() {
                           key={`${item.productId}-${index}`}
                           component={RouterLink}
                           to={`/products/${item.productId}`}
+                          state={{
+                            returnTo: location.pathname + location.search,
+                            returnLabel: mode === 'admin' ? 'Назад в панель администратора' : 'Назад в панель флориста',
+                          }}
                           direction={{ xs: 'column', sm: 'row' }}
                           spacing={1}
                           sx={{

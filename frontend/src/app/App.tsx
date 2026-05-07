@@ -8,6 +8,7 @@ import { ConfirmEmailPage } from '../pages/account/ConfirmEmailPage';
 import { OrdersPage } from '../pages/orders/OrdersPage';
 import { FloristPanelPage } from '../pages/florist/FloristPanelPage';
 import { CourierPanelPage } from '../pages/courier/CourierPanelPage';
+import { AdminPanelPage } from '../pages/admin/AdminPanelPage';
 
 export function App() {
   return (
@@ -24,6 +25,7 @@ export function App() {
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/florist" element={<FloristPanelPage />} />
         <Route path="/courier" element={<CourierPanelPage />} />
+        <Route path="/admin" element={<AdminPanelPage />} />
         <Route path="*" element={<Navigate to="/bouquets" replace />} />
       </Route>
     </Routes>

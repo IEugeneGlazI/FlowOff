@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import {
   alpha,
   Box,
@@ -121,7 +121,7 @@ function isLastStepCompleted(order: Order) {
   return order.status === 'ReceivedByCustomer';
 }
 
-function renderOrderCard(order: Order, isMobile: boolean) {
+function renderOrderCard(order: Order, isMobile: boolean, returnTo: string) {
   const isPickup = order.deliveryMethod === 'Pickup';
   const activeStep = isPickup ? getPickupOrderStep(order.status) : getDeliveryOrderStep(order.status);
   const orderSteps = isPickup ? pickupOrderSteps : deliveryOrderSteps;
@@ -219,6 +219,7 @@ function renderOrderCard(order: Order, isMobile: boolean) {
               key={`${item.productId}-${index}`}
               component={RouterLink}
               to={`/products/${item.productId}`}
+              state={{ returnTo, returnLabel: 'Назад к заказам' }}
               sx={{
                 display: 'grid',
                 gridTemplateColumns: '72px minmax(0, 1fr)',
@@ -279,6 +280,7 @@ function renderOrderCard(order: Order, isMobile: boolean) {
 
 export function OrdersPage() {
   const { session } = useAuth();
+  const location = useLocation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<OrdersView>('active');
@@ -394,7 +396,7 @@ export function OrdersPage() {
 
           {!isLoading && visibleOrders.length > 0 ? (
             <Box sx={{ display: 'grid', gap: 2 }}>
-              {visibleOrders.map((order) => renderOrderCard(order, isMobile))}
+              {visibleOrders.map((order) => renderOrderCard(order, isMobile, location.pathname + location.search))}
             </Box>
           ) : null}
         </CardContent>

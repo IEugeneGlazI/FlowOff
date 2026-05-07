@@ -19,12 +19,81 @@ export async function getCategories() {
   return apiRequest<Category[]>('/Categories');
 }
 
+export async function createCategory(payload: { name: string; description?: string | null }, token: string) {
+  return apiRequest<Category>('/Categories', {
+    method: 'POST',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateCategory(categoryId: string, payload: { name: string; description?: string | null }, token: string) {
+  return apiRequest<Category>(`/Categories/${categoryId}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteCategory(categoryId: string, token: string) {
+  return apiRequest<void>(`/Categories/${categoryId}`, {
+    method: 'DELETE',
+    token,
+  });
+}
+
 export async function getColors() {
   return apiRequest<ColorReference[]>('/Colors');
 }
 
+export async function createColor(payload: { name: string }, token: string) {
+  return apiRequest<ColorReference>('/Colors', {
+    method: 'POST',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateColor(colorId: string, payload: { name: string }, token: string) {
+  return apiRequest<ColorReference>(`/Colors/${colorId}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteColor(colorId: string, token: string) {
+  return apiRequest<void>(`/Colors/${colorId}`, {
+    method: 'DELETE',
+    token,
+  });
+}
+
 export async function getFlowerIns() {
   return apiRequest<FlowerInReference[]>('/FlowerIns');
+}
+
+export async function createFlowerIn(payload: { name: string }, token: string) {
+  return apiRequest<FlowerInReference>('/FlowerIns', {
+    method: 'POST',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateFlowerIn(flowerInId: string, payload: { name: string }, token: string) {
+  return apiRequest<FlowerInReference>(`/FlowerIns/${flowerInId}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteFlowerIn(flowerInId: string, token: string) {
+  return apiRequest<void>(`/FlowerIns/${flowerInId}`, {
+    method: 'DELETE',
+    token,
+  });
 }
 
 export async function getPromotions() {

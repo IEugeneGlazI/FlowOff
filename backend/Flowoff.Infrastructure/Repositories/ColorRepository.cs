@@ -22,4 +22,19 @@ public class ColorRepository : IColorRepository
             .OrderBy(color => color.Name)
             .ToArrayAsync(cancellationToken);
     }
+
+    public Task<Color?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return _dbContext.Colors.FirstOrDefaultAsync(color => color.Id == id && !color.IsDeleted, cancellationToken);
+    }
+
+    public async Task AddAsync(Color color, CancellationToken cancellationToken)
+    {
+        await _dbContext.Colors.AddAsync(color, cancellationToken);
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        return _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

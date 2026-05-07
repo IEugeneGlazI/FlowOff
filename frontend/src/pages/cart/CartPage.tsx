@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent, SyntheticEvent } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Alert,
   Autocomplete,
@@ -46,6 +46,7 @@ export function CartPage() {
   const { cart, updateItem, clearCart, refreshCart } = useCart();
   const { session } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('Delivery');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [addressOptions, setAddressOptions] = useState<AddressSuggestion[]>([]);
@@ -325,6 +326,7 @@ export function CartPage() {
                       <Box
                         component={RouterLink}
                         to={`/products/${item.productId}`}
+                        state={{ returnTo: location.pathname + location.search, returnLabel: 'Назад в корзину' }}
                         sx={{
                           display: { xs: 'none', md: 'block' },
                           lineHeight: 0,
@@ -349,6 +351,7 @@ export function CartPage() {
                       <Box
                         component={RouterLink}
                         to={`/products/${item.productId}`}
+                        state={{ returnTo: location.pathname + location.search, returnLabel: 'Назад в корзину' }}
                         sx={{
                           display: 'grid',
                           gap: 0.5,

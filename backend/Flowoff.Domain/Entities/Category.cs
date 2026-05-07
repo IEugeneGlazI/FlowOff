@@ -19,6 +19,12 @@ public class Category : Entity
         Description = description;
     }
 
+    public void Update(string name, string? description)
+    {
+        Name = name;
+        Description = description;
+    }
+
     public void SoftDelete()
     {
         if (IsDeleted)
