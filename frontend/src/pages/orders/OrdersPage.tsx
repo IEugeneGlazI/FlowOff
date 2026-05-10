@@ -26,6 +26,23 @@ import { formatCurrency, formatDate } from '../../shared/format';
 
 type OrdersView = 'active' | 'completed';
 
+const deliveryOrderSteps = [
+  'Заказ на рассмотрении',
+  'Заказ собирается',
+  'Заказ передается в доставку',
+  'Заказ принят в доставку',
+  'Заказ в пути',
+  'Заказ доставлен',
+  'Заказ получен клиентом',
+];
+
+const pickupOrderSteps = [
+  'Заказ на рассмотрении',
+  'Заказ собирается',
+  'Заказ готов к выдаче',
+  'Заказ получен клиентом',
+];
+
 function getProductPlaceholderImage(productType: ProductType) {
   if (productType === 'Flower') {
     return 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=80';
@@ -43,87 +60,52 @@ function getDeliveryMethodLabel(method: string) {
 }
 
 function getPaymentStatusLabel(status?: string | null) {
-  switch (status) {
-    case 'Pending':
-      return 'Ожидает оплаты';
-    case 'Paid':
-      return 'Оплачено';
-    case 'Failed':
-      return 'Ошибка оплаты';
-    default:
-      return 'Не указано';
-  }
+  return status || 'Не указано';
 }
 
-const deliveryOrderSteps = [
-  'Заказ на рассмотрении',
-  'Заказ собирается',
-  'Заказ передается в доставку',
-  'Заказ принят в доставку',
-  'Заказ в пути',
-  'Заказ доставлен',
-];
+function getDeliveryStepIndex(deliveryStatus: string | null | undefined, isPickup: boolean) {
+  if (isPickup) {
+    switch (deliveryStatus) {
+      case 'Заказ собирается':
+        return 1;
+      case 'Заказ готов к выдаче':
+        return 2;
+      case 'Заказ получен клиентом':
+        return 3;
+      default:
+        return 0;
+    }
+  }
 
-const pickupOrderSteps = ['Заказ на рассмотрении', 'Заказ собирается', 'Заказ готов к выдаче'];
-
-function getDeliveryOrderStep(status: string) {
-  switch (status) {
-    case 'PendingPayment':
-    case 'Paid':
-      return 0;
-    case 'Accepted':
-    case 'InAssembly':
+  switch (deliveryStatus) {
+    case 'Заказ собирается':
       return 1;
-    case 'Assembled':
+    case 'Заказ передается в доставку':
       return 2;
-    case 'TransferredToCourier':
+    case 'Заказ принят в доставку':
       return 3;
-    case 'InTransit':
+    case 'Заказ в пути':
       return 4;
-    case 'Delivered':
-    case 'ReceivedByCustomer':
+    case 'Заказ доставлен':
       return 5;
-    case 'Cancelled':
-      return 0;
-    default:
-      return 0;
-  }
-}
-
-function getPickupOrderStep(status: string) {
-  switch (status) {
-    case 'PendingPayment':
-    case 'Paid':
-      return 0;
-    case 'Accepted':
-    case 'InAssembly':
-      return 1;
-    case 'Assembled':
-    case 'Delivered':
-    case 'ReceivedByCustomer':
-      return 2;
-    case 'Cancelled':
-      return 0;
+    case 'Заказ получен клиентом':
+      return 6;
     default:
       return 0;
   }
 }
 
 function isCompletedOrder(order: Order) {
-  return ['ReceivedByCustomer', 'Cancelled'].includes(order.status) || (order.deliveryMethod === 'Pickup' && order.status === 'Delivered');
+  return order.status === 'Завершен' || order.status === 'Отменен';
 }
 
 function isLastStepCompleted(order: Order) {
-  if (order.deliveryMethod === 'Pickup') {
-    return ['Delivered', 'ReceivedByCustomer'].includes(order.status);
-  }
-
-  return order.status === 'ReceivedByCustomer';
+  return order.status === 'Завершен';
 }
 
 function renderOrderCard(order: Order, isMobile: boolean, returnTo: string) {
   const isPickup = order.deliveryMethod === 'Pickup';
-  const activeStep = isPickup ? getPickupOrderStep(order.status) : getDeliveryOrderStep(order.status);
+  const activeStep = getDeliveryStepIndex(order.deliveryStatus, isPickup);
   const orderSteps = isPickup ? pickupOrderSteps : deliveryOrderSteps;
   const lastStepCompleted = isLastStepCompleted(order);
 
@@ -144,7 +126,7 @@ function renderOrderCard(order: Order, isMobile: boolean, returnTo: string) {
           sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' } }}
         >
           <Box sx={{ display: 'grid', gap: 0.5 }}>
-            <Typography variant="h5">Заказ {order.id.slice(0, 8)}</Typography>
+            <Typography variant="h5">Заказ #{order.orderNumber ? String(order.orderNumber).padStart(6, '0') : order.id.slice(0, 8)}</Typography>
             <Typography variant="body2" color="text.secondary">
               Оформлен {formatDate(order.createdAtUtc)}
             </Typography>
@@ -173,43 +155,26 @@ function renderOrderCard(order: Order, isMobile: boolean, returnTo: string) {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(4, minmax(0, 1fr))' },
             gap: 1.5,
           }}
         >
-          <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
-            <CardContent sx={{ display: 'grid', gap: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">
-                Тип получения
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {getDeliveryMethodLabel(order.deliveryMethod)}
-              </Typography>
-            </CardContent>
-          </Card>
-
-          <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
-            <CardContent sx={{ display: 'grid', gap: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">
-                Статус оплаты
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {getPaymentStatusLabel(order.paymentStatus)}
-              </Typography>
-            </CardContent>
-          </Card>
-
-          <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
-            <CardContent sx={{ display: 'grid', gap: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">
-                Адрес
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {order.deliveryAddress || 'Самовывоз из магазина'}
-              </Typography>
-            </CardContent>
-          </Card>
+          <InfoCard label="Статус заказа" value={order.status} />
+          <InfoCard label="Статус доставки" value={order.deliveryStatus || 'Не указано'} />
+          <InfoCard label="Статус оплаты" value={getPaymentStatusLabel(order.paymentStatus)} />
+          <InfoCard label="Получение" value={getDeliveryMethodLabel(order.deliveryMethod)} />
         </Box>
+
+        <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
+          <CardContent sx={{ display: 'grid', gap: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              Адрес
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+              {order.deliveryAddress || 'Самовывоз из магазина'}
+            </Typography>
+          </CardContent>
+        </Card>
 
         <Divider />
 
@@ -278,6 +243,21 @@ function renderOrderCard(order: Order, isMobile: boolean, returnTo: string) {
   );
 }
 
+function InfoCard({ label, value }: { label: string; value: string }) {
+  return (
+    <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
+      <CardContent sx={{ display: 'grid', gap: 0.5 }}>
+        <Typography variant="caption" color="text.secondary">
+          {label}
+        </Typography>
+        <Typography variant="body1" sx={{ fontWeight: 600 }}>
+          {value}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function OrdersPage() {
   const { session } = useAuth();
   const location = useLocation();
@@ -324,7 +304,7 @@ export function OrdersPage() {
               История заказов доступна после входа
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-              Войдите в аккаунт, чтобы видеть оформленные заказы, способ получения и текущий этап доставки.
+              Войдите в аккаунт, чтобы видеть оформленные заказы, способ получения и текущий этап обработки.
             </Typography>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ justifyContent: 'center', pt: 1 }}>
               <Button component={RouterLink} to="/account" variant="contained" color="primary" startIcon={<Lock size={16} />}>

@@ -2,6 +2,7 @@ using Flowoff.Application.DTOs.Statistics;
 using Flowoff.Application.Interfaces;
 using Flowoff.Domain.Enums;
 using Flowoff.Domain.Repositories;
+using Flowoff.Domain.Statuses;
 
 namespace Flowoff.Application.Services;
 
@@ -26,9 +27,9 @@ public class StatisticsService : IStatisticsService
         return new DashboardStatisticsDto
         {
             TotalOrders = orders.Count,
-            DeliveredOrders = orders.Count(order => order.Status == OrderStatus.Delivered || order.Status == OrderStatus.ReceivedByCustomer),
+            DeliveredOrders = orders.Count(order => order.Status == OrderStatusCodes.Completed),
             Revenue = orders
-                .Where(order => order.Payment?.Status == PaymentStatus.Paid)
+                .Where(order => order.Payment?.Status == PaymentStatusCodes.Paid)
                 .Sum(order => order.TotalAmount),
             OpenSupportRequests = supportRequests.Count(request =>
                 request.Status == SupportRequestStatus.Open || request.Status == SupportRequestStatus.InProgress)

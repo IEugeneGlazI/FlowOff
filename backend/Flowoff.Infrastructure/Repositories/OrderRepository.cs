@@ -1,6 +1,7 @@
 using Flowoff.Domain.Entities;
 using Flowoff.Domain.Enums;
 using Flowoff.Domain.Repositories;
+using Flowoff.Domain.Statuses;
 using Flowoff.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +22,15 @@ public class OrderRepository : IOrderRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<int> GetNextOrderNumberAsync(CancellationToken cancellationToken)
+    {
+        var maxOrderNumber = await _dbContext.Orders
+            .Select(order => (int?)order.OrderNumber)
+            .MaxAsync(cancellationToken);
+
+        return (maxOrderNumber ?? 0) + 1;
+    }
+
     public Task<Order?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return _dbContext.Orders
@@ -32,13 +42,18 @@ public class OrderRepository : IOrderRepository
 
     public async Task<IReadOnlyCollection<Order>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return await _dbContext.Orders
+        return await Query()
             .AsNoTracking()
-            .Include(order => order.Items)
-            .Include(order => order.Delivery)
-            .Include(order => order.Payment)
             .OrderByDescending(order => order.CreatedAtUtc)
             .ToArrayAsync(cancellationToken);
+    }
+
+    public IQueryable<Order> Query()
+    {
+        return _dbContext.Orders
+            .Include(order => order.Items)
+            .Include(order => order.Delivery)
+            .Include(order => order.Payment);
     }
 
     public async Task<IReadOnlyCollection<Order>> GetAvailableForCourierAsync(CancellationToken cancellationToken)
@@ -50,8 +65,9 @@ public class OrderRepository : IOrderRepository
             .Include(order => order.Payment)
             .Where(order =>
                 order.DeliveryMethod == DeliveryMethod.Delivery
-                && order.Status == OrderStatus.Assembled
+                && order.Status == OrderStatusCodes.Active
                 && order.Delivery != null
+                && order.Delivery.Status == DeliveryStatusCodes.ReadyForPickup
                 && order.Delivery.CourierId == null)
             .OrderByDescending(order => order.CreatedAtUtc)
             .ToArrayAsync(cancellationToken);

@@ -15,4 +15,6 @@ public interface IOrderService
     Task<OrderDto> AcceptForDeliveryAsync(Guid id, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<OrderDto>> GetAssignedToCourierAsync(CancellationToken cancellationToken);
     Task<OrderDto> UpdateDeliveryStatusAsync(Guid id, UpdateDeliveryStatusRequestDto request, CancellationToken cancellationToken);
+    Task<OrderDto> UpdateStatusByAdminAsync(Guid id, UpdateOrderStatusByAdminRequestDto request, CancellationToken cancellationToken);
+    Task<OrderDto> CancelByAdminAsync(Guid id, CancellationToken cancellationToken);
 }

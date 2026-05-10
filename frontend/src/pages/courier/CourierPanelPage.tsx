@@ -27,17 +27,10 @@ type FeedbackState = {
 
 type CourierTab = 'available' | 'assigned';
 
+const ACTIVE_COURIER_STATUSES = ['Заказ принят в доставку', 'Заказ в пути', 'Заказ доставлен'];
+
 function getOrderStageLabel(order: Order) {
-  switch (order.status) {
-    case 'InTransit':
-      return 'Заказ в пути';
-    case 'Delivered':
-      return 'Заказ доставлен';
-    case 'ReceivedByCustomer':
-      return 'Заказ принят покупателем';
-    default:
-      return 'Заказ ожидает принятия в доставку';
-  }
+  return order.deliveryStatus || 'Заказ на рассмотрении';
 }
 
 function getProductPlaceholderImage(productType: Order['items'][number]['productType']) {
@@ -78,6 +71,7 @@ export function CourierPanelPage() {
     }
 
     setIsLoading(true);
+
     try {
       const [nextAvailableOrders, nextAssignedOrders] = await Promise.all([
         apiRequest<Order[]>('/courier/orders/available', { token }),
@@ -113,7 +107,10 @@ export function CourierPanelPage() {
     }
   }
 
-  async function handleDeliveryStatusChange(orderId: string, status: 'Delivered' | 'ReceivedByCustomer') {
+  async function handleDeliveryStatusChange(
+    orderId: string,
+    status: 'Заказ в пути' | 'Заказ доставлен' | 'Заказ получен клиентом',
+  ) {
     if (!token) {
       return;
     }
@@ -130,9 +127,11 @@ export function CourierPanelPage() {
       setFeedback({
         severity: 'success',
         message:
-          status === 'Delivered'
-            ? 'Заказ отмечен как доставленный.'
-            : 'Заказ отмечен как принятый покупателем.',
+          status === 'Заказ в пути'
+            ? 'Заказ отмечен как отправленный в путь.'
+            : status === 'Заказ доставлен'
+              ? 'Заказ отмечен как доставленный.'
+              : 'Заказ отмечен как полученный клиентом.',
       });
       await loadOrders();
     } catch (error) {
@@ -142,7 +141,7 @@ export function CourierPanelPage() {
   }
 
   const activeAssignedOrders = useMemo(
-    () => assignedOrders.filter((order) => ['InTransit', 'Delivered'].includes(order.status)),
+    () => assignedOrders.filter((order) => ACTIVE_COURIER_STATUSES.includes(order.deliveryStatus || '')),
     [assignedOrders],
   );
 
@@ -161,7 +160,7 @@ export function CourierPanelPage() {
       <Box sx={{ display: 'grid', gap: 0.75 }}>
         <Typography variant="h1">Панель доставщика</Typography>
         <Typography variant="body1" color="text.secondary">
-          Здесь можно принять собранный заказ в доставку и отмечать его продвижение до передачи покупателю.
+          Здесь можно принять подготовленный заказ в доставку и отмечать этапы до получения заказа клиентом.
         </Typography>
       </Box>
 
@@ -180,7 +179,7 @@ export function CourierPanelPage() {
             <Box sx={{ display: 'grid', gap: 0.5 }}>
               <Typography variant="h5">Ожидают принятия</Typography>
               <Typography variant="body2" color="text.secondary">
-                Здесь находятся заказы, уже подготовленные флористом к передаче в доставку.
+                Здесь находятся заказы, которые уже готовы к передаче в доставку.
               </Typography>
             </Box>
 
@@ -192,14 +191,14 @@ export function CourierPanelPage() {
                   <CardContent sx={{ display: 'grid', gap: 1.5 }}>
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
                       <Box sx={{ display: 'grid', gap: 0.4 }}>
-                        <Typography variant="h6">Заказ {order.id.slice(0, 8)}</Typography>
+                        <Typography variant="h6">Заказ #{order.orderNumber ? String(order.orderNumber).padStart(6, '0') : order.id.slice(0, 8)}</Typography>
                         <Typography variant="body2" color="text.secondary">
                           {formatDate(order.createdAtUtc)}
                           {order.deliveryAddress ? ` • ${order.deliveryAddress}` : ''}
                         </Typography>
                       </Box>
                       <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-                        <Chip icon={<PackageCheck size={16} />} label="Заказ передается в доставку" color="warning" variant="outlined" />
+                        <Chip icon={<PackageCheck size={16} />} label={getOrderStageLabel(order)} color="warning" variant="outlined" />
                         <Chip label={formatCurrency(order.totalAmount)} variant="outlined" />
                       </Stack>
                     </Stack>
@@ -289,7 +288,7 @@ export function CourierPanelPage() {
                   <CardContent sx={{ display: 'grid', gap: 1.5 }}>
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
                       <Box sx={{ display: 'grid', gap: 0.4 }}>
-                        <Typography variant="h6">Заказ {order.id.slice(0, 8)}</Typography>
+                        <Typography variant="h6">Заказ #{order.orderNumber ? String(order.orderNumber).padStart(6, '0') : order.id.slice(0, 8)}</Typography>
                         <Typography variant="body2" color="text.secondary">
                           {formatDate(order.createdAtUtc)}
                           {order.deliveryAddress ? ` • ${order.deliveryAddress}` : ''}
@@ -354,14 +353,23 @@ export function CourierPanelPage() {
                     <Divider />
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
-                      {order.status === 'InTransit' ? (
-                        <Button variant="contained" onClick={() => void handleDeliveryStatusChange(order.id, 'Delivered')}>
-                          Отметить: Заказ доставлен
+                      {order.deliveryStatus === 'Заказ принят в доставку' ? (
+                        <Button variant="contained" onClick={() => void handleDeliveryStatusChange(order.id, 'Заказ в пути')}>
+                          Отметить: заказ в пути
                         </Button>
                       ) : null}
-                      {order.status === 'Delivered' ? (
-                        <Button variant="outlined" color="inherit" onClick={() => void handleDeliveryStatusChange(order.id, 'ReceivedByCustomer')}>
-                          Отметить: Заказ принят покупателем
+                      {order.deliveryStatus === 'Заказ в пути' ? (
+                        <Button variant="contained" onClick={() => void handleDeliveryStatusChange(order.id, 'Заказ доставлен')}>
+                          Отметить: заказ доставлен
+                        </Button>
+                      ) : null}
+                      {order.deliveryStatus === 'Заказ доставлен' ? (
+                        <Button
+                          variant="outlined"
+                          color="inherit"
+                          onClick={() => void handleDeliveryStatusChange(order.id, 'Заказ получен клиентом')}
+                        >
+                          Отметить: заказ получен клиентом
                         </Button>
                       ) : null}
                     </Stack>

@@ -5,9 +5,11 @@ namespace Flowoff.Domain.Repositories;
 public interface IOrderRepository
 {
     Task AddAsync(Order order, CancellationToken cancellationToken);
+    Task<int> GetNextOrderNumberAsync(CancellationToken cancellationToken);
     Task<Order?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<Order>> GetByCustomerIdAsync(string customerId, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<Order>> GetAllAsync(CancellationToken cancellationToken);
+    IQueryable<Order> Query();
     Task<IReadOnlyCollection<Order>> GetAvailableForCourierAsync(CancellationToken cancellationToken);
     Task<IReadOnlyCollection<Order>> GetByCourierIdAsync(string courierId, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);

@@ -1,4 +1,4 @@
-import type { Category, ColorReference, FlowerInReference, Product, ProductType, Promotion } from '../../entities/catalog';
+import type { Category, ColorReference, FlowerInReference, Product, ProductType, Promotion, StatusReference } from '../../entities/catalog';
 import { apiRequest } from '../../shared/api';
 
 type ProductMutationPayload = {
@@ -71,6 +71,54 @@ export async function deleteColor(colorId: string, token: string) {
 
 export async function getFlowerIns() {
   return apiRequest<FlowerInReference[]>('/FlowerIns');
+}
+
+export async function getOrderStatuses() {
+  return apiRequest<StatusReference[]>('/OrderStatuses');
+}
+
+export async function updateOrderStatusReference(
+  statusId: string,
+  payload: { name: string },
+  token: string,
+) {
+  return apiRequest<StatusReference>(`/OrderStatuses/${statusId}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getDeliveryStatuses() {
+  return apiRequest<StatusReference[]>('/DeliveryStatuses');
+}
+
+export async function updateDeliveryStatusReference(
+  statusId: string,
+  payload: { name: string },
+  token: string,
+) {
+  return apiRequest<StatusReference>(`/DeliveryStatuses/${statusId}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getPaymentStatuses() {
+  return apiRequest<StatusReference[]>('/PaymentStatuses');
+}
+
+export async function updatePaymentStatusReference(
+  statusId: string,
+  payload: { name: string },
+  token: string,
+) {
+  return apiRequest<StatusReference>(`/PaymentStatuses/${statusId}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function createFlowerIn(payload: { name: string }, token: string) {

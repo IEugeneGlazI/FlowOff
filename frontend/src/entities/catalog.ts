@@ -16,6 +16,11 @@ export type FlowerInReference = {
   name: string;
 };
 
+export type StatusReference = {
+  id: string;
+  name: string;
+};
+
 export type Product = {
   id: string;
   name: string;

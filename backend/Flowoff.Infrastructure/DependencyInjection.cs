@@ -67,6 +67,7 @@ public static class DependencyInjection
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICourierDirectoryService, CourierDirectoryService>();
+        services.AddScoped<IUserDirectoryService, UserDirectoryService>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<IOrderNotificationService, OrderNotificationService>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
@@ -75,6 +76,9 @@ public static class DependencyInjection
         services.AddScoped<ICartRepository, CartRepository>();
         services.AddScoped<IColorRepository, ColorRepository>();
         services.AddScoped<IFlowerInRepository, FlowerInRepository>();
+        services.AddScoped<IOrderStatusReferenceRepository, OrderStatusReferenceRepository>();
+        services.AddScoped<IDeliveryStatusReferenceRepository, DeliveryStatusReferenceRepository>();
+        services.AddScoped<IPaymentStatusReferenceRepository, PaymentStatusReferenceRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();

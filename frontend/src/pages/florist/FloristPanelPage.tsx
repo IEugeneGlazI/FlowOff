@@ -112,38 +112,7 @@ function getProductTypeLabel(productType: ProductType) {
 }
 
 function getOrderStageLabel(order: Order) {
-  if (order.deliveryMethod === 'Pickup') {
-    switch (order.status) {
-      case 'Accepted':
-      case 'InAssembly':
-        return 'Заказ собирается';
-      case 'Assembled':
-        return 'Заказ готов к выдаче';
-      case 'ReceivedByCustomer':
-      case 'Delivered':
-        return 'Заказ принят покупателем';
-      default:
-        return 'Заказ на рассмотрении';
-    }
-  }
-
-  switch (order.status) {
-    case 'Accepted':
-    case 'InAssembly':
-      return 'Заказ собирается';
-    case 'Assembled':
-      return 'Заказ передается в доставку';
-    case 'TransferredToCourier':
-      return 'Заказ принят в доставку';
-    case 'InTransit':
-      return 'Заказ в пути';
-    case 'Delivered':
-      return 'Заказ доставлен';
-    case 'ReceivedByCustomer':
-      return 'Заказ принят покупателем';
-    default:
-      return 'Заказ на рассмотрении';
-  }
+  return order.deliveryStatus || 'Заказ на рассмотрении';
 }
 
 export function FloristPanelPage({
@@ -158,7 +127,10 @@ export function FloristPanelPage({
   const productImageInputRef = useRef<HTMLInputElement | null>(null);
   const { session } = useAuth();
   const location = useLocation();
-  const availableTabs = allowedTabs ?? (mode === 'admin' ? ['products'] : ['products', 'orders']);
+  const availableTabs = useMemo<FloristTab[]>(
+    () => allowedTabs ?? (mode === 'admin' ? ['products'] : ['products', 'orders']),
+    [allowedTabs, mode],
+  );
   const defaultTab = availableTabs[0] ?? 'products';
 
   const [tab, setTab] = useState<FloristTab>(defaultTab);
@@ -414,7 +386,7 @@ export function FloristPanelPage({
     }
   }
 
-  async function handleAssemblyStatusChange(orderId: string, status: 'Accepted' | 'Assembled') {
+  async function handleAssemblyStatusChange(orderId: string, status: 'Заказ собирается' | 'Заказ готов к выдаче') {
     if (!token) {
       return;
     }
@@ -430,7 +402,7 @@ export function FloristPanelPage({
 
       setFeedback({
         severity: 'success',
-        message: status === 'Accepted' ? 'Заказ принят в сборку.' : 'Сборка заказа завершена.',
+        message: status === 'Заказ собирается' ? 'Заказ принят в сборку.' : 'Сборка заказа завершена.',
       });
       await loadOrders();
     } catch (error) {
@@ -492,12 +464,22 @@ export function FloristPanelPage({
   );
 
   const assemblyOrders = useMemo(
-    () => orders.filter((order) => ['PendingPayment', 'Paid'].includes(order.status)),
+    () =>
+      orders.filter(
+        (order) =>
+          order.status === 'Активен' &&
+          (order.deliveryStatus === 'Заказ на рассмотрении' || !order.deliveryStatus),
+      ),
     [orders],
   );
 
   const acceptedOrders = useMemo(
-    () => orders.filter((order) => ['Accepted', 'InAssembly', 'Assembled'].includes(order.status)),
+    () =>
+      orders.filter(
+        (order) =>
+          order.status === 'Активен' &&
+          ['Заказ собирается', 'Заказ готов к выдаче', 'Заказ передается в доставку'].includes(order.deliveryStatus || ''),
+      ),
     [orders],
   );
 
@@ -971,7 +953,7 @@ export function FloristPanelPage({
                   <CardContent sx={{ display: 'grid', gap: 1.5 }}>
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
                       <Box sx={{ display: 'grid', gap: 0.4 }}>
-                        <Typography variant="h6">Заказ {order.id.slice(0, 8)}</Typography>
+                        <Typography variant="h6">Заказ #{order.orderNumber ? String(order.orderNumber).padStart(6, '0') : order.id.slice(0, 8)}</Typography>
                         <Typography variant="body2" color="text.secondary">
                           {formatDate(order.createdAtUtc)} • {order.deliveryMethod === 'Pickup' ? 'Самовывоз' : 'Доставка'}
                         </Typography>
@@ -1038,17 +1020,21 @@ export function FloristPanelPage({
                     <Divider />
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
-                      {['PendingPayment', 'Paid'].includes(order.status) ? (
-                        <Button variant="contained" onClick={() => void handleAssemblyStatusChange(order.id, 'Accepted')}>
+                      {order.status === 'Активен' && (order.deliveryStatus === 'Заказ на рассмотрении' || !order.deliveryStatus) ? (
+                        <Button variant="contained" onClick={() => void handleAssemblyStatusChange(order.id, 'Заказ собирается')}>
                           Принять заказ
                         </Button>
                       ) : null}
-                      {['Accepted', 'InAssembly'].includes(order.status) ? (
-                        <Button variant="contained" color="primary" onClick={() => void handleAssemblyStatusChange(order.id, 'Assembled')}>
+                      {order.status === 'Активен' && order.deliveryStatus === 'Заказ собирается' ? (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() => void handleAssemblyStatusChange(order.id, 'Заказ готов к выдаче')}
+                        >
                           Отметить: Заказ собран
                         </Button>
                       ) : null}
-                      {order.deliveryMethod === 'Pickup' && order.status === 'Assembled' ? (
+                      {order.deliveryMethod === 'Pickup' && order.deliveryStatus === 'Заказ готов к выдаче' ? (
                         <Button variant="outlined" color="inherit" onClick={() => void handleCompletePickup(order.id)}>
                           Отметить: Заказ принят покупателем
                         </Button>

@@ -87,6 +87,7 @@ using (var scope = app.Services.CreateScope())
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     await RoleSeeder.SeedAsync(roleManager, userManager);
+    await StatusReferenceSeed.SeedAsync(dbContext);
     await CatalogSeed.SeedAsync(dbContext);
 }
 

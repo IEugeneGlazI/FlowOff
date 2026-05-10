@@ -1,40 +1,51 @@
 using Flowoff.Application.DTOs.References;
 using Flowoff.Application.Interfaces;
-using Flowoff.Domain.Enums;
+using Flowoff.Domain.Repositories;
 
 namespace Flowoff.Application.Services;
 
 public class ReferenceDataService : IReferenceDataService
 {
-    public Task<IReadOnlyCollection<StatusReferenceItemDto>> GetStatusesAsync(CancellationToken cancellationToken)
+    private readonly IOrderStatusReferenceRepository _orderStatusReferenceRepository;
+    private readonly IDeliveryStatusReferenceRepository _deliveryStatusReferenceRepository;
+    private readonly IPaymentStatusReferenceRepository _paymentStatusReferenceRepository;
+
+    public ReferenceDataService(
+        IOrderStatusReferenceRepository orderStatusReferenceRepository,
+        IDeliveryStatusReferenceRepository deliveryStatusReferenceRepository,
+        IPaymentStatusReferenceRepository paymentStatusReferenceRepository)
     {
-        var result = new List<StatusReferenceItemDto>();
-
-        result.AddRange(Build<OrderStatus>("order"));
-        result.AddRange(Build<PaymentStatus>("payment"));
-        result.AddRange(Build<SupportRequestStatus>("support"));
-
-        result.AddRange(new[]
-        {
-            new StatusReferenceItemDto { Group = "assembly", Key = OrderStatus.Accepted.ToString() },
-            new StatusReferenceItemDto { Group = "assembly", Key = OrderStatus.InAssembly.ToString() },
-            new StatusReferenceItemDto { Group = "assembly", Key = OrderStatus.Assembled.ToString() },
-            new StatusReferenceItemDto { Group = "assembly", Key = OrderStatus.TransferredToCourier.ToString() },
-            new StatusReferenceItemDto { Group = "delivery", Key = OrderStatus.InTransit.ToString() },
-            new StatusReferenceItemDto { Group = "delivery", Key = OrderStatus.Delivered.ToString() },
-            new StatusReferenceItemDto { Group = "delivery", Key = OrderStatus.ReceivedByCustomer.ToString() }
-        });
-
-        return Task.FromResult<IReadOnlyCollection<StatusReferenceItemDto>>(result);
+        _orderStatusReferenceRepository = orderStatusReferenceRepository;
+        _deliveryStatusReferenceRepository = deliveryStatusReferenceRepository;
+        _paymentStatusReferenceRepository = paymentStatusReferenceRepository;
     }
 
-    private static IEnumerable<StatusReferenceItemDto> Build<TEnum>(string group)
-        where TEnum : struct, Enum
+    public async Task<IReadOnlyCollection<StatusReferenceItemDto>> GetStatusesAsync(CancellationToken cancellationToken)
     {
-        return Enum.GetNames<TEnum>().Select(name => new StatusReferenceItemDto
-        {
-            Group = group,
-            Key = name
-        });
+        var orderStatuses = await _orderStatusReferenceRepository.GetAllAsync(cancellationToken);
+        var deliveryStatuses = await _deliveryStatusReferenceRepository.GetAllAsync(cancellationToken);
+        var paymentStatuses = await _paymentStatusReferenceRepository.GetAllAsync(cancellationToken);
+
+        return
+        [
+            .. orderStatuses.Select(status => new StatusReferenceItemDto
+            {
+                Id = status.Id,
+                Group = "order",
+                Name = status.Name
+            }),
+            .. deliveryStatuses.Select(status => new StatusReferenceItemDto
+            {
+                Id = status.Id,
+                Group = "delivery",
+                Name = status.Name
+            }),
+            .. paymentStatuses.Select(status => new StatusReferenceItemDto
+            {
+                Id = status.Id,
+                Group = "payment",
+                Name = status.Name
+            })
+        ];
     }
 }

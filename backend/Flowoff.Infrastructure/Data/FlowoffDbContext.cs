@@ -25,6 +25,9 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<Delivery> Deliveries => Set<Delivery>();
     public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<OrderStatusReference> OrderStatusReferences => Set<OrderStatusReference>();
+    public DbSet<DeliveryStatusReference> DeliveryStatusReferences => Set<DeliveryStatusReference>();
+    public DbSet<PaymentStatusReference> PaymentStatusReferences => Set<PaymentStatusReference>();
     public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
 
@@ -58,6 +61,27 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(color => color.Name).HasMaxLength(100).IsRequired();
             entity.Property(color => color.IsDeleted).HasDefaultValue(false);
             entity.HasIndex(color => color.Name).IsUnique();
+        });
+
+        builder.Entity<OrderStatusReference>(entity =>
+        {
+            entity.Property(status => status.Name).HasMaxLength(150).IsRequired();
+            entity.Property(status => status.IsDeleted).HasDefaultValue(false);
+            entity.HasIndex(status => status.Name).IsUnique();
+        });
+
+        builder.Entity<DeliveryStatusReference>(entity =>
+        {
+            entity.Property(status => status.Name).HasMaxLength(150).IsRequired();
+            entity.Property(status => status.IsDeleted).HasDefaultValue(false);
+            entity.HasIndex(status => status.Name).IsUnique();
+        });
+
+        builder.Entity<PaymentStatusReference>(entity =>
+        {
+            entity.Property(status => status.Name).HasMaxLength(150).IsRequired();
+            entity.Property(status => status.IsDeleted).HasDefaultValue(false);
+            entity.HasIndex(status => status.Name).IsUnique();
         });
 
         builder.Entity<Product>(entity =>
@@ -161,10 +185,17 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<Order>(entity =>
         {
+            entity.Property(order => order.OrderNumber).ValueGeneratedNever();
+            entity.HasIndex(order => order.OrderNumber).IsUnique();
             entity.Property(order => order.CustomerId).HasMaxLength(450).IsRequired();
+            entity.Property(order => order.FloristId).HasMaxLength(450);
             entity.Property(order => order.TotalAmount).HasPrecision(18, 2);
-            entity.Property(order => order.Status).HasConversion<string>().HasMaxLength(32);
+            entity.Property(order => order.Status).HasMaxLength(64).IsRequired();
             entity.Property(order => order.DeliveryMethod).HasConversion<string>().HasMaxLength(32);
+            entity.HasOne(order => order.OrderStatusReference)
+                .WithMany()
+                .HasForeignKey(order => order.OrderStatusReferenceId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasMany(order => order.Items)
                 .WithOne(item => item.Order)
                 .HasForeignKey(item => item.OrderId);
@@ -194,6 +225,11 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.Property(delivery => delivery.Address).HasMaxLength(500);
             entity.Property(delivery => delivery.CourierId).HasMaxLength(450);
+            entity.Property(delivery => delivery.Status).HasMaxLength(64).IsRequired();
+            entity.HasOne(delivery => delivery.DeliveryStatusReference)
+                .WithMany()
+                .HasForeignKey(delivery => delivery.DeliveryStatusReferenceId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(delivery => delivery.Order)
                 .WithOne(order => order.Delivery)
                 .HasForeignKey<Delivery>(delivery => delivery.OrderId);
@@ -203,7 +239,11 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.Property(payment => payment.Amount).HasPrecision(18, 2);
             entity.Property(payment => payment.Provider).HasMaxLength(100).IsRequired();
-            entity.Property(payment => payment.Status).HasConversion<string>().HasMaxLength(32);
+            entity.Property(payment => payment.Status).HasMaxLength(64).IsRequired();
+            entity.HasOne(payment => payment.PaymentStatusReference)
+                .WithMany()
+                .HasForeignKey(payment => payment.PaymentStatusReferenceId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(payment => payment.Order)
                 .WithOne(order => order.Payment)
                 .HasForeignKey<Payment>(payment => payment.OrderId);

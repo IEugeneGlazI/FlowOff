@@ -187,15 +187,52 @@ namespace Flowoff.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("DeliveredAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("DeliveryStatusReferenceId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("DeliveryStatusReferenceId");
 
                     b.HasIndex("OrderId")
                         .IsUnique();
 
                     b.ToTable("Deliveries");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.DeliveryStatusReference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("DeliveryStatusReferences");
                 });
 
             modelBuilder.Entity("Flowoff.Domain.Entities.FlowerIn", b =>
@@ -244,16 +281,31 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
 
+                    b.Property<string>("FloristId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("OrderNumber")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("OrderStatusReferenceId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrderNumber")
+                        .IsUnique();
+
+                    b.HasIndex("OrderStatusReferenceId");
 
                     b.ToTable("Orders");
                 });
@@ -306,6 +358,33 @@ namespace Flowoff.Infrastructure.Data.Migrations
                     b.ToTable("OrderItems");
                 });
 
+            modelBuilder.Entity("Flowoff.Domain.Entities.OrderStatusReference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("OrderStatusReferences");
+                });
+
             modelBuilder.Entity("Flowoff.Domain.Entities.Payment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -322,6 +401,9 @@ namespace Flowoff.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("PaidAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("PaymentStatusReferenceId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Provider")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -329,15 +411,44 @@ namespace Flowoff.Infrastructure.Data.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("OrderId")
                         .IsUnique();
 
+                    b.HasIndex("PaymentStatusReferenceId");
+
                     b.ToTable("Payments");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.PaymentStatusReference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("PaymentStatusReferences");
                 });
 
             modelBuilder.Entity("Flowoff.Domain.Entities.Product", b =>
@@ -827,13 +938,32 @@ namespace Flowoff.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Flowoff.Domain.Entities.Delivery", b =>
                 {
+                    b.HasOne("Flowoff.Domain.Entities.DeliveryStatusReference", "DeliveryStatusReference")
+                        .WithMany()
+                        .HasForeignKey("DeliveryStatusReferenceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Flowoff.Domain.Entities.Order", "Order")
                         .WithOne("Delivery")
                         .HasForeignKey("Flowoff.Domain.Entities.Delivery", "OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("DeliveryStatusReference");
+
                     b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.Order", b =>
+                {
+                    b.HasOne("Flowoff.Domain.Entities.OrderStatusReference", "OrderStatusReference")
+                        .WithMany()
+                        .HasForeignKey("OrderStatusReferenceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OrderStatusReference");
                 });
 
             modelBuilder.Entity("Flowoff.Domain.Entities.OrderItem", b =>
@@ -876,7 +1006,15 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Flowoff.Domain.Entities.PaymentStatusReference", "PaymentStatusReference")
+                        .WithMany()
+                        .HasForeignKey("PaymentStatusReferenceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Order");
+
+                    b.Navigation("PaymentStatusReference");
                 });
 
             modelBuilder.Entity("Flowoff.Domain.Entities.PromotionBouquet", b =>

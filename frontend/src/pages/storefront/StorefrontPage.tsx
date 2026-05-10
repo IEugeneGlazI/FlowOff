@@ -36,20 +36,7 @@ type FeedbackState = {
   severity: 'success' | 'info' | 'warning' | 'error';
 };
 
-function toSearchBlob(product: Product) {
-  return [
-    product.name,
-    product.description,
-    product.categoryName,
-    product.flowerInName,
-    ...(product.flowerInNames ?? []),
-    product.colorName,
-    ...(product.colorNames ?? []),
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-}
+const ALL_FILTER_VALUE = '__all__';
 
 function getTabHeading(activeTab: CatalogTab) {
   switch (activeTab) {
@@ -74,6 +61,10 @@ function getTabSubheading(activeTab: CatalogTab) {
 }
 
 function getProductPlaceholderImage(product: Product) {
+  if (product.imageUrl) {
+    return product.imageUrl;
+  }
+
   if (product.type === 'Flower') {
     return 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=80';
   }
@@ -170,8 +161,7 @@ export function StorefrontPage() {
     const needle = search.trim().toLowerCase();
 
     return products.filter((product) => {
-      const blob = toSearchBlob(product);
-      const matchesSearch = !needle || blob.includes(needle);
+      const matchesSearch = !needle || product.name.toLowerCase().includes(needle);
       const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
 
       if (!matchesSearch || !matchesPrice) {
@@ -291,7 +281,8 @@ export function StorefrontPage() {
     event: SelectChangeEvent<string[]>,
     setter: React.Dispatch<React.SetStateAction<string[]>>,
   ) {
-    setter(normalizeMultiValue(event.target.value));
+    const nextValue = normalizeMultiValue(event.target.value);
+    setter(nextValue.includes(ALL_FILTER_VALUE) ? [] : nextValue);
   }
 
   function renderSelectedNames(selectedIds: string[], source: Array<{ id: string; name: string }>, emptyLabel: string) {
@@ -319,6 +310,7 @@ export function StorefrontPage() {
               renderValue={(selected) => renderSelectedNames(selected, colors, 'Все цвета')}
               onChange={(event) => handleMultipleChange(event, setSelectedBouquetColorIds)}
             >
+              <MenuItem value={ALL_FILTER_VALUE}>Все цвета</MenuItem>
               {colors.map((color) => (
                 <MenuItem key={color.id} value={color.id}>
                   {color.name}
@@ -337,6 +329,7 @@ export function StorefrontPage() {
               renderValue={(selected) => renderSelectedNames(selected, flowerIns, 'Все цветки')}
               onChange={(event) => handleMultipleChange(event, setSelectedBouquetFlowerInIds)}
             >
+              <MenuItem value={ALL_FILTER_VALUE}>Все цветки</MenuItem>
               {flowerIns.map((flowerIn) => (
                 <MenuItem key={flowerIn.id} value={flowerIn.id}>
                   {flowerIn.name}
@@ -361,6 +354,7 @@ export function StorefrontPage() {
               renderValue={(selected) => renderSelectedNames(selected, flowerIns, 'Все типы')}
               onChange={(event) => handleMultipleChange(event, setSelectedFlowerInIds)}
             >
+              <MenuItem value={ALL_FILTER_VALUE}>Все типы</MenuItem>
               {flowerIns.map((flowerIn) => (
                 <MenuItem key={flowerIn.id} value={flowerIn.id}>
                   {flowerIn.name}
@@ -379,6 +373,7 @@ export function StorefrontPage() {
               renderValue={(selected) => renderSelectedNames(selected, colors, 'Все цвета')}
               onChange={(event) => handleMultipleChange(event, setSelectedFlowerColorIds)}
             >
+              <MenuItem value={ALL_FILTER_VALUE}>Все цвета</MenuItem>
               {colors.map((color) => (
                 <MenuItem key={color.id} value={color.id}>
                   {color.name}
@@ -401,6 +396,7 @@ export function StorefrontPage() {
           renderValue={(selected) => renderSelectedNames(selected, categories, 'Все подарки')}
           onChange={(event) => handleMultipleChange(event, setSelectedGiftCategoryIds)}
         >
+          <MenuItem value={ALL_FILTER_VALUE}>Все подарки</MenuItem>
           {categories.map((category) => (
             <MenuItem key={category.id} value={category.id}>
               {category.name}
@@ -734,15 +730,17 @@ export function StorefrontPage() {
                             sx={{ bgcolor: alpha('#ffffff', 0.74) }}
                           />
                         ) : null}
-                        {(product.colorNames ?? []).map((colorName) => (
-                          <Chip
-                            key={`${product.id}-${colorName}`}
-                            size="small"
-                            variant="outlined"
-                            label={colorName}
-                            sx={{ bgcolor: alpha('#ffffff', 0.74) }}
-                          />
-                        ))}
+                        {product.type === 'Bouquet'
+                          ? (product.colorNames ?? []).map((colorName) => (
+                              <Chip
+                                key={`${product.id}-${colorName}`}
+                                size="small"
+                                variant="outlined"
+                                label={colorName}
+                                sx={{ bgcolor: alpha('#ffffff', 0.74) }}
+                              />
+                            ))
+                          : null}
                         {product.colorName && product.type === 'Flower' ? (
                           <Chip
                             size="small"

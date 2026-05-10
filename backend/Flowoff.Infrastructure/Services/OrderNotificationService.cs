@@ -117,7 +117,7 @@ public class OrderNotificationService : IOrderNotificationService
 
     private static string GetOrderNumber(Order order)
     {
-        return $"#{order.Id.ToString()[..8].ToUpperInvariant()}";
+        return $"#{order.OrderNumber:D6}";
     }
 
     private static string GetGreeting(ApplicationUser user)
