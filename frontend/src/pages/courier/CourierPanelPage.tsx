@@ -14,7 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import { Bike, PackageCheck } from 'lucide-react';
+import { PackageCheck } from 'lucide-react';
 import type { Order } from '../../entities/cart';
 import { useAuth } from '../../features/auth/AuthContext';
 import { apiRequest, ApiError } from '../../shared/api';
@@ -30,6 +30,10 @@ type CourierTab = 'available' | 'assigned';
 const ACTIVE_COURIER_STATUSES = ['Заказ принят в доставку', 'Заказ в пути', 'Заказ доставлен'];
 
 function getOrderStageLabel(order: Order) {
+  if (order.deliveryMethod !== 'Pickup' && order.deliveryStatus === 'Заказ готов к выдаче') {
+    return 'Заказ передается в доставку';
+  }
+
   return order.deliveryStatus || 'Заказ на рассмотрении';
 }
 
@@ -198,7 +202,7 @@ export function CourierPanelPage() {
                         </Typography>
                       </Box>
                       <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-                        <Chip icon={<PackageCheck size={16} />} label={getOrderStageLabel(order)} color="warning" variant="outlined" />
+                        <Chip icon={<PackageCheck size={16} />} label={getOrderStageLabel(order)} color="primary" variant="outlined" />
                         <Chip label={formatCurrency(order.totalAmount)} variant="outlined" />
                       </Stack>
                     </Stack>
@@ -255,7 +259,11 @@ export function CourierPanelPage() {
 
                     <Divider />
 
-                    <Button variant="contained" startIcon={<Bike size={16} />} onClick={() => void handleAcceptOrder(order.id)}>
+                    <Button
+                      variant="contained"
+                      onClick={() => void handleAcceptOrder(order.id)}
+                      sx={{ alignSelf: 'flex-start', justifySelf: 'start', width: 'fit-content' }}
+                    >
                       Принять доставку
                     </Button>
                   </CardContent>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, SyntheticEvent } from 'react';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -10,6 +10,10 @@ import {
   CardContent,
   Checkbox,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   FormControlLabel,
   IconButton,
@@ -47,19 +51,50 @@ export function CartPage() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const hasInitializedSelectionRef = useRef(false);
+
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('Delivery');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [addressOptions, setAddressOptions] = useState<AddressSuggestion[]>([]);
   const [isAddressLoading, setIsAddressLoading] = useState(false);
   const [addressLookupError, setAddressLookupError] = useState<string | null>(null);
   const [payOnPickup, setPayOnPickup] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<{ severity: 'success' | 'error' | 'warning'; message: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false);
 
-  const canCheckout = useMemo(
-    () => Boolean(session?.token && session.role === 'Customer' && cart && cart.items.length > 0),
-    [session, cart],
+  useEffect(() => {
+    if (!cart) {
+      hasInitializedSelectionRef.current = false;
+      setSelectedProductIds([]);
+      return;
+    }
+
+    const cartProductIds = cart.items.map((item) => item.productId);
+
+    setSelectedProductIds((current) => {
+      if (!hasInitializedSelectionRef.current) {
+        hasInitializedSelectionRef.current = true;
+        return cartProductIds;
+      }
+
+      return current.filter((productId) => cartProductIds.includes(productId));
+    });
+  }, [cart]);
+
+  const selectedItems = useMemo(
+    () => cart?.items.filter((item) => selectedProductIds.includes(item.productId)) ?? [],
+    [cart, selectedProductIds],
   );
+
+  const selectedItemsTotal = useMemo(
+    () => selectedItems.reduce((sum, item) => sum + item.lineTotal, 0),
+    [selectedItems],
+  );
+
+  const hasItems = Boolean(cart && cart.items.length > 0);
+  const canCheckout = Boolean(session?.token && session.role === 'Customer' && selectedItems.length > 0);
 
   useEffect(() => {
     if (deliveryMethod !== 'Delivery') {
@@ -92,9 +127,7 @@ export function CartPage() {
         .catch((error: unknown) => {
           if (!cancelled) {
             setAddressOptions([]);
-            setAddressLookupError(
-              error instanceof ApiError ? error.message : 'Не удалось загрузить подсказки адреса.',
-            );
+            setAddressLookupError(error instanceof ApiError ? error.message : 'Не удалось загрузить подсказки адреса.');
           }
         })
         .finally(() => {
@@ -110,15 +143,37 @@ export function CartPage() {
     };
   }, [deliveryAddress, deliveryMethod, session?.role, session?.token]);
 
-  async function handleCheckout(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function handleToggleItemSelection(productId: string, checked: boolean) {
+    setSelectedProductIds((current) =>
+      checked ? (current.includes(productId) ? current : [...current, productId]) : current.filter((id) => id !== productId),
+    );
+  }
 
+  async function handleRemoveSelectedItems() {
+    if (selectedItems.length === 0) {
+      setFeedback({
+        severity: 'warning',
+        message: 'Выберите товары, которые хотите удалить из корзины.',
+      });
+      return;
+    }
+
+    setFeedback(null);
+
+    for (const item of selectedItems) {
+      await updateItem(item.productId, 0);
+    }
+
+    await refreshCart();
+  }
+
+  function validateCheckout() {
     if (!session?.token || !cart || cart.items.length === 0) {
       setFeedback({
         severity: 'warning',
         message: 'Чтобы оформить заказ, войдите в аккаунт и добавьте хотя бы один товар в корзину.',
       });
-      return;
+      return false;
     }
 
     if (session.role !== 'Customer') {
@@ -126,17 +181,45 @@ export function CartPage() {
         severity: 'warning',
         message: 'Оформление заказа и подсказки адреса доступны только для аккаунта покупателя.',
       });
-      return;
+      return false;
     }
 
-    const normalizedDeliveryAddress = deliveryAddress.trim();
-    if (deliveryMethod === 'Delivery' && normalizedDeliveryAddress.length === 0) {
+    if (selectedItems.length === 0) {
+      setFeedback({
+        severity: 'warning',
+        message: 'Выберите хотя бы один товар для оформления заказа.',
+      });
+      return false;
+    }
+
+    if (deliveryMethod === 'Delivery' && deliveryAddress.trim().length === 0) {
       setFeedback({
         severity: 'warning',
         message: 'Укажите адрес доставки.',
       });
+      return false;
+    }
+
+    return true;
+  }
+
+  function handleCheckout(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!validateCheckout()) {
       return;
     }
+
+    setFeedback(null);
+    setIsCheckoutDialogOpen(true);
+  }
+
+  async function handleConfirmCheckout() {
+    if (!session?.token || selectedItems.length === 0) {
+      return;
+    }
+
+    const normalizedDeliveryAddress = deliveryAddress.trim();
 
     setIsSubmitting(true);
     setFeedback(null);
@@ -149,15 +232,19 @@ export function CartPage() {
           deliveryMethod,
           deliveryAddress: deliveryMethod === 'Delivery' ? normalizedDeliveryAddress : null,
           payOnPickup,
-          items: cart.items.map((item) => ({
+          items: selectedItems.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
           })),
         }),
       });
 
-      await clearCart();
+      for (const item of selectedItems) {
+        await updateItem(item.productId, 0);
+      }
+
       await refreshCart();
+      setIsCheckoutDialogOpen(false);
       navigate('/orders');
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Не удалось оформить заказ.';
@@ -194,14 +281,7 @@ export function CartPage() {
               Войдите в аккаунт, чтобы собирать товары в корзину, менять количество и переходить к оформлению заказа.
             </Typography>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ justifyContent: 'center', pt: 1 }}>
-              <Button
-                component={RouterLink}
-                to="/account"
-                variant="contained"
-                color="primary"
-                size="large"
-                startIcon={<Lock size={16} />}
-              >
+              <Button component={RouterLink} to="/account" variant="contained" color="primary" size="large" startIcon={<Lock size={16} />}>
                 Перейти ко входу
               </Button>
               <Button component={RouterLink} to="/bouquets" variant="text" color="inherit" size="large">
@@ -213,8 +293,6 @@ export function CartPage() {
       </Card>
     );
   }
-
-  const hasItems = Boolean(cart && cart.items.length > 0);
 
   return (
     <Box sx={{ display: 'grid', gap: 3 }}>
@@ -231,9 +309,7 @@ export function CartPage() {
         </Button>
         <Typography variant="h1">Корзина</Typography>
         <Typography variant="body1" color="text.secondary">
-          {hasItems
-            ? `В корзине ${cart?.items.length ?? 0} ${cart?.items.length === 1 ? 'позиция' : 'позиций'}.`
-            : 'Выберите товары, которые хотите приобрести.'}
+          Проверьте выбранные товары перед оформлением заказа.
         </Typography>
       </Box>
 
@@ -257,19 +333,19 @@ export function CartPage() {
               <Box>
                 <Typography variant="h5">Состав заказа</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {hasItems ? 'Проверьте количество и итоговую сумму перед оформлением.' : 'Корзина пока пустая.'}
+                  {hasItems ? 'Выберите товары, которые хотите оформить или удалить.' : 'Корзина пока пустая.'}
                 </Typography>
               </Box>
 
               {hasItems ? (
-                <Button
-                  variant="text"
-                  color="inherit"
-                  startIcon={<Trash2 size={16} />}
-                  onClick={() => void clearCart()}
-                >
-                  Очистить
-                </Button>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                  <Button variant="text" color="inherit" startIcon={<Trash2 size={16} />} onClick={() => void handleRemoveSelectedItems()}>
+                    Удалить выбранное
+                  </Button>
+                  <Button variant="text" color="inherit" startIcon={<Trash2 size={16} />} onClick={() => void clearCart()}>
+                    Очистить все
+                  </Button>
+                </Stack>
               ) : null}
             </Stack>
 
@@ -299,116 +375,135 @@ export function CartPage() {
               </Box>
             ) : (
               <Stack spacing={1.5}>
-                {cart?.items.map((item) => (
-                  <Card
-                    key={item.productId}
-                    variant="outlined"
-                    sx={{
-                      borderRadius: 2.5,
-                      bgcolor: alpha('#f8fbf9', 0.92),
-                      borderColor: 'rgba(24,38,31,0.08)',
-                      transition: 'transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 16px 36px rgba(31,42,35,0.10)',
-                        borderColor: 'rgba(24,38,31,0.18)',
-                        bgcolor: alpha('#ffffff', 0.98),
-                      },
-                    }}
-                  >
-                    <CardContent
+                {cart?.items.map((item) => {
+                  const isSelected = selectedProductIds.includes(item.productId);
+
+                  return (
+                    <Card
+                      key={item.productId}
+                      variant="outlined"
                       sx={{
-                        display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', md: '92px minmax(0, 1fr) 124px 128px' },
-                        gap: { xs: 1.5, md: 1 },
-                        alignItems: 'center',
+                        position: 'relative',
+                        borderRadius: 2.5,
+                        bgcolor: '#ffffff',
+                        borderColor: isSelected ? 'rgba(92,143,115,0.38)' : 'rgba(24,38,31,0.08)',
+                        boxShadow: 'none',
+                        transition: 'transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease',
+                        ':hover': {
+                          transform: 'translateY(-1px)',
+                          boxShadow: '0 14px 32px rgba(38, 54, 45, 0.08)',
+                          borderColor: 'rgba(92, 143, 115, 0.34)',
+                          bgcolor: '#ffffff',
+                        },
                       }}
                     >
-                      <Box
-                        component={RouterLink}
-                        to={`/products/${item.productId}`}
-                        state={{ returnTo: location.pathname + location.search, returnLabel: 'Назад в корзину' }}
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={(event) => handleToggleItemSelection(item.productId, event.target.checked)}
                         sx={{
-                          display: { xs: 'none', md: 'block' },
-                          lineHeight: 0,
+                          position: 'absolute',
+                          top: 10,
+                          left: 10,
+                          zIndex: 1,
+                          p: 0.5,
+                          bgcolor: 'rgba(255,255,255,0.94)',
+                          borderRadius: '50%',
+                          color: 'rgba(31,42,35,0.5)',
+                          '&:hover': {
+                            bgcolor: 'rgba(255,255,255,0.94)',
+                          },
+                        }}
+                      />
+
+                      <CardContent
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: { xs: '1fr', md: '92px minmax(0, 1fr) 124px 128px' },
+                          gap: { xs: 1.5, md: 1 },
+                          alignItems: 'center',
                         }}
                       >
                         <Box
-                          component="img"
-                          src={getCartItemPlaceholderImage(item.productType)}
-                          alt={item.productName}
+                          component={RouterLink}
+                          to={`/products/${item.productId}`}
+                          state={{ returnTo: location.pathname + location.search, returnLabel: 'Назад в корзину' }}
                           sx={{
-                            width: 92,
-                            height: 118,
-                            objectFit: 'cover',
-                            borderRadius: 2,
-                            border: '1px solid rgba(24,38,31,0.08)',
-                            bgcolor: '#f3f7f4',
-                            display: 'block',
+                            display: { xs: 'none', md: 'block' },
+                            lineHeight: 0,
                           }}
-                        />
-                      </Box>
-
-                      <Box
-                        component={RouterLink}
-                        to={`/products/${item.productId}`}
-                        state={{ returnTo: location.pathname + location.search, returnLabel: 'Назад в корзину' }}
-                        sx={{
-                          display: 'grid',
-                          gap: 0.5,
-                          color: 'inherit',
-                          textDecoration: 'none',
-                          minWidth: 0,
-                        }}
-                      >
-                        <Typography variant="h6">{item.productName}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatCurrency(item.unitPrice)} за единицу
-                        </Typography>
-                      </Box>
-
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        sx={{
-                          alignItems: 'center',
-                          justifySelf: { xs: 'start', md: 'stretch' },
-                          justifyContent: 'space-between',
-                          width: { xs: 'fit-content', md: 124 },
-                          p: 0.5,
-                          borderRadius: 999,
-                          bgcolor: '#ffffff',
-                          border: '1px solid rgba(24,38,31,0.08)',
-                        }}
-                      >
-                        <IconButton
-                          size="small"
-                          onClick={() => void updateItem(item.productId, Math.max(0, item.quantity - 1))}
                         >
-                          <Minus size={16} />
-                        </IconButton>
-                        <Typography sx={{ minWidth: 28, textAlign: 'center', fontWeight: 600 }}>
-                          {item.quantity}
-                        </Typography>
-                        <IconButton size="small" onClick={() => void updateItem(item.productId, item.quantity + 1)}>
-                          <Plus size={16} />
-                        </IconButton>
-                      </Stack>
+                          <Box
+                            component="img"
+                            src={getCartItemPlaceholderImage(item.productType)}
+                            alt={item.productName}
+                            sx={{
+                              width: 92,
+                              height: 118,
+                              objectFit: 'cover',
+                              borderRadius: 2,
+                              border: '1px solid rgba(24,38,31,0.08)',
+                              bgcolor: '#f3f7f4',
+                              display: 'block',
+                            }}
+                          />
+                        </Box>
 
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          justifySelf: { xs: 'start', md: 'end' },
-                          width: { xs: 'auto', md: 128 },
-                          textAlign: { xs: 'left', md: 'right' },
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {formatCurrency(item.lineTotal)}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <Box
+                          component={RouterLink}
+                          to={`/products/${item.productId}`}
+                          state={{ returnTo: location.pathname + location.search, returnLabel: 'Назад в корзину' }}
+                          sx={{
+                            display: 'grid',
+                            gap: 0.5,
+                            color: 'inherit',
+                            textDecoration: 'none',
+                            minWidth: 0,
+                          }}
+                        >
+                          <Typography variant="h6">{item.productName}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {formatCurrency(item.unitPrice)} за единицу
+                          </Typography>
+                        </Box>
+
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          sx={{
+                            alignItems: 'center',
+                            justifySelf: { xs: 'start', md: 'stretch' },
+                            justifyContent: 'space-between',
+                            width: { xs: 'fit-content', md: 124 },
+                            p: 0.5,
+                            borderRadius: 999,
+                            bgcolor: '#ffffff',
+                            border: '1px solid rgba(24,38,31,0.08)',
+                          }}
+                        >
+                          <IconButton size="small" onClick={() => void updateItem(item.productId, Math.max(0, item.quantity - 1))}>
+                            <Minus size={16} />
+                          </IconButton>
+                          <Typography sx={{ minWidth: 28, textAlign: 'center', fontWeight: 600 }}>{item.quantity}</Typography>
+                          <IconButton size="small" onClick={() => void updateItem(item.productId, item.quantity + 1)}>
+                            <Plus size={16} />
+                          </IconButton>
+                        </Stack>
+
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            justifySelf: { xs: 'start', md: 'end' },
+                            width: { xs: 'auto', md: 128 },
+                            textAlign: { xs: 'left', md: 'right' },
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {formatCurrency(item.lineTotal)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </Stack>
             )}
           </CardContent>
@@ -431,7 +526,7 @@ export function CartPage() {
               </Typography>
             </Box>
 
-            <form onSubmit={(event) => void handleCheckout(event)}>
+            <form onSubmit={(event) => handleCheckout(event)}>
               <Stack spacing={2}>
                 <Box sx={{ display: 'grid', gap: 1 }}>
                   <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
@@ -466,56 +561,55 @@ export function CartPage() {
                 {deliveryMethod === 'Delivery' ? (
                   <>
                     <Autocomplete
-                    freeSolo
-                    filterOptions={(options) => options}
-                    options={addressOptions}
-                    loading={isAddressLoading}
-                    noOptionsText={
-                      addressLookupError
-                        ? addressLookupError
-                        : deliveryAddress.trim().length < 3
-                          ? 'Введите минимум 3 символа.'
-                          : 'Подсказки не найдены.'
-                    }
-                    inputValue={deliveryAddress}
-                    onInputChange={(_event: SyntheticEvent, nextValue: string) => {
-                      setDeliveryAddress(nextValue);
-                    }}
-                    onChange={(_event: SyntheticEvent, option: AddressSuggestion | string | null) => {
-                      if (!option) {
-                        return;
+                      freeSolo
+                      filterOptions={(options) => options}
+                      options={addressOptions}
+                      loading={isAddressLoading}
+                      noOptionsText={
+                        addressLookupError
+                          ? addressLookupError
+                          : deliveryAddress.trim().length < 3
+                            ? 'Введите минимум 3 символа.'
+                            : 'Подсказки не найдены.'
                       }
+                      inputValue={deliveryAddress}
+                      onInputChange={(_event: SyntheticEvent, nextValue: string) => {
+                        setDeliveryAddress(nextValue);
+                      }}
+                      onChange={(_event: SyntheticEvent, option: AddressSuggestion | string | null) => {
+                        if (!option) {
+                          return;
+                        }
 
-                      if (typeof option === 'string') {
-                        setDeliveryAddress(option);
-                        return;
-                      }
+                        if (typeof option === 'string') {
+                          setDeliveryAddress(option);
+                          return;
+                        }
 
-                      setDeliveryAddress(option.unrestrictedValue || option.value);
-                    }}
-                    getOptionLabel={(option) => (typeof option === 'string' ? option : option.unrestrictedValue || option.value)}
-                    renderOption={(props, option) => {
-                      if (typeof option === 'string') {
+                        setDeliveryAddress(option.unrestrictedValue || option.value);
+                      }}
+                      getOptionLabel={(option) => (typeof option === 'string' ? option : option.unrestrictedValue || option.value)}
+                      renderOption={(props, option) => {
+                        if (typeof option === 'string') {
+                          return (
+                            <Box component="li" {...props}>
+                              <Typography variant="body2">{option}</Typography>
+                            </Box>
+                          );
+                        }
+
                         return (
-                          <Box component="li" {...props}>
-                            <Typography variant="body2">{option}</Typography>
+                          <Box component="li" {...props} sx={{ display: 'grid', gap: 0.25 }}>
+                            <Typography variant="body2">{option.value}</Typography>
+                            {option.postalCode || option.city || option.street || option.house ? (
+                              <Typography variant="caption" color="text.secondary">
+                                {[option.postalCode, option.city, option.street, option.house].filter(Boolean).join(', ')}
+                              </Typography>
+                            ) : null}
                           </Box>
                         );
-                      }
-
-                      return (
-                        <Box component="li" {...props} sx={{ display: 'grid', gap: 0.25 }}>
-                          <Typography variant="body2">{option.value}</Typography>
-                          {option.postalCode || option.city || option.street || option.house ? (
-                            <Typography variant="caption" color="text.secondary">
-                              {[option.postalCode, option.city, option.street, option.house].filter(Boolean).join(', ')}
-                            </Typography>
-                          ) : null}
-                        </Box>
-                      );
-                    }}
-                    renderInput={(params) => {
-                      return (
+                      }}
+                      renderInput={(params) => (
                         <TextField
                           {...params}
                           label="Адрес доставки"
@@ -545,16 +639,13 @@ export function CartPage() {
                             },
                           }}
                         />
-                      );
-                    }}
+                      )}
                     />
                     {addressLookupError ? <Alert severity="error">{addressLookupError}</Alert> : null}
                   </>
                 ) : (
                   <FormControlLabel
-                    control={
-                      <Checkbox checked={payOnPickup} onChange={(event) => setPayOnPickup(event.target.checked)} />
-                    }
+                    control={<Checkbox checked={payOnPickup} onChange={(event) => setPayOnPickup(event.target.checked)} />}
                     label="Оплатить при получении"
                   />
                 )}
@@ -570,16 +661,16 @@ export function CartPage() {
                   <CardContent sx={{ display: 'grid', gap: 0.9 }}>
                     <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="body2" color="text.secondary">
-                        Товаров
+                        Выбрано позиций
                       </Typography>
-                      <Typography variant="body2">{cart?.items.length ?? 0}</Typography>
+                      <Typography variant="body2">{selectedItems.length}</Typography>
                     </Stack>
 
                     <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="body2" color="text.secondary">
                         Итого
                       </Typography>
-                      <Typography variant="h5">{formatCurrency(cart?.totalAmount ?? 0)}</Typography>
+                      <Typography variant="h5">{formatCurrency(selectedItemsTotal)}</Typography>
                     </Stack>
                   </CardContent>
                 </Card>
@@ -602,6 +693,42 @@ export function CartPage() {
           </CardContent>
         </Card>
       </Box>
+
+      <Dialog open={isCheckoutDialogOpen} onClose={() => (isSubmitting ? undefined : setIsCheckoutDialogOpen(false))} fullWidth maxWidth="xs">
+        <DialogTitle>Подтверждение заказа</DialogTitle>
+        <DialogContent sx={{ display: 'grid', gap: 1.5, pt: 1 }}>
+          <Typography color="text.secondary">
+            Проверьте выбранные товары и детали получения перед окончательным оформлением заказа.
+          </Typography>
+
+          <Card variant="outlined" sx={{ borderRadius: 2, boxShadow: 'none' }}>
+            <CardContent sx={{ display: 'grid', gap: 1 }}>
+              <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 2 }}>
+                <Typography color="text.secondary">Способ получения</Typography>
+                <Typography>{deliveryMethod === 'Delivery' ? 'Доставка' : 'Самовывоз'}</Typography>
+              </Stack>
+
+              <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 2 }}>
+                <Typography color="text.secondary">Выбрано позиций</Typography>
+                <Typography>{selectedItems.length}</Typography>
+              </Stack>
+
+              <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 2 }}>
+                <Typography color="text.secondary">Итого</Typography>
+                <Typography sx={{ fontWeight: 700 }}>{formatCurrency(selectedItemsTotal)}</Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button color="inherit" onClick={() => setIsCheckoutDialogOpen(false)} disabled={isSubmitting}>
+            Отмена
+          </Button>
+          <Button variant="contained" onClick={() => void handleConfirmCheckout()} disabled={isSubmitting}>
+            {isSubmitting ? 'Оформляем...' : 'Подтвердить заказ'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

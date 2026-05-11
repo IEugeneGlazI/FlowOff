@@ -7,6 +7,7 @@ import {
   CardContent,
   Chip,
   Divider,
+  Dialog,
   Snackbar,
   Stack,
   TextField,
@@ -61,6 +62,7 @@ export function ProductPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const { addItem } = useCart();
   const returnTo =
     typeof location.state === 'object' && location.state && 'returnTo' in location.state && typeof location.state.returnTo === 'string'
@@ -212,6 +214,7 @@ export function ProductPage() {
         >
           <Box sx={{ p: { xs: 2, md: 3 }, pb: 0 }}>
             <Box
+              onClick={() => setIsImagePreviewOpen(true)}
               sx={{
                 position: 'relative',
                 width: '100%',
@@ -222,6 +225,7 @@ export function ProductPage() {
                 backgroundColor: '#f3f7f4',
                 aspectRatio: { xs: '4 / 5', md: '3 / 4' },
                 boxShadow: '0 20px 48px rgba(31,42,35,0.12)',
+                cursor: 'pointer',
               }}
             >
               <Box
@@ -241,6 +245,7 @@ export function ProductPage() {
                   inset: 0,
                   background:
                     'linear-gradient(180deg, rgba(14,19,16,0.02) 0%, rgba(14,19,16,0.06) 48%, rgba(14,19,16,0.24) 100%)',
+                  pointerEvents: 'none',
                 }}
               />
               <Box
@@ -445,6 +450,40 @@ export function ProductPage() {
           {feedback?.message}
         </Alert>
       </Snackbar>
+
+      <Dialog
+        open={isImagePreviewOpen}
+        onClose={() => setIsImagePreviewOpen(false)}
+        maxWidth={false}
+        slotProps={{
+          paper: {
+            sx: {
+              m: 0,
+              maxWidth: 'min(92vw, 1200px)',
+              width: 'fit-content',
+              bgcolor: 'transparent',
+              boxShadow: 'none',
+              overflow: 'hidden',
+            },
+          },
+        }}
+      >
+        <Box
+          component="img"
+          src={getProductPlaceholderImage(product)}
+          alt={product.name}
+          sx={{
+            display: 'block',
+            maxWidth: '92vw',
+            maxHeight: '92vh',
+            width: 'auto',
+            height: 'auto',
+            objectFit: 'contain',
+            borderRadius: 2,
+            backgroundColor: '#f3f7f4',
+          }}
+        />
+      </Dialog>
     </Box>
   );
 }

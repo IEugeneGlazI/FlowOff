@@ -112,6 +112,10 @@ function getProductTypeLabel(productType: ProductType) {
 }
 
 function getOrderStageLabel(order: Order) {
+  if (order.deliveryMethod !== 'Pickup' && order.deliveryStatus === 'Заказ готов к выдаче') {
+    return 'Заказ передается в доставку';
+  }
+
   return order.deliveryStatus || 'Заказ на рассмотрении';
 }
 
@@ -531,7 +535,7 @@ export function FloristPanelPage({
                 <Box sx={{ display: 'grid', gap: 0.5 }}>
                   <Typography variant="h5">Каталог товаров</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Здесь видны и скрытые товары.
+                    Создавайте, редактируйте и скрывайте товары каталога.
                   </Typography>
                 </Box>
                 <Button
@@ -935,8 +939,8 @@ export function FloristPanelPage({
               <Typography variant="h5">{ordersTab === 'assembly' ? 'Заказы для сборки' : 'Принятые заказы'}</Typography>
               <Typography variant="body2" color="text.secondary">
                 {ordersTab === 'assembly'
-                  ? 'Здесь находятся заказы, которые флорист может принять в сборку.'
-                  : 'Здесь находятся заказы, уже принятые флористом в работу.'}
+                  ? 'Здесь находятся заказы, которые можно принять в сборку.'
+                  : 'Здесь находятся заказы, уже принятые в работу.'}
               </Typography>
             </Box>
 
