@@ -49,4 +49,7 @@ export type Promotion = {
   startsAtUtc: string;
   endsAtUtc: string;
   isActive: boolean;
+  bouquetIds?: string[];
+  flowerIds?: string[];
+  giftIds?: string[];
 };

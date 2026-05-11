@@ -25,6 +25,24 @@ public class AdminUsersController : ControllerBase
         return Ok(await _userManagementService.GetAllAsync(cancellationToken));
     }
 
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(UserManagementDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserManagementDto>> GetById(string id, CancellationToken cancellationToken)
+    {
+        var user = await _userManagementService.GetByIdAsync(id, cancellationToken);
+        return user is null ? NotFound() : Ok(user);
+    }
+
+    [HttpPost]
+    [ProducesResponseType(typeof(UserManagementDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UserManagementDto>> Create(
+        CreateUserRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await _userManagementService.CreateAsync(request, cancellationToken));
+    }
+
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(UserManagementDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<UserManagementDto>> Update(
@@ -43,6 +61,14 @@ public class AdminUsersController : ControllerBase
         CancellationToken cancellationToken)
     {
         return Ok(await _userManagementService.UpdateBlockStatusAsync(id, request, cancellationToken));
+    }
+
+    [HttpPost("{id}/send-password-reset")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> SendPasswordReset(string id, CancellationToken cancellationToken)
+    {
+        await _userManagementService.SendPasswordResetAsync(id, cancellationToken);
+        return NoContent();
     }
 
     [HttpDelete("{id}")]

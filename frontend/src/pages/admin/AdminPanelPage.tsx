@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   Alert,
+  alpha,
   Box,
   Button,
   Card,
@@ -8,7 +10,6 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  Divider,
   FormControl,
   InputLabel,
   ListSubheader,
@@ -49,9 +50,11 @@ import {
 } from '../../features/catalog/catalogApi';
 import { apiRequest, ApiError } from '../../shared/api';
 import { formatCurrency, formatDate } from '../../shared/format';
+import { AdminPromotionsTab } from './AdminPromotionsTab';
+import { AdminUsersTab } from './AdminUsersTab';
 import { FloristPanelPage } from '../florist/FloristPanelPage';
 
-type AdminTab = 'products' | 'references' | 'orders';
+type AdminTab = 'products' | 'references' | 'promotions' | 'orders' | 'users';
 type ReferenceTab =
   | 'categories'
   | 'colors'
@@ -220,6 +223,68 @@ function getProductPlaceholderImage(productType: Order['items'][number]['product
   }
 
   return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=900&q=80';
+}
+
+function getOrderItemsCountLabel(count: number) {
+  if (count % 10 === 1 && count % 100 !== 11) {
+    return `${count} позиция`;
+  }
+
+  if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14)) {
+    return `${count} позиции`;
+  }
+
+  return `${count} позиций`;
+}
+
+function OrderInfoCard({
+  label,
+  primary,
+  secondary,
+  tertiary,
+  quaternary,
+}: {
+  label: string;
+  primary: ReactNode;
+  secondary?: ReactNode;
+  tertiary?: ReactNode;
+  quaternary?: ReactNode;
+}) {
+  return (
+    <Card
+      variant="outlined"
+      sx={{
+        height: '100%',
+        borderRadius: 2,
+        bgcolor: alpha('#f8fbf9', 0.92),
+        boxShadow: 'none',
+      }}
+    >
+      <CardContent sx={{ p: 1.75, display: 'grid', gap: 0.55 }}>
+        <Typography variant="caption" color="text.secondary">
+          {label}
+        </Typography>
+        <Typography variant="body1" sx={{ fontWeight: 600 }}>
+          {primary}
+        </Typography>
+        {secondary ? (
+          <Typography variant="body2" color="text.secondary">
+            {secondary}
+          </Typography>
+        ) : null}
+        {tertiary ? (
+          <Typography variant="body2" color="text.secondary">
+            {tertiary}
+          </Typography>
+        ) : null}
+        {quaternary ? (
+          <Typography variant="body2" color="text.secondary">
+            {quaternary}
+          </Typography>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
 }
 
 function getDialogTitle(dialogState: ReferenceDialogState) {
@@ -538,12 +603,17 @@ export function AdminPanelPage() {
 
   const filteredOrders = useMemo(() => {
     const needle = orderSearch.trim().toLowerCase();
+    const normalizedNeedle = needle.replace(/^#/, '');
 
     return orders.filter((order) => {
+      const orderNumberRaw = String(order.orderNumber ?? '');
+      const orderNumberFormatted = order.orderNumber ? String(order.orderNumber).padStart(6, '0') : '';
+
       const matchesSearch =
         !needle ||
         order.id.toLowerCase().includes(needle) ||
-        String(order.orderNumber ?? '').includes(needle) ||
+        orderNumberRaw.includes(normalizedNeedle) ||
+        orderNumberFormatted.includes(normalizedNeedle) ||
         order.id.slice(0, 8).toLowerCase().includes(needle) ||
         (order.customerEmail ?? '').toLowerCase().includes(needle) ||
         (order.customerFullName ?? '').toLowerCase().includes(needle);
@@ -587,7 +657,7 @@ export function AdminPanelPage() {
       <Box sx={{ display: 'grid', gap: 0.75 }}>
         <Typography variant="h1">Панель администратора</Typography>
         <Typography variant="body1" color="text.secondary">
-          Здесь можно управлять товарами, справочниками и заказами.
+          Здесь можно управлять товарами, справочниками, акциями, заказами и пользователями.
         </Typography>
       </Box>
 
@@ -596,13 +666,16 @@ export function AdminPanelPage() {
           <Tabs value={tab} onChange={(_, value: AdminTab) => setTab(value)} sx={{ minHeight: 48 }}>
             <Tab value="products" label="Товары" />
             <Tab value="references" label="Справочники" />
+            <Tab value="promotions" label="Акции" />
             <Tab value="orders" label="Заказы" />
+            <Tab value="users" label="Пользователи" />
           </Tabs>
         </CardContent>
       </Card>
 
       {tab === 'products' ? <FloristPanelPage mode="admin" allowedTabs={['products']} embedded /> : null}
 
+      {tab === 'promotions' ? <AdminPromotionsTab token={token!} /> : null}
       {tab === 'references' ? (
         <Box sx={{ display: 'grid', gap: 2.5 }}>
           <Card sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
@@ -695,113 +768,170 @@ export function AdminPanelPage() {
 
       {tab === 'orders' ? (
         <Box sx={{ display: 'grid', gap: 2.5 }}>
-          <Card sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
-            <CardContent sx={{ p: { xs: 2, md: 2.5 }, display: 'grid', gap: 2 }} />
-            <CardContent sx={{ p: { xs: 2, md: 2.5 }, pt: 0, display: 'grid', gap: 2 }}>
+          <Card
+            sx={{
+              overflow: 'hidden',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(246,251,247,0.84) 100%)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(24,38,31,0.06)',
+            }}
+          >
+            <CardContent sx={{ p: { xs: 2, md: 2.75 }, display: 'grid', gap: 2.25 }}>
               <Box sx={{ display: 'grid', gap: 0.5 }}>
                 <Typography variant="h5">Все заказы</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Поиск, фильтрация и ручное управление статусами заказов.
+                  Управляйте заказами, следите за текущими статусами и быстро находите нужные позиции по клиенту или номеру.
                 </Typography>
               </Box>
 
-              <Stack direction={{ xs: 'column', xl: 'row' }} spacing={1.5} sx={{ alignItems: { xl: 'center' }, flexWrap: 'wrap' }}>
-                <TextField
-                  label="Поиск по номеру, email, имени"
-                  value={orderSearch}
-                  onChange={(event) => setOrderSearch(event.target.value)}
-                  sx={{ width: { xs: '100%', xl: 320 }, flexShrink: 0 }}
-                />
+              <Box
+                sx={{
+                  p: { xs: 1.5, md: 1.75 },
+                  borderRadius: 2.5,
+                  bgcolor: alpha('#ffffff', 0.54),
+                  border: '1px solid rgba(24,38,31,0.05)',
+                  display: 'grid',
+                  gap: 1.5,
+                }}
+              >
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ alignItems: { md: 'center' } }}>
+                  <TextField
+                    fullWidth
+                    label="Поиск по номеру, email, имени"
+                    value={orderSearch}
+                    onChange={(event) => setOrderSearch(event.target.value)}
+                  />
 
-                <FormControl sx={{ minWidth: 200 }}>
-                  <InputLabel id="admin-order-status-filter-label">Статус заказа</InputLabel>
-                  <Select
-                    labelId="admin-order-status-filter-label"
-                    value={orderStatusFilter}
-                    label="Статус заказа"
-                    onChange={(event: SelectChangeEvent) => setOrderStatusFilter(event.target.value)}
+                  <Button
+                    variant="text"
+                    color="inherit"
+                    onClick={() => {
+                      setOrderSearch('');
+                      setOrderStatusFilter('All');
+                      setDeliveryStatusFilter('All');
+                      setPaymentStatusFilter('All');
+                      setOrderMethodFilter('All');
+                      setOrderDateFrom('');
+                      setOrderDateTo('');
+                    }}
+                    sx={{
+                      minHeight: 48,
+                      px: 2.25,
+                      bgcolor: alpha('#ffffff', 0.52),
+                      width: { xs: '100%', md: 'fit-content' },
+                      alignSelf: { xs: 'stretch', md: 'flex-start' },
+                    }}
                   >
-                    <MenuItem value="All">Все статусы заказа</MenuItem>
-                    {orderStatuses.map((status) => (
-                      <MenuItem key={status.id} value={status.name}>
-                        {status.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                    Сбросить фильтры
+                  </Button>
+                </Stack>
 
-                <FormControl sx={{ minWidth: 220 }}>
-                  <InputLabel id="admin-delivery-status-filter-label">Статус доставки</InputLabel>
-                  <Select
-                    labelId="admin-delivery-status-filter-label"
-                    value={deliveryStatusFilter}
-                    label="Статус доставки"
-                    onChange={(event: SelectChangeEvent) => setDeliveryStatusFilter(event.target.value)}
-                  >
-                    <MenuItem value="All">Все статусы доставки</MenuItem>
-                    {deliveryStatuses.map((status) => (
-                      <MenuItem key={status.id} value={status.name}>
-                        {status.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Box
+                  sx={{
+                    p: { xs: 1.5, md: 1.75 },
+                    borderRadius: 2.25,
+                    bgcolor: alpha('#ffffff', 0.52),
+                    border: '1px solid rgba(24,38,31,0.05)',
+                    display: 'grid',
+                    gap: 1.1,
+                  }}
+                >
+                  <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
+                    Фильтры
+                  </Typography>
 
-                <FormControl sx={{ minWidth: 200 }}>
-                  <InputLabel id="admin-payment-status-filter-label">Статус оплаты</InputLabel>
-                  <Select
-                    labelId="admin-payment-status-filter-label"
-                    value={paymentStatusFilter}
-                    label="Статус оплаты"
-                    onChange={(event: SelectChangeEvent) => setPaymentStatusFilter(event.target.value)}
-                  >
-                    <MenuItem value="All">Все статусы оплаты</MenuItem>
-                    {paymentStatuses.map((status) => (
-                      <MenuItem key={status.id} value={status.name}>
-                        {status.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                  <Stack direction={{ xs: 'column', xl: 'row' }} spacing={1.5} sx={{ flexWrap: 'wrap' }}>
+                    <FormControl sx={{ minWidth: 200, flex: 1 }}>
+                      <InputLabel id="admin-order-status-filter-label">Статус заказа</InputLabel>
+                      <Select
+                        labelId="admin-order-status-filter-label"
+                        value={orderStatusFilter}
+                        label="Статус заказа"
+                        onChange={(event: SelectChangeEvent) => setOrderStatusFilter(event.target.value)}
+                      >
+                        <MenuItem value="All">Все статусы заказа</MenuItem>
+                        {orderStatuses.map((status) => (
+                          <MenuItem key={status.id} value={status.name}>
+                            {status.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
 
-                <FormControl sx={{ minWidth: 180 }}>
-                  <InputLabel id="admin-order-method-label">Получение</InputLabel>
-                  <Select
-                    labelId="admin-order-method-label"
-                    value={orderMethodFilter}
-                    label="Получение"
-                    onChange={(event: SelectChangeEvent) => setOrderMethodFilter(event.target.value as 'All' | 'Pickup' | 'Delivery')}
-                  >
-                    <MenuItem value="All">Все</MenuItem>
-                    <MenuItem value="Delivery">Доставка</MenuItem>
-                    <MenuItem value="Pickup">Самовывоз</MenuItem>
-                  </Select>
-                </FormControl>
-              </Stack>
+                    <FormControl sx={{ minWidth: 220, flex: 1 }}>
+                      <InputLabel id="admin-delivery-status-filter-label">Статус доставки</InputLabel>
+                      <Select
+                        labelId="admin-delivery-status-filter-label"
+                        value={deliveryStatusFilter}
+                        label="Статус доставки"
+                        onChange={(event: SelectChangeEvent) => setDeliveryStatusFilter(event.target.value)}
+                      >
+                        <MenuItem value="All">Все статусы доставки</MenuItem>
+                        {deliveryStatuses.map((status) => (
+                          <MenuItem key={status.id} value={status.name}>
+                            {status.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
 
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ alignItems: { md: 'center' } }}>
-                <TextField
-                  label="Дата от"
-                  type="date"
-                  value={orderDateFrom}
-                  onChange={(event) => setOrderDateFrom(event.target.value)}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  sx={{ width: { xs: '100%', md: 220 } }}
-                />
+                    <FormControl sx={{ minWidth: 200, flex: 1 }}>
+                      <InputLabel id="admin-payment-status-filter-label">Статус оплаты</InputLabel>
+                      <Select
+                        labelId="admin-payment-status-filter-label"
+                        value={paymentStatusFilter}
+                        label="Статус оплаты"
+                        onChange={(event: SelectChangeEvent) => setPaymentStatusFilter(event.target.value)}
+                      >
+                        <MenuItem value="All">Все статусы оплаты</MenuItem>
+                        {paymentStatuses.map((status) => (
+                          <MenuItem key={status.id} value={status.name}>
+                            {status.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
 
-                <TextField
-                  label="Дата до"
-                  type="date"
-                  value={orderDateTo}
-                  onChange={(event) => setOrderDateTo(event.target.value)}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  sx={{ width: { xs: '100%', md: 220 } }}
-                />
-              </Stack>
+                    <FormControl sx={{ minWidth: 180, flex: 1 }}>
+                      <InputLabel id="admin-order-method-label">Получение</InputLabel>
+                      <Select
+                        labelId="admin-order-method-label"
+                        value={orderMethodFilter}
+                        label="Получение"
+                        onChange={(event: SelectChangeEvent) => setOrderMethodFilter(event.target.value as 'All' | 'Pickup' | 'Delivery')}
+                      >
+                        <MenuItem value="All">Все способы</MenuItem>
+                        <MenuItem value="Delivery">Доставка</MenuItem>
+                        <MenuItem value="Pickup">Самовывоз</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Stack>
+
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ alignItems: { md: 'center' } }}>
+                    <TextField
+                      label="Дата от"
+                      type="date"
+                      value={orderDateFrom}
+                      onChange={(event) => setOrderDateFrom(event.target.value)}
+                      slotProps={{ inputLabel: { shrink: true } }}
+                      sx={{ width: { xs: '100%', md: 220 } }}
+                    />
+
+                    <TextField
+                      label="Дата до"
+                      type="date"
+                      value={orderDateTo}
+                      onChange={(event) => setOrderDateTo(event.target.value)}
+                      slotProps={{ inputLabel: { shrink: true } }}
+                      sx={{ width: { xs: '100%', md: 220 } }}
+                    />
+                  </Stack>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
 
-          <Box sx={{ display: 'grid', gap: 1.25 }}>
+          <Box sx={{ display: 'grid', gap: 1.5 }}>
             {filteredOrders.map((order) => (
               <Card key={order.id} sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
                 <CardContent sx={{ p: { xs: 2, md: 2.5 }, display: 'grid', gap: 2 }}>
@@ -811,168 +941,176 @@ export function AdminPanelPage() {
                     sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', lg: 'center' } }}
                   >
                     <Box sx={{ display: 'grid', gap: 0.45 }}>
-                      <Typography variant="h5">Заказ #{order.orderNumber ? String(order.orderNumber).padStart(6, '0') : order.id.slice(0, 8)}</Typography>
+                      <Typography variant="h5">
+                        Заказ #{order.orderNumber ? String(order.orderNumber).padStart(6, '0') : order.id.slice(0, 8)}
+                      </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Оформлен {formatDate(order.createdAtUtc)}
                       </Typography>
                     </Box>
 
-                    <Typography variant="h5">{formatCurrency(order.totalAmount)}</Typography>
-                  </Stack>
-
-                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                    <Box sx={{ display: 'grid', gap: 0.45, minWidth: 0, flex: 1 }}>
+                    <Box sx={{ textAlign: { xs: 'left', lg: 'right' } }}>
+                      <Typography variant="h5">{formatCurrency(order.totalAmount)}</Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Клиент
-                      </Typography>
-                      <Typography>{order.customerFullName || 'Не указано'}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {order.customerEmail || 'Email не указан'}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ display: 'grid', gap: 0.45, minWidth: 0, flex: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Получение
-                      </Typography>
-                      <Typography>{getDeliveryMethodLabel(order.deliveryMethod)}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {order.deliveryAddress || 'Без адреса'}
+                        {getOrderItemsCountLabel(order.items.length)}
                       </Typography>
                     </Box>
                   </Stack>
 
-                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                    <Box sx={{ display: 'grid', gap: 0.45, flex: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Флорист
-                      </Typography>
-                      <Typography>{order.floristFullName || 'Не назначен'}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {order.floristEmail || '—'}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ display: 'grid', gap: 0.45, flex: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Доставщик
-                      </Typography>
-                      <Typography>{order.courierFullName || 'Не назначен'}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {order.courierEmail || '—'}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ display: 'grid', gap: 0.45, flex: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Статусы
-                      </Typography>
-                      <Typography>Заказ: {order.status}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Доставка: {order.deliveryStatus || 'Не указано'}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Оплата: {order.paymentStatus || 'Не указано'}
-                      </Typography>
-                    </Box>
-                  </Stack>
-
-                  <Divider />
-
-                  <Box sx={{ display: 'grid', gap: 1 }}>
-                    {order.items.map((item, index) => (
-                      <Stack
-                        key={`${item.productId}-${index}`}
-                        component={RouterLink}
-                        to={`/products/${item.productId}`}
-                        state={{ returnTo: location.pathname + location.search, returnLabel: 'Назад в панель администратора' }}
-                        direction={{ xs: 'column', sm: 'row' }}
-                        spacing={1}
-                        sx={{
-                          justifyContent: 'space-between',
-                          alignItems: { xs: 'flex-start', sm: 'center' },
-                          color: 'inherit',
-                          textDecoration: 'none',
-                          p: 1,
-                          borderRadius: 2,
-                          transition: 'transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease',
-                          '&:hover': {
-                            transform: 'translateY(-1px)',
-                            boxShadow: '0 12px 28px rgba(31,42,35,0.08)',
-                            backgroundColor: 'rgba(255,255,255,0.94)',
-                          },
-                        }}
-                      >
-                        <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', minWidth: 0 }}>
-                          <Box
-                            component="img"
-                            src={getProductPlaceholderImage(item.productType)}
-                            alt={item.productName}
-                            sx={{
-                              width: 48,
-                              height: 48,
-                              borderRadius: 1.5,
-                              objectFit: 'cover',
-                              display: 'block',
-                              flexShrink: 0,
-                              border: '1px solid rgba(31, 42, 35, 0.08)',
-                            }}
-                          />
-                          <Typography variant="body2">
-                            {item.productName} x {item.quantity}
-                          </Typography>
-                        </Stack>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatCurrency(item.unitPrice * item.quantity)}
-                        </Typography>
-                      </Stack>
-                    ))}
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))', xl: 'repeat(4, minmax(0, 1fr))' },
+                      gap: 1.5,
+                    }}
+                  >
+                    <OrderInfoCard
+                      label="Клиент"
+                      primary={order.customerFullName || 'Не указано'}
+                      secondary={order.customerEmail || 'Email не указан'}
+                    />
+                    <OrderInfoCard
+                      label="Получение"
+                      primary={getDeliveryMethodLabel(order.deliveryMethod)}
+                      secondary={order.deliveryAddress || 'Без адреса'}
+                    />
+                    <OrderInfoCard
+                      label="Ответственные"
+                      primary={
+                        <Box component="span" sx={{ fontWeight: 600 }}>
+                          <strong>Флорист:</strong> {order.floristFullName || 'Не назначен'}
+                        </Box>
+                      }
+                      secondary={order.floristEmail || 'Флорист без email'}
+                      tertiary={
+                        <Box component="span" sx={{ fontWeight: 600 }}>
+                          <strong>Доставщик:</strong> {order.courierFullName || 'Не назначен'}
+                        </Box>
+                      }
+                      quaternary={order.courierEmail || 'Доставщик без email'}
+                    />
+                    <OrderInfoCard
+                      label="Статусы"
+                      primary={`Заказ: ${order.status}`}
+                      secondary={`Доставка: ${order.deliveryStatus || 'Не указано'}`}
+                      tertiary={`Оплата: ${order.paymentStatus || 'Не указано'}`}
+                    />
                   </Box>
 
-                  <Divider />
+                  <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
+                    <CardContent sx={{ p: { xs: 1.5, md: 1.75 }, display: 'grid', gap: 1 }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
+                        Состав заказа
+                      </Typography>
 
-                  <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.25} sx={{ alignItems: { lg: 'center' } }}>
-                    <FormControl sx={{ minWidth: 280 }}>
-                      <InputLabel id={`admin-order-status-draft-${order.id}`}>Изменить статус</InputLabel>
-                      <Select
-                        labelId={`admin-order-status-draft-${order.id}`}
-                        value={orderStatusDrafts[order.id] ?? order.status}
-                        label="Изменить статус"
-                        onChange={(event: SelectChangeEvent) =>
-                          setOrderStatusDrafts((current) => ({ ...current, [order.id]: event.target.value }))
-                        }
-                      >
-                        <ListSubheader>Статус заказа</ListSubheader>
-                        {allStatusOptions.order.map((status) => (
-                          <MenuItem key={`order-${status.id}`} value={status.name}>
-                            {status.name}
-                          </MenuItem>
-                        ))}
-                        <ListSubheader>Статус доставки</ListSubheader>
-                        {allStatusOptions.delivery.map((status) => (
-                          <MenuItem key={`delivery-${status.id}`} value={status.name}>
-                            {status.name}
-                          </MenuItem>
-                        ))}
-                        <ListSubheader>Статус оплаты</ListSubheader>
-                        {allStatusOptions.payment.map((status) => (
-                          <MenuItem key={`payment-${status.id}`} value={status.name}>
-                            {status.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                      <Box sx={{ display: 'grid', gap: 1 }}>
+                        {order.items.map((item, index) => (
+                          <Stack
+                            key={`${item.productId}-${index}`}
+                            component={RouterLink}
+                            to={`/products/${item.productId}`}
+                            state={{ returnTo: location.pathname + location.search, returnLabel: 'Назад в панель администратора' }}
+                            direction={{ xs: 'column', sm: 'row' }}
+                            spacing={1}
+                            sx={{
+                              justifyContent: 'space-between',
+                              alignItems: { xs: 'flex-start', sm: 'center' },
+                              color: 'inherit',
+                              textDecoration: 'none',
+                              p: 1,
+                              borderRadius: 2,
+                              transition: 'transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease',
+                              '&:hover': {
+                                transform: 'translateY(-1px)',
+                                boxShadow: '0 12px 28px rgba(31,42,35,0.08)',
+                                backgroundColor: 'rgba(255,255,255,0.94)',
+                              },
+                            }}
+                          >
+                            <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', minWidth: 0 }}>
+                              <Box
+                                component="img"
+                                src={getProductPlaceholderImage(item.productType)}
+                                alt={item.productName}
+                                sx={{
+                                  width: 56,
+                                  height: 56,
+                                  borderRadius: 1.5,
+                                  objectFit: 'cover',
+                                  display: 'block',
+                                  flexShrink: 0,
+                                  border: '1px solid rgba(31, 42, 35, 0.08)',
+                                }}
+                              />
+                              <Box sx={{ minWidth: 0 }}>
+                                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                  {item.productName}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {item.quantity} x {formatCurrency(item.unitPrice)}
+                                </Typography>
+                              </Box>
+                            </Stack>
 
-                    <Button variant="contained" onClick={() => void handleAdminOrderStatusSave(order.id)}>
-                      Сохранить статус
-                    </Button>
+                            <Typography variant="body1" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
+                              {formatCurrency(item.unitPrice * item.quantity)}
+                            </Typography>
+                          </Stack>
+                        ))}
+                      </Box>
+                    </CardContent>
+                  </Card>
 
-                    {order.status !== 'Отменен' && order.status !== 'Завершен' ? (
-                      <Button variant="outlined" color="inherit" onClick={() => void handleAdminOrderCancel(order.id)}>
-                        Отменить заказ
-                      </Button>
-                    ) : null}
-                  </Stack>
+                  <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92), boxShadow: 'none' }}>
+                    <CardContent sx={{ p: { xs: 1.5, md: 1.75 }, display: 'grid', gap: 1.25 }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
+                        Действия
+                      </Typography>
+
+                      <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.25} sx={{ alignItems: { lg: 'center' } }}>
+                        <FormControl sx={{ minWidth: 280, flex: 1 }}>
+                          <InputLabel id={`admin-order-status-draft-${order.id}`}>Изменить статус</InputLabel>
+                          <Select
+                            labelId={`admin-order-status-draft-${order.id}`}
+                            value={orderStatusDrafts[order.id] ?? order.status}
+                            label="Изменить статус"
+                            onChange={(event: SelectChangeEvent) =>
+                              setOrderStatusDrafts((current) => ({ ...current, [order.id]: event.target.value }))
+                            }
+                          >
+                            <ListSubheader>Статус заказа</ListSubheader>
+                            {allStatusOptions.order.map((status) => (
+                              <MenuItem key={`order-${status.id}`} value={status.name}>
+                                {status.name}
+                              </MenuItem>
+                            ))}
+                            <ListSubheader>Статус доставки</ListSubheader>
+                            {allStatusOptions.delivery.map((status) => (
+                              <MenuItem key={`delivery-${status.id}`} value={status.name}>
+                                {status.name}
+                              </MenuItem>
+                            ))}
+                            <ListSubheader>Статус оплаты</ListSubheader>
+                            {allStatusOptions.payment.map((status) => (
+                              <MenuItem key={`payment-${status.id}`} value={status.name}>
+                                {status.name}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+
+                        <Button variant="contained" onClick={() => void handleAdminOrderStatusSave(order.id)}>
+                          Сохранить статус
+                        </Button>
+
+                        {order.status !== 'Отменен' && order.status !== 'Завершен' ? (
+                          <Button variant="outlined" color="inherit" onClick={() => void handleAdminOrderCancel(order.id)}>
+                            Отменить заказ
+                          </Button>
+                        ) : null}
+                      </Stack>
+                    </CardContent>
+                  </Card>
                 </CardContent>
               </Card>
             ))}
@@ -983,6 +1121,8 @@ export function AdminPanelPage() {
           </Box>
         </Box>
       ) : null}
+
+      {tab === 'users' ? <AdminUsersTab token={token!} /> : null}
 
       <Dialog open={Boolean(dialogState)} onClose={closeDialog} fullWidth maxWidth="sm">
         <DialogTitle>{getDialogTitle(dialogState)}</DialogTitle>
@@ -1037,3 +1177,4 @@ export function AdminPanelPage() {
     </Box>
   );
 }
+

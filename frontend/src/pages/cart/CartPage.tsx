@@ -242,13 +242,14 @@ export function CartPage() {
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 1.25fr) minmax(340px, 0.75fr)' },
           gap: 2.5,
-          alignItems: 'start',
+          alignItems: hasItems ? 'start' : 'stretch',
         }}
       >
         <Card
           sx={{
             background: 'rgba(255,255,255,0.84)',
             backdropFilter: 'blur(14px)',
+            height: hasItems ? 'auto' : '100%',
           }}
         >
           <CardContent sx={{ p: { xs: 2, md: 2.5 }, display: 'grid', gap: 2 }}>
@@ -417,11 +418,12 @@ export function CartPage() {
           sx={{
             background: 'rgba(255,255,255,0.84)',
             backdropFilter: 'blur(14px)',
-            position: { xl: 'sticky' },
-            top: { xl: 96 },
+            height: hasItems ? 'auto' : '100%',
+            position: hasItems ? { xl: 'sticky' } : 'static',
+            top: hasItems ? { xl: 96 } : 'auto',
           }}
         >
-          <CardContent sx={{ p: { xs: 2, md: 2.5 }, display: 'grid', gap: 2 }}>
+          <CardContent sx={{ p: { xs: 2, md: 2.5 }, display: 'grid', gap: 2, height: '100%', alignContent: 'start' }}>
             <Box sx={{ display: 'grid', gap: 0.75 }}>
               <Typography variant="h5">Оформление заказа</Typography>
               <Typography variant="body2" color="text.secondary">

@@ -91,7 +91,7 @@ export function AppShell() {
               </Box>
             </Stack>
 
-            <Stack direction="row" spacing={1} aria-label="Основная навигация" sx={{ flexWrap: 'wrap' }}>
+            <Stack direction="row" spacing={1} aria-label="Букеты" sx={{ flexWrap: 'wrap' }}>
               <Button
                 component={NavLink}
                 to="/bouquets"

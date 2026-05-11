@@ -15,6 +15,18 @@ type ProductMutationPayload = {
   colorIds?: string[];
 };
 
+type PromotionMutationPayload = {
+  title: string;
+  description?: string | null;
+  discountPercent: number;
+  startsAtUtc: string;
+  endsAtUtc: string;
+  isActive?: boolean;
+  bouquetIds?: string[];
+  flowerIds?: string[];
+  giftIds?: string[];
+};
+
 export async function getCategories() {
   return apiRequest<Category[]>('/Categories');
 }
@@ -146,6 +158,29 @@ export async function deleteFlowerIn(flowerInId: string, token: string) {
 
 export async function getPromotions() {
   return apiRequest<Promotion[]>('/Promotions');
+}
+
+export async function createPromotion(payload: PromotionMutationPayload, token: string) {
+  return apiRequest<Promotion>('/Promotions', {
+    method: 'POST',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updatePromotion(promotionId: string, payload: PromotionMutationPayload, token: string) {
+  return apiRequest<Promotion>(`/Promotions/${promotionId}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deletePromotion(promotionId: string, token: string) {
+  return apiRequest<void>(`/Promotions/${promotionId}`, {
+    method: 'DELETE',
+    token,
+  });
 }
 
 export async function getProducts(filter: {
