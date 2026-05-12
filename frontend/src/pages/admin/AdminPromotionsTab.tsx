@@ -17,12 +17,19 @@ import {
   Stack,
   Switch,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import { PencilLine, Plus, Trash2 } from 'lucide-react';
-import type { Promotion } from '../../entities/catalog';
-import { createPromotion, deletePromotion, getPromotions, updatePromotion } from '../../features/catalog/catalogApi';
+import type { Product, Promotion } from '../../entities/catalog';
+import {
+  createPromotion,
+  deletePromotion,
+  getProducts,
+  getPromotions,
+  updatePromotion,
+} from '../../features/catalog/catalogApi';
 import { ApiError } from '../../shared/api';
 import { formatDate } from '../../shared/format';
 
@@ -65,20 +72,15 @@ function getPromotionState(promotion: Promotion, now: Date) {
   return 'active';
 }
 
-function getPromotionStateLabel(promotion: Promotion, now: Date) {
-  const state = getPromotionState(promotion, now);
-  switch (state) {
-    case 'completed':
-      return 'Завершена';
-    case 'disabled':
-      return 'Отключена';
-    default:
-      return 'Активна';
-  }
+function getSelectedNames(ids: string[], products: Product[]) {
+  return products.filter((product) => ids.includes(product.id)).map((product) => product.name);
 }
 
 export function AdminPromotionsTab({ token }: { token: string }) {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [bouquets, setBouquets] = useState<Product[]>([]);
+  const [flowers, setFlowers] = useState<Product[]>([]);
+  const [gifts, setGifts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [viewFilter, setViewFilter] = useState<PromotionViewFilter>('all');
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -90,14 +92,29 @@ export function AdminPromotionsTab({ token }: { token: string }) {
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [selectedBouquetIds, setSelectedBouquetIds] = useState<string[]>([]);
+  const [selectedFlowerIds, setSelectedFlowerIds] = useState<string[]>([]);
+  const [selectedGiftIds, setSelectedGiftIds] = useState<string[]>([]);
 
   useEffect(() => {
-    void loadPromotions();
+    void Promise.all([loadPromotions(), loadProducts()]);
   }, []);
 
   async function loadPromotions() {
     const nextPromotions = await getPromotions();
     setPromotions(nextPromotions);
+  }
+
+  async function loadProducts() {
+    const [nextBouquets, nextFlowers, nextGifts] = await Promise.all([
+      getProducts({ type: 'Bouquet', includeHidden: true, token }),
+      getProducts({ type: 'Flower', includeHidden: true, token }),
+      getProducts({ type: 'Gift', includeHidden: true, token }),
+    ]);
+
+    setBouquets(nextBouquets);
+    setFlowers(nextFlowers);
+    setGifts(nextGifts);
   }
 
   function resetForm() {
@@ -109,6 +126,9 @@ export function AdminPromotionsTab({ token }: { token: string }) {
     setStartsAt(toLocalDateTimeInput(now.toISOString()));
     setEndsAt(toLocalDateTimeInput(tomorrow.toISOString()));
     setIsActive(true);
+    setSelectedBouquetIds([]);
+    setSelectedFlowerIds([]);
+    setSelectedGiftIds([]);
   }
 
   function openCreateDialog() {
@@ -123,6 +143,9 @@ export function AdminPromotionsTab({ token }: { token: string }) {
     setStartsAt(toLocalDateTimeInput(promotion.startsAtUtc));
     setEndsAt(toLocalDateTimeInput(promotion.endsAtUtc));
     setIsActive(promotion.isActive);
+    setSelectedBouquetIds(promotion.bouquetIds ?? []);
+    setSelectedFlowerIds(promotion.flowerIds ?? []);
+    setSelectedGiftIds(promotion.giftIds ?? []);
     setDialogState({ mode: 'edit', promotion });
   }
 
@@ -159,6 +182,14 @@ export function AdminPromotionsTab({ token }: { token: string }) {
         throw new Error('Процент скидки должен быть в диапазоне от 0.01 до 100.');
       }
 
+      if (
+        selectedBouquetIds.length === 0 &&
+        selectedFlowerIds.length === 0 &&
+        selectedGiftIds.length === 0
+      ) {
+        throw new Error('Выберите хотя бы один букет, цветок или подарок для акции.');
+      }
+
       const payload = {
         title: trimmedTitle,
         description: trimmedDescription || null,
@@ -166,9 +197,9 @@ export function AdminPromotionsTab({ token }: { token: string }) {
         startsAtUtc: toUtcIsoString(startsAt),
         endsAtUtc: toUtcIsoString(endsAt),
         isActive,
-        bouquetIds: [],
-        flowerIds: [],
-        giftIds: [],
+        bouquetIds: selectedBouquetIds,
+        flowerIds: selectedFlowerIds,
+        giftIds: selectedGiftIds,
       };
 
       if (dialogState.mode === 'create') {
@@ -265,7 +296,7 @@ export function AdminPromotionsTab({ token }: { token: string }) {
             <Box sx={{ display: 'grid', gap: 0.5 }}>
               <Typography variant="h5">Акции</Typography>
               <Typography variant="body2" color="text.secondary">
-                Управляйте скидками, периодами действия и видимостью акций для витрины.
+                Управляйте скидками, периодами действия и товарами, на которые распространяется акция.
               </Typography>
             </Box>
 
@@ -333,11 +364,6 @@ export function AdminPromotionsTab({ token }: { token: string }) {
                     <Box sx={{ display: 'grid', gap: 0.5 }}>
                       <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
                         <Typography variant="h6">{promotion.title}</Typography>
-                        <Chip
-                          size="small"
-                          color={getPromotionState(promotion, now) === 'active' ? 'success' : 'default'}
-                          label={getPromotionStateLabel(promotion, now)}
-                        />
                         <Chip size="small" variant="outlined" label={`Скидка ${promotion.discountPercent}%`} />
                       </Stack>
 
@@ -346,9 +372,25 @@ export function AdminPromotionsTab({ token }: { token: string }) {
                           {promotion.description}
                         </Typography>
                       ) : null}
+
+                      <Typography variant="body2" color="text.secondary">
+                        Букеты: {promotion.bouquetIds?.length ?? 0}, цветы: {promotion.flowerIds?.length ?? 0}, подарки: {promotion.giftIds?.length ?? 0}
+                      </Typography>
                     </Box>
 
                     <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                      <Tooltip title={promotion.isActive ? 'Нажмите, чтобы отключить акцию на сайте' : 'Нажмите, чтобы снова включить акцию на сайте'}>
+                        <Chip
+                          label={promotion.isActive ? 'Активна' : 'Отключена'}
+                          color={promotion.isActive ? 'success' : 'default'}
+                          variant="outlined"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void handleToggleActive(promotion, !promotion.isActive);
+                          }}
+                        />
+                      </Tooltip>
+
                       <Button
                         variant="text"
                         color="inherit"
@@ -380,18 +422,7 @@ export function AdminPromotionsTab({ token }: { token: string }) {
                       Период действия: {formatDate(promotion.startsAtUtc)} - {formatDate(promotion.endsAtUtc)}
                     </Typography>
 
-                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Включена
-                      </Typography>
-                      <Switch
-                        checked={promotion.isActive}
-                        onClick={(event) => event.stopPropagation()}
-                        onChange={(_, checked) => {
-                          void handleToggleActive(promotion, checked);
-                        }}
-                      />
-                    </Stack>
+                    <Box />
                   </Stack>
                 </CardContent>
               </Card>
@@ -404,11 +435,11 @@ export function AdminPromotionsTab({ token }: { token: string }) {
         </CardContent>
       </Card>
 
-      <Dialog open={Boolean(dialogState)} onClose={closeDialog} fullWidth maxWidth="sm">
+      <Dialog open={Boolean(dialogState)} onClose={closeDialog} fullWidth maxWidth="md">
         <DialogTitle>{dialogState?.mode === 'edit' ? 'Редактирование акции' : 'Создание акции'}</DialogTitle>
         <DialogContent sx={{ pt: 1, display: 'grid', gap: 2 }}>
           <Typography variant="body2" color="text.secondary">
-            Заполните параметры акции, задайте скидку и укажите срок действия. Акцию можно включать и отключать в любой момент.
+            Заполните параметры акции, задайте скидку, срок действия и отметьте, на какие товары она распространяется.
           </Typography>
 
           <TextField label="Название" value={title} onChange={(event) => setTitle(event.target.value)} fullWidth />
@@ -461,6 +492,71 @@ export function AdminPromotionsTab({ token }: { token: string }) {
             />
           </Stack>
 
+          <Stack spacing={1.5}>
+            <FormControl fullWidth>
+              <InputLabel id="promotion-bouquets-label">Букеты</InputLabel>
+              <Select
+                labelId="promotion-bouquets-label"
+                multiple
+                value={selectedBouquetIds}
+                label="Букеты"
+                onChange={(event) => setSelectedBouquetIds(typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value)}
+                renderValue={(selected) => {
+                  const names = getSelectedNames(selected as string[], bouquets);
+                  return names.length > 0 ? names.join(', ') : 'Не выбраны';
+                }}
+              >
+                {bouquets.map((product) => (
+                  <MenuItem key={product.id} value={product.id}>
+                    {product.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel id="promotion-flowers-label">Цветы</InputLabel>
+              <Select
+                labelId="promotion-flowers-label"
+                multiple
+                value={selectedFlowerIds}
+                label="Цветы"
+                onChange={(event) => setSelectedFlowerIds(typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value)}
+                renderValue={(selected) => {
+                  const names = getSelectedNames(selected as string[], flowers);
+                  return names.length > 0 ? names.join(', ') : 'Не выбраны';
+                }}
+              >
+                {flowers.map((product) => (
+                  <MenuItem key={product.id} value={product.id}>
+                    {product.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel id="promotion-gifts-label">Подарки</InputLabel>
+              <Select
+                labelId="promotion-gifts-label"
+                multiple
+                value={selectedGiftIds}
+                label="Подарки"
+                onChange={(event) => setSelectedGiftIds(typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value)}
+                renderValue={(selected) => {
+                  const names = getSelectedNames(selected as string[], gifts);
+                  return names.length > 0 ? names.join(', ') : 'Не выбраны';
+                }}
+              >
+                {gifts.map((product) => (
+                  <MenuItem key={product.id} value={product.id}>
+                    {product.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+
           <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1.25} sx={{ justifyContent: 'flex-end', pb: 0.5 }}>
             <Button onClick={closeDialog} disabled={isSaving} color="inherit">
               Закрыть
@@ -478,7 +574,11 @@ export function AdminPromotionsTab({ token }: { token: string }) {
         onClose={() => setFeedback(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert onClose={() => setFeedback(null)} severity={feedback?.severity ?? 'success'} variant="filled" sx={{ width: '100%' }}>
+        <Alert
+          onClose={() => setFeedback(null)}
+          severity={feedback?.severity ?? 'success'}
+          sx={{ borderRadius: 2, minWidth: 320, boxShadow: '0 18px 40px rgba(31,42,35,0.18)' }}
+        >
           {feedback?.message}
         </Alert>
       </Snackbar>

@@ -30,7 +30,7 @@ import {
 } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { ImagePlus, PackageCheck, PencilLine, Plus, Trash2, X } from 'lucide-react';
-import type { Category, ColorReference, FlowerInReference, Product, ProductType } from '../../entities/catalog';
+import type { Category, ColorReference, FlowerInReference, Product, ProductType, Promotion } from '../../entities/catalog';
 import type { Order } from '../../entities/cart';
 import { useAuth } from '../../features/auth/AuthContext';
 import {
@@ -39,12 +39,14 @@ import {
   getCategories,
   getColors,
   getFlowerIns,
+  getPromotions,
   getProducts,
   updateProduct,
   uploadProductImage,
 } from '../../features/catalog/catalogApi';
 import { apiRequest, ApiError } from '../../shared/api';
 import { formatCurrency, formatDate } from '../../shared/format';
+import { getPromotionPricing } from '../../shared/promotionPricing';
 
 type FloristTab = 'products' | 'orders';
 type FloristOrdersTab = 'assembly' | 'accepted';
@@ -141,6 +143,7 @@ export function FloristPanelPage({
   const [ordersTab, setOrdersTab] = useState<FloristOrdersTab>('assembly');
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [colors, setColors] = useState<ColorReference[]>([]);
   const [flowerIns, setFlowerIns] = useState<FlowerInReference[]>([]);
@@ -159,6 +162,16 @@ export function FloristPanelPage({
   const token = session?.token ?? null;
   const isAllowed = mode === 'admin' ? session?.role === 'Administrator' : session?.role === 'Florist' || session?.role === 'Administrator';
   const isEditing = Boolean(productForm.id);
+  const pricingByProductId = useMemo(
+    () =>
+      Object.fromEntries(
+        products.map((product) => [
+          product.id,
+          getPromotionPricing({ id: product.id, type: product.type, price: product.price }, promotions),
+        ]),
+      ),
+    [products, promotions],
+  );
 
   useEffect(() => {
     if (!availableTabs.includes(tab)) {
@@ -167,11 +180,14 @@ export function FloristPanelPage({
   }, [availableTabs, defaultTab, tab]);
 
   useEffect(() => {
-    void Promise.all([getCategories(), getColors(), getFlowerIns()]).then(([nextCategories, nextColors, nextFlowerIns]) => {
-      setCategories(nextCategories);
-      setColors(nextColors);
-      setFlowerIns(nextFlowerIns);
-    });
+    void Promise.all([getCategories(), getColors(), getFlowerIns(), getPromotions()]).then(
+      ([nextCategories, nextColors, nextFlowerIns, nextPromotions]) => {
+        setCategories(nextCategories);
+        setColors(nextColors);
+        setFlowerIns(nextFlowerIns);
+        setPromotions(nextPromotions);
+      },
+    );
   }, []);
 
   useEffect(() => {
@@ -648,9 +664,19 @@ export function FloristPanelPage({
                           />
                           <Box sx={{ display: 'grid', gap: 0.4, minWidth: 0 }}>
                             <Typography variant="h6">{product.name}</Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {getProductTypeLabel(product.type)} • {formatCurrency(product.price)}
-                            </Typography>
+                            <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
+                              <Typography variant="body2" color="text.secondary">
+                                {getProductTypeLabel(product.type)}
+                              </Typography>
+                              <Typography variant="body1" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                                {formatCurrency(pricingByProductId[product.id]?.discountedPrice ?? product.price)}
+                              </Typography>
+                              {pricingByProductId[product.id]?.hasDiscount ? (
+                                <Typography variant="caption" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+                                  {formatCurrency(product.price)}
+                                </Typography>
+                              ) : null}
+                            </Stack>
                           </Box>
                         </Stack>
 

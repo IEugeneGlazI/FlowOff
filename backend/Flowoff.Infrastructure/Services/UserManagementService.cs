@@ -130,6 +130,25 @@ public class UserManagementService : IUserManagementService
             cancellationToken);
     }
 
+    public async Task<UserManagementDto> RestoreAsync(string id, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.Users.FirstOrDefaultAsync(entity => entity.Id == id, cancellationToken)
+            ?? throw new InvalidOperationException("User not found.");
+
+        user.IsDeleted = false;
+        user.DeletedAtUtc = null;
+        user.LockoutEnabled = true;
+        user.LockoutEnd = null;
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
+        }
+
+        return Map(user);
+    }
+
     public async Task<UserManagementDto> UpdateAsync(string id, UpdateUserRequestDto request, CancellationToken cancellationToken)
     {
         var user = await _userManager.Users.FirstOrDefaultAsync(entity => entity.Id == id, cancellationToken)

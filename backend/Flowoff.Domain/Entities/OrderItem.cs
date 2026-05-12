@@ -25,12 +25,12 @@ public class OrderItem : Entity
     {
     }
 
-    public OrderItem(Product product, int quantity)
+    public OrderItem(Product product, int quantity, decimal? unitPrice = null)
     {
         SetProductReference(product);
         ProductType = product.Type.ToString();
         ProductName = product.Name;
-        UnitPrice = product.Price;
+        UnitPrice = unitPrice ?? product.Price;
         Quantity = quantity;
     }
 

@@ -28,6 +28,7 @@ import { getCategories, getColors, getFlowerIns, getProducts, getPromotions } fr
 import { useCart } from '../../features/cart/CartContext';
 import { ApiError } from '../../shared/api';
 import { formatCurrency } from '../../shared/format';
+import { getPromotionPricing } from '../../shared/promotionPricing';
 
 type CatalogTab = 'bouquets' | 'flowers' | 'gifts';
 type PriceRange = [number, number];
@@ -579,6 +580,13 @@ export function StorefrontPage() {
           <Grid container spacing={2}>
             {filteredProducts.map((product) => (
               <Grid key={product.id} size={{ xs: 12, md: 6, xl: 4 }}>
+                {(() => {
+                  const pricing = getPromotionPricing(
+                    { id: product.id, type: product.type, price: product.price },
+                    promotions,
+                  );
+
+                  return (
                 <Card
                   sx={{
                     height: '100%',
@@ -649,9 +657,24 @@ export function StorefrontPage() {
                             boxShadow: '0 8px 24px rgba(31,42,35,0.10)',
                           }}
                         >
-                          <Typography variant="h5" sx={{ maxWidth: '10ch' }}>
-                            {formatCurrency(product.price)}
-                          </Typography>
+                          {pricing.hasDiscount ? (
+                            <Stack spacing={0.15} sx={{ alignItems: 'flex-end' }}>
+                              <Typography variant="h5" sx={{ maxWidth: '10ch' }}>
+                                {formatCurrency(pricing.discountedPrice)}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ textDecoration: 'line-through', whiteSpace: 'nowrap' }}
+                              >
+                                {formatCurrency(pricing.originalPrice)}
+                              </Typography>
+                            </Stack>
+                          ) : (
+                            <Typography variant="h5" sx={{ maxWidth: '10ch' }}>
+                              {formatCurrency(product.price)}
+                            </Typography>
+                          )}
                         </Box>
 
                         <Tooltip title="В корзину">
@@ -754,6 +777,8 @@ export function StorefrontPage() {
                     </CardContent>
                   </CardActionArea>
                 </Card>
+                  );
+                })()}
               </Grid>
             ))}
           </Grid>

@@ -53,3 +53,10 @@ export async function deactivateAdminUser(userId: string, token: string) {
     token,
   });
 }
+
+export async function restoreAdminUser(userId: string, token: string) {
+  return apiRequest<AdminUser>(`/admin/users/${userId}/restore`, {
+    method: 'POST',
+    token,
+  });
+}

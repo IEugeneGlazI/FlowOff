@@ -27,10 +27,13 @@ import {
 import { ArrowLeft, Lock, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useCart } from '../../features/cart/CartContext';
 import { useAuth } from '../../features/auth/AuthContext';
+import type { Promotion } from '../../entities/catalog';
+import { getPromotions } from '../../features/catalog/catalogApi';
 import { formatCurrency } from '../../shared/format';
 import { apiRequest, ApiError } from '../../shared/api';
 import { getAddressSuggestions } from '../../features/address/addressApi';
 import type { AddressSuggestion } from '../../entities/address';
+import { getPromotionPricing } from '../../shared/promotionPricing';
 
 type DeliveryMethod = 'Delivery' | 'Pickup';
 
@@ -56,6 +59,7 @@ export function CartPage() {
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('Delivery');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [addressOptions, setAddressOptions] = useState<AddressSuggestion[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [isAddressLoading, setIsAddressLoading] = useState(false);
   const [addressLookupError, setAddressLookupError] = useState<string | null>(null);
   const [payOnPickup, setPayOnPickup] = useState(false);
@@ -63,6 +67,10 @@ export function CartPage() {
   const [feedback, setFeedback] = useState<{ severity: 'success' | 'error' | 'warning'; message: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false);
+
+  useEffect(() => {
+    void getPromotions().then(setPromotions);
+  }, []);
 
   useEffect(() => {
     if (!cart) {
@@ -88,9 +96,24 @@ export function CartPage() {
     [cart, selectedProductIds],
   );
 
+  const pricingByProductId = useMemo(
+    () =>
+      Object.fromEntries(
+        (cart?.items ?? []).map((item) => [
+          item.productId,
+          getPromotionPricing({ id: item.productId, type: item.productType, price: item.unitPrice }, promotions),
+        ]),
+      ),
+    [cart?.items, promotions],
+  );
+
   const selectedItemsTotal = useMemo(
-    () => selectedItems.reduce((sum, item) => sum + item.lineTotal, 0),
-    [selectedItems],
+    () =>
+      selectedItems.reduce((sum, item) => {
+        const pricing = pricingByProductId[item.productId];
+        return sum + (pricing?.discountedPrice ?? item.unitPrice) * item.quantity;
+      }, 0),
+    [pricingByProductId, selectedItems],
   );
 
   const hasItems = Boolean(cart && cart.items.length > 0);
@@ -377,6 +400,9 @@ export function CartPage() {
               <Stack spacing={1.5}>
                 {cart?.items.map((item) => {
                   const isSelected = selectedProductIds.includes(item.productId);
+                  const pricing = pricingByProductId[item.productId];
+                  const unitPrice = pricing?.discountedPrice ?? item.unitPrice;
+                  const lineTotal = unitPrice * item.quantity;
 
                   return (
                     <Card
@@ -461,9 +487,16 @@ export function CartPage() {
                           }}
                         >
                           <Typography variant="h6">{item.productName}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {formatCurrency(item.unitPrice)} за единицу
-                          </Typography>
+                          <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'baseline' }}>
+                            <Typography variant="body2" color="text.secondary">
+                              {formatCurrency(unitPrice)} за единицу
+                            </Typography>
+                            {pricing?.hasDiscount ? (
+                              <Typography variant="caption" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+                                {formatCurrency(item.unitPrice)}
+                              </Typography>
+                            ) : null}
+                          </Stack>
                         </Box>
 
                         <Stack
@@ -489,17 +522,22 @@ export function CartPage() {
                           </IconButton>
                         </Stack>
 
-                        <Typography
-                          variant="h6"
+                        <Stack
                           sx={{
                             justifySelf: { xs: 'start', md: 'end' },
                             width: { xs: 'auto', md: 128 },
                             textAlign: { xs: 'left', md: 'right' },
-                            whiteSpace: 'nowrap',
                           }}
                         >
-                          {formatCurrency(item.lineTotal)}
-                        </Typography>
+                          <Typography variant="h6" sx={{ whiteSpace: 'nowrap' }}>
+                            {formatCurrency(lineTotal)}
+                          </Typography>
+                          {pricing?.hasDiscount ? (
+                            <Typography variant="caption" color="text.secondary" sx={{ textDecoration: 'line-through', whiteSpace: 'nowrap' }}>
+                              {formatCurrency(item.lineTotal)}
+                            </Typography>
+                          ) : null}
+                        </Stack>
                       </CardContent>
                     </Card>
                   );

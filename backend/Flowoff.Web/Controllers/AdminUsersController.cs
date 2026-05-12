@@ -71,6 +71,13 @@ public class AdminUsersController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id}/restore")]
+    [ProducesResponseType(typeof(UserManagementDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UserManagementDto>> Restore(string id, CancellationToken cancellationToken)
+    {
+        return Ok(await _userManagementService.RestoreAsync(id, cancellationToken));
+    }
+
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)

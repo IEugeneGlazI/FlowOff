@@ -16,11 +16,12 @@ import {
 } from '@mui/material';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Minus, Plus, ShoppingBag } from 'lucide-react';
-import type { Product } from '../../entities/catalog';
-import { getProductById } from '../../features/catalog/catalogApi';
+import type { Product, Promotion } from '../../entities/catalog';
+import { getProductById, getPromotions } from '../../features/catalog/catalogApi';
 import { useCart } from '../../features/cart/CartContext';
 import { ApiError } from '../../shared/api';
 import { formatCurrency } from '../../shared/format';
+import { getPromotionPricing } from '../../shared/promotionPricing';
 
 function getProductPlaceholderImage(product: Product) {
   if (product.imageUrl) {
@@ -59,6 +60,7 @@ export function ProductPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -72,6 +74,10 @@ export function ProductPage() {
     typeof location.state === 'object' && location.state && 'returnLabel' in location.state && typeof location.state.returnLabel === 'string'
       ? location.state.returnLabel
       : null;
+
+  useEffect(() => {
+    void getPromotions().then(setPromotions);
+  }, []);
 
   useEffect(() => {
     if (!productId) {
@@ -156,6 +162,14 @@ export function ProductPage() {
 
     return chips;
   }, [product]);
+
+  const pricing = useMemo(() => {
+    if (!product) {
+      return null;
+    }
+
+    return getPromotionPricing({ id: product.id, type: product.type, price: product.price }, promotions);
+  }, [product, promotions]);
 
   if (isLoading) {
     return (
@@ -261,7 +275,16 @@ export function ProductPage() {
                   boxShadow: '0 12px 32px rgba(31,42,35,0.16)',
                 }}
               >
-                <Typography variant="h4">{formatCurrency(product.price)}</Typography>
+                {pricing?.hasDiscount ? (
+                  <Stack spacing={0.25} sx={{ alignItems: 'flex-end' }}>
+                    <Typography variant="h4">{formatCurrency(pricing.discountedPrice)}</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+                      {formatCurrency(pricing.originalPrice)}
+                    </Typography>
+                  </Stack>
+                ) : (
+                  <Typography variant="h4">{formatCurrency(product.price)}</Typography>
+                )}
               </Box>
             </Box>
           </Box>
@@ -363,7 +386,16 @@ export function ProductPage() {
                 <Typography variant="caption" color="text.secondary">
                   Итого
                 </Typography>
-                <Typography variant="h4">{formatCurrency(product.price * quantity)}</Typography>
+                {pricing?.hasDiscount ? (
+                  <Stack spacing={0.25}>
+                    <Typography variant="h4">{formatCurrency(pricing.discountedPrice * quantity)}</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+                      {formatCurrency(pricing.originalPrice * quantity)}
+                    </Typography>
+                  </Stack>
+                ) : (
+                  <Typography variant="h4">{formatCurrency(product.price * quantity)}</Typography>
+                )}
               </CardContent>
             </Card>
 

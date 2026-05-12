@@ -18,6 +18,7 @@ public class OrderService : IOrderService
     private readonly IOrderRepository _orderRepository;
     private readonly IOrderStatusReferenceRepository _orderStatusReferenceRepository;
     private readonly IPaymentStatusReferenceRepository _paymentStatusReferenceRepository;
+    private readonly IPromotionRepository _promotionRepository;
     private readonly IProductRepository _productRepository;
     private readonly IUserDirectoryService _userDirectoryService;
 
@@ -30,7 +31,8 @@ public class OrderService : IOrderService
         IUserDirectoryService userDirectoryService,
         IOrderStatusReferenceRepository orderStatusReferenceRepository,
         IDeliveryStatusReferenceRepository deliveryStatusReferenceRepository,
-        IPaymentStatusReferenceRepository paymentStatusReferenceRepository)
+        IPaymentStatusReferenceRepository paymentStatusReferenceRepository,
+        IPromotionRepository promotionRepository)
     {
         _orderRepository = orderRepository;
         _productRepository = productRepository;
@@ -41,6 +43,7 @@ public class OrderService : IOrderService
         _orderStatusReferenceRepository = orderStatusReferenceRepository;
         _deliveryStatusReferenceRepository = deliveryStatusReferenceRepository;
         _paymentStatusReferenceRepository = paymentStatusReferenceRepository;
+        _promotionRepository = promotionRepository;
     }
 
     public async Task<OrderDto> AssignCourierAsync(Guid id, AssignCourierRequestDto request, CancellationToken cancellationToken)
@@ -77,6 +80,7 @@ public class OrderService : IOrderService
             throw new InvalidOperationException("Delivery orders require online payment.");
         }
 
+        var promotions = await _promotionRepository.GetAllAsync(cancellationToken);
         var orderItems = new List<OrderItem>();
 
         foreach (var item in request.Items)
@@ -87,7 +91,8 @@ public class OrderService : IOrderService
                 throw new InvalidOperationException($"Product {item.ProductId} not found.");
             }
 
-            orderItems.Add(new OrderItem(product, item.Quantity));
+            var discountedPrice = GetDiscountedPrice(product, promotions);
+            orderItems.Add(new OrderItem(product, item.Quantity, discountedPrice));
         }
 
         var totalAmount = orderItems.Sum(item => item.UnitPrice * item.Quantity);
@@ -348,6 +353,38 @@ public class OrderService : IOrderService
         order.Cancel(cancelledOrderStatusId);
         await _orderRepository.SaveChangesAsync(cancellationToken);
         return await MapOrderAsync(order, cancellationToken);
+    }
+
+    private static decimal GetDiscountedPrice(Product product, IReadOnlyCollection<Promotion> promotions)
+    {
+        var now = DateTime.UtcNow;
+        var bestDiscount = promotions
+            .Where(promotion =>
+                promotion.IsActive &&
+                promotion.StartsAtUtc <= now &&
+                promotion.EndsAtUtc >= now &&
+                AppliesToProduct(product, promotion))
+            .OrderByDescending(promotion => promotion.DiscountPercent)
+            .Select(promotion => promotion.DiscountPercent)
+            .FirstOrDefault();
+
+        if (bestDiscount <= 0)
+        {
+            return product.Price;
+        }
+
+        return Math.Round(product.Price * (1 - bestDiscount / 100m), 2, MidpointRounding.AwayFromZero);
+    }
+
+    private static bool AppliesToProduct(Product product, Promotion promotion)
+    {
+        return product switch
+        {
+            Bouquet => promotion.Bouquets.Any(item => item.BouquetId == product.Id),
+            Flower => promotion.Flowers.Any(item => item.FlowerId == product.Id),
+            Gift => promotion.Gifts.Any(item => item.GiftId == product.Id),
+            _ => false
+        };
     }
 
     private async Task<OrderDto> MapOrderAsync(Order order, CancellationToken cancellationToken)

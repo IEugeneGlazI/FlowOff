@@ -9,6 +9,7 @@ public interface IUserManagementService
     Task<UserManagementDto> CreateAsync(CreateUserRequestDto request, CancellationToken cancellationToken);
     Task<UserManagementDto> UpdateAsync(string id, UpdateUserRequestDto request, CancellationToken cancellationToken);
     Task<UserManagementDto> UpdateBlockStatusAsync(string id, UpdateUserBlockStatusRequestDto request, CancellationToken cancellationToken);
+    Task<UserManagementDto> RestoreAsync(string id, CancellationToken cancellationToken);
     Task SendPasswordResetAsync(string id, CancellationToken cancellationToken);
     Task DeleteAsync(string id, CancellationToken cancellationToken);
 }
