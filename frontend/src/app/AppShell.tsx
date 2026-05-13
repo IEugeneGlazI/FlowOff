@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import type { MouseEvent } from 'react';
 import {
   AppBar,
   Avatar,
@@ -6,6 +8,8 @@ import {
   Button,
   Container,
   IconButton,
+  Menu,
+  MenuItem,
   Stack,
   Toolbar,
   Tooltip,
@@ -13,7 +17,7 @@ import {
   alpha,
 } from '@mui/material';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Flower2, Package2, ShoppingBag, UserRound } from 'lucide-react';
+import { ChevronDown, Flower2, Package2, ShoppingBag, UserRound } from 'lucide-react';
 import { useAuth } from '../features/auth/AuthContext';
 import { useCart } from '../features/cart/CartContext';
 
@@ -21,6 +25,7 @@ export function AppShell() {
   const location = useLocation();
   const { session } = useAuth();
   const { cart } = useCart();
+  const [aboutMenuAnchor, setAboutMenuAnchor] = useState<HTMLElement | null>(null);
 
   const cartCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
   const storefrontPath = location.pathname.startsWith('/bouquets')
@@ -30,6 +35,7 @@ export function AppShell() {
       : location.pathname.startsWith('/gifts')
         ? '/gifts'
         : null;
+  const isAboutSection = location.pathname.startsWith('/about') || location.pathname.startsWith('/contacts');
 
   function getCatalogButtonVariant(path: string) {
     return storefrontPath === path ? 'contained' : 'text';
@@ -37,6 +43,14 @@ export function AppShell() {
 
   function getSectionButtonVariant(path: string) {
     return location.pathname.startsWith(path) ? 'contained' : 'text';
+  }
+
+  function openAboutMenu(event: MouseEvent<HTMLElement>) {
+    setAboutMenuAnchor(event.currentTarget);
+  }
+
+  function closeAboutMenu() {
+    setAboutMenuAnchor(null);
   }
 
   return (
@@ -91,7 +105,7 @@ export function AppShell() {
               </Box>
             </Stack>
 
-            <Stack direction="row" spacing={1} aria-label="Букеты" sx={{ flexWrap: 'wrap' }}>
+            <Stack direction="row" spacing={1} aria-label="Навигация" sx={{ flexWrap: 'wrap' }}>
               <Button
                 component={NavLink}
                 to="/bouquets"
@@ -116,6 +130,22 @@ export function AppShell() {
               >
                 Подарки
               </Button>
+              <Button
+                variant={isAboutSection ? 'contained' : 'text'}
+                color={isAboutSection ? 'primary' : 'inherit'}
+                endIcon={<ChevronDown size={16} />}
+                onClick={openAboutMenu}
+              >
+                О нас
+              </Button>
+              <Menu anchorEl={aboutMenuAnchor} open={Boolean(aboutMenuAnchor)} onClose={closeAboutMenu}>
+                <MenuItem component={NavLink} to="/about" onClick={closeAboutMenu}>
+                  О нас
+                </MenuItem>
+                <MenuItem component={NavLink} to="/contacts" onClick={closeAboutMenu}>
+                  Контакты
+                </MenuItem>
+              </Menu>
               <Button
                 component={NavLink}
                 to="/orders"

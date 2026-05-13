@@ -41,6 +41,8 @@ type UserDialogState =
   | { mode: 'edit'; user: AdminUser }
   | null;
 
+type UserActivationFilter = 'All' | 'Active' | 'Deactivated';
+
 const roleOptions: UserRole[] = ['Customer', 'Florist', 'Courier', 'Administrator'];
 
 function getRoleLabel(role: UserRole) {
@@ -74,6 +76,7 @@ export function AdminUsersTab({ token }: { token: string }) {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'All' | UserRole>('All');
+  const [activationFilter, setActivationFilter] = useState<UserActivationFilter>('All');
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [dialogState, setDialogState] = useState<UserDialogState>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -221,9 +224,14 @@ export function AdminUsersTab({ token }: { token: string }) {
         user.email.toLowerCase().includes(needle);
 
       const matchesRole = roleFilter === 'All' || user.role === roleFilter;
-      return matchesSearch && matchesRole;
+      const matchesActivation =
+        activationFilter === 'All' ||
+        (activationFilter === 'Active' && !user.isDeleted) ||
+        (activationFilter === 'Deactivated' && user.isDeleted);
+
+      return matchesSearch && matchesRole && matchesActivation;
     });
-  }, [roleFilter, search, users]);
+  }, [activationFilter, roleFilter, search, users]);
 
   return (
     <Box sx={{ display: 'grid', gap: 2.5 }}>
@@ -277,6 +285,20 @@ export function AdminUsersTab({ token }: { token: string }) {
                     {getRoleLabel(item)}
                   </MenuItem>
                 ))}
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ minWidth: 220 }}>
+              <InputLabel id="admin-users-activation-filter-label">Статус</InputLabel>
+              <Select
+                labelId="admin-users-activation-filter-label"
+                value={activationFilter}
+                label="Статус"
+                onChange={(event: SelectChangeEvent) => setActivationFilter(event.target.value as UserActivationFilter)}
+              >
+                <MenuItem value="All">Все пользователи</MenuItem>
+                <MenuItem value="Active">Активированные</MenuItem>
+                <MenuItem value="Deactivated">Деактивированные</MenuItem>
               </Select>
             </FormControl>
           </Stack>

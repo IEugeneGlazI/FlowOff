@@ -20,6 +20,7 @@ public class OrderService : IOrderService
     private readonly IPaymentStatusReferenceRepository _paymentStatusReferenceRepository;
     private readonly IPromotionRepository _promotionRepository;
     private readonly IProductRepository _productRepository;
+    private readonly ISiteContactSettingsService _siteContactSettingsService;
     private readonly IUserDirectoryService _userDirectoryService;
 
     public OrderService(
@@ -28,6 +29,7 @@ public class OrderService : IOrderService
         ICurrentUserService currentUserService,
         ICourierDirectoryService courierDirectoryService,
         IOrderNotificationService orderNotificationService,
+        ISiteContactSettingsService siteContactSettingsService,
         IUserDirectoryService userDirectoryService,
         IOrderStatusReferenceRepository orderStatusReferenceRepository,
         IDeliveryStatusReferenceRepository deliveryStatusReferenceRepository,
@@ -39,6 +41,7 @@ public class OrderService : IOrderService
         _currentUserService = currentUserService;
         _courierDirectoryService = courierDirectoryService;
         _orderNotificationService = orderNotificationService;
+        _siteContactSettingsService = siteContactSettingsService;
         _userDirectoryService = userDirectoryService;
         _orderStatusReferenceRepository = orderStatusReferenceRepository;
         _deliveryStatusReferenceRepository = deliveryStatusReferenceRepository;
@@ -101,9 +104,15 @@ public class OrderService : IOrderService
         var underReviewDeliveryStatusId = await GetDeliveryStatusIdAsync(DeliveryStatusCodes.UnderReview, cancellationToken);
         var pendingPaymentStatusId = await GetPaymentStatusIdAsync(PaymentStatusCodes.Pending, cancellationToken);
         var paidPaymentStatusId = await GetPaymentStatusIdAsync(PaymentStatusCodes.Paid, cancellationToken);
+        var pickupAddress = request.DeliveryMethod == DeliveryMethod.Pickup
+            ? await GetPickupAddressAsync(cancellationToken)
+            : null;
         var order = new Order(orderNumber, _currentUserService.UserId, request.DeliveryMethod, orderItems, totalAmount, activeOrderStatusId);
 
-        order.AttachDelivery(new Delivery(order.Id, request.DeliveryMethod == DeliveryMethod.Delivery ? request.DeliveryAddress : null, underReviewDeliveryStatusId));
+        order.AttachDelivery(new Delivery(
+            order.Id,
+            request.DeliveryMethod == DeliveryMethod.Delivery ? request.DeliveryAddress : pickupAddress,
+            underReviewDeliveryStatusId));
 
         if (request.PayOnPickup && request.DeliveryMethod == DeliveryMethod.Pickup)
         {
@@ -459,6 +468,19 @@ public class OrderService : IOrderService
         var status = await _orderStatusReferenceRepository.GetByNameAsync(name, cancellationToken)
             ?? throw new InvalidOperationException($"Order status '{name}' not found.");
         return status.Id;
+    }
+
+    private async Task<string> GetPickupAddressAsync(CancellationToken cancellationToken)
+    {
+        var settings = await _siteContactSettingsService.GetAsync(cancellationToken);
+        var address = settings.Address.Trim();
+
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            throw new InvalidOperationException("Pickup address is not configured.");
+        }
+
+        return address;
     }
 
     private async Task<Guid> GetDeliveryStatusIdAsync(string name, CancellationToken cancellationToken)

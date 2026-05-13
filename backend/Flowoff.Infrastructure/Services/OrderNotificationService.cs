@@ -42,11 +42,7 @@ public class OrderNotificationService : IOrderNotificationService
                 intro: $"{greeting}, ваш заказ {orderNumber} собран.",
                 details: "Вы можете забрать его в удобное время.",
                 footnote: "Статус заказа уже обновился в вашем личном кабинете Flowoff.",
-                facts: new[]
-                {
-                    ("Номер заказа", orderNumber),
-                    ("Способ получения", "Самовывоз")
-                }),
+                facts: BuildPickupFacts(orderNumber, order.Delivery?.Address)),
             order.Id,
             cancellationToken);
     }
@@ -61,9 +57,6 @@ public class OrderNotificationService : IOrderNotificationService
 
         var orderNumber = GetOrderNumber(order);
         var greeting = GetGreeting(user);
-        var address = string.IsNullOrWhiteSpace(order.Delivery?.Address)
-            ? string.Empty
-            : $"<p>Адрес доставки: <strong>{order.Delivery.Address}</strong></p>";
 
         await TrySendAsync(
             user.Email!,
@@ -123,6 +116,22 @@ public class OrderNotificationService : IOrderNotificationService
     private static string GetGreeting(ApplicationUser user)
     {
         return string.IsNullOrWhiteSpace(user.FullName) ? "Здравствуйте" : $"{user.FullName}, здравствуйте";
+    }
+
+    private static IReadOnlyCollection<(string Label, string Value)> BuildPickupFacts(string orderNumber, string? address)
+    {
+        var facts = new List<(string Label, string Value)>
+        {
+            ("Номер заказа", orderNumber),
+            ("Способ получения", "Самовывоз")
+        };
+
+        if (!string.IsNullOrWhiteSpace(address))
+        {
+            facts.Add(("Адрес", address));
+        }
+
+        return facts;
     }
 
     private static IReadOnlyCollection<(string Label, string Value)> BuildDeliveryFacts(string orderNumber, string? address)

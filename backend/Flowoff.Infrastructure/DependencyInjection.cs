@@ -83,11 +83,13 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IPromotionRepository, PromotionRepository>();
+        services.AddScoped<ISiteContactSettingsRepository, SiteContactSettingsRepository>();
         services.AddScoped<ISupportRequestRepository, SupportRequestRepository>();
         services.AddScoped<ICartService, CartService>();
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IPromotionService, PromotionService>();
+        services.AddScoped<ISiteContactSettingsService, SiteContactSettingsService>();
         services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<ISupportRequestService, SupportRequestService>();
         services.AddScoped<IUserManagementService, UserManagementService>();

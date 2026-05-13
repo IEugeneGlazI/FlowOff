@@ -6,6 +6,8 @@ import { CartPage } from '../pages/cart/CartPage';
 import { AccountPage } from '../pages/account/AccountPage';
 import { ConfirmEmailPage } from '../pages/account/ConfirmEmailPage';
 import { OrdersPage } from '../pages/orders/OrdersPage';
+import { AboutPage } from '../pages/about/AboutPage';
+import { ContactsPage } from '../pages/about/ContactsPage';
 import { FloristPanelPage } from '../pages/florist/FloristPanelPage';
 import { CourierPanelPage } from '../pages/courier/CourierPanelPage';
 import { AdminPanelPage } from '../pages/admin/AdminPanelPage';
@@ -19,6 +21,8 @@ export function App() {
         <Route path="/bouquets" element={<StorefrontPage />} />
         <Route path="/flowers" element={<StorefrontPage />} />
         <Route path="/gifts" element={<StorefrontPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contacts" element={<ContactsPage />} />
         <Route path="/products/:productId" element={<ProductPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/account" element={<AccountPage />} />

@@ -30,6 +30,7 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PaymentStatusReference> PaymentStatusReferences => Set<PaymentStatusReference>();
     public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
+    public DbSet<SiteContactSettings> SiteContactSettings => Set<SiteContactSettings>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -255,6 +256,16 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(request => request.Subject).HasMaxLength(200).IsRequired();
             entity.Property(request => request.Message).HasMaxLength(4000).IsRequired();
             entity.Property(request => request.Status).HasConversion<string>().HasMaxLength(32);
+        });
+
+        builder.Entity<SiteContactSettings>(entity =>
+        {
+            entity.Property(settings => settings.Phone).HasMaxLength(50).IsRequired();
+            entity.Property(settings => settings.Email).HasMaxLength(200).IsRequired();
+            entity.Property(settings => settings.Address).HasMaxLength(500).IsRequired();
+            entity.Property(settings => settings.WorkingHours).HasMaxLength(200).IsRequired();
+            entity.Property(settings => settings.VkUrl).HasMaxLength(500).IsRequired();
+            entity.Property(settings => settings.TelegramUrl).HasMaxLength(500).IsRequired();
         });
 
         builder.Entity<Promotion>(entity =>
