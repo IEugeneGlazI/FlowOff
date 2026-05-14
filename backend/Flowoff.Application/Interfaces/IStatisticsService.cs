@@ -4,5 +4,5 @@ namespace Flowoff.Application.Interfaces;
 
 public interface IStatisticsService
 {
-    Task<DashboardStatisticsDto> GetDashboardAsync(CancellationToken cancellationToken);
+    Task<AdminAnalyticsDto> GetDashboardAsync(DateOnly? dateFrom, DateOnly? dateTo, CancellationToken cancellationToken);
 }

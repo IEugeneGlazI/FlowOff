@@ -19,9 +19,11 @@ public class AdminStatisticsController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(DashboardStatisticsDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<DashboardStatisticsDto>> GetDashboard(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(AdminAnalyticsDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AdminAnalyticsDto>> GetDashboard(
+        [FromQuery] AdminAnalyticsQueryDto query,
+        CancellationToken cancellationToken)
     {
-        return Ok(await _statisticsService.GetDashboardAsync(cancellationToken));
+        return Ok(await _statisticsService.GetDashboardAsync(query.DateFrom, query.DateTo, cancellationToken));
     }
 }

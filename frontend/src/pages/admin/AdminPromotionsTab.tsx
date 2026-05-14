@@ -279,8 +279,6 @@ export function AdminPromotionsTab({ token }: { token: string }) {
     });
   }, [promotions, search, viewFilter]);
 
-  const now = new Date();
-
   return (
     <Box sx={{ display: 'grid', gap: 2.5 }}>
       <Card

@@ -52,11 +52,12 @@ import {
 import { ApiError, apiRequest } from '../../shared/api';
 import { formatCurrency, formatDate } from '../../shared/format';
 import { FloristPanelPage } from '../florist/FloristPanelPage';
+import { AdminAnalyticsTab } from './AdminAnalyticsTab';
 import { AdminPromotionsTab } from './AdminPromotionsTab';
 import { AdminSiteContactsTab } from './AdminSiteContactsTab';
 import { AdminUsersTab } from './AdminUsersTab';
 
-type AdminTab = 'products' | 'references' | 'promotions' | 'orders' | 'users' | 'contacts';
+type AdminTab = 'products' | 'references' | 'promotions' | 'orders' | 'users' | 'contacts' | 'analytics';
 type ReferenceTab =
   | 'categories'
   | 'colors'
@@ -715,6 +716,7 @@ export function AdminPanelPage() {
             <Tab value="orders" label="Заказы" />
             <Tab value="users" label="Пользователи" />
             <Tab value="contacts" label="Контакты" />
+            <Tab value="analytics" label="Аналитика" />
           </Tabs>
         </CardContent>
       </Card>
@@ -1202,6 +1204,8 @@ export function AdminPanelPage() {
       {tab === 'users' ? <AdminUsersTab token={token!} /> : null}
 
       {tab === 'contacts' ? <AdminSiteContactsTab token={token!} /> : null}
+
+      {tab === 'analytics' ? <AdminAnalyticsTab token={token!} /> : null}
 
       <Dialog open={Boolean(dialogState)} onClose={closeDialog} fullWidth maxWidth="sm">
         <DialogTitle>{getDialogTitle(dialogState)}</DialogTitle>
