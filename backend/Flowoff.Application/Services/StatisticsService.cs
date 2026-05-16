@@ -111,8 +111,7 @@ public class StatisticsService : IStatisticsService
             PickupOrders = orders.Count(order => order.DeliveryMethod == DeliveryMethod.Pickup),
             PaidOrders = paidOrders.Count,
             PendingPaymentOrders = orders.Count(order => order.Payment?.Status == PaymentStatusCodes.Pending),
-            OpenSupportRequests = supportRequests.Count(request =>
-                request.Status == SupportRequestStatus.Open || request.Status == SupportRequestStatus.InProgress),
+            OpenSupportRequests = supportRequests.Count(request => SupportStatusCodes.OpenStatuses.Contains(request.Status)),
             UniqueCustomers = orders
                 .Select(order => order.CustomerId)
                 .Where(customerId => !string.IsNullOrWhiteSpace(customerId))

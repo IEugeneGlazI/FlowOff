@@ -32,6 +32,8 @@ import {
 } from '../../features/catalog/catalogApi';
 import { ApiError } from '../../shared/api';
 import { formatDate } from '../../shared/format';
+import { PaginationControls } from '../../shared/PaginationControls';
+import { getPromotionState } from '../../shared/promotionPricing';
 
 type FeedbackState = {
   severity: 'success' | 'error';
@@ -43,7 +45,9 @@ type PromotionDialogState =
   | { mode: 'edit'; promotion: Promotion }
   | null;
 
-type PromotionViewFilter = 'all' | 'active' | 'completed' | 'disabled';
+type PromotionViewFilter = 'all' | 'active' | 'completed' | 'disabled' | 'scheduled';
+
+const PROMOTIONS_PAGE_SIZE = 8;
 
 function toLocalDateTimeInput(value: string) {
   const date = new Date(value);
@@ -59,19 +63,6 @@ function toUtcIsoString(value: string) {
   return new Date(value).toISOString();
 }
 
-function getPromotionState(promotion: Promotion, now: Date) {
-  const endsAt = new Date(promotion.endsAtUtc);
-  if (endsAt < now) {
-    return 'completed';
-  }
-
-  if (!promotion.isActive) {
-    return 'disabled';
-  }
-
-  return 'active';
-}
-
 function getSelectedNames(ids: string[], products: Product[]) {
   return products.filter((product) => ids.includes(product.id)).map((product) => product.name);
 }
@@ -83,6 +74,7 @@ export function AdminPromotionsTab({ token }: { token: string }) {
   const [gifts, setGifts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [viewFilter, setViewFilter] = useState<PromotionViewFilter>('all');
+  const [page, setPage] = useState(1);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [dialogState, setDialogState] = useState<PromotionDialogState>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -213,7 +205,10 @@ export function AdminPromotionsTab({ token }: { token: string }) {
       await loadPromotions();
       closeDialog();
     } catch (error) {
-      const message = error instanceof ApiError || error instanceof Error ? error.message : 'Не удалось сохранить акцию.';
+      const message =
+        error instanceof ApiError || error instanceof Error
+          ? error.message
+          : 'Не удалось сохранить акцию.';
       setFeedback({ severity: 'error', message });
     } finally {
       setIsSaving(false);
@@ -244,7 +239,8 @@ export function AdminPromotionsTab({ token }: { token: string }) {
       });
       await loadPromotions();
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Не удалось изменить состояние акции.';
+      const message =
+        error instanceof ApiError ? error.message : 'Не удалось изменить состояние акции.';
       setFeedback({ severity: 'error', message });
     }
   }
@@ -279,12 +275,23 @@ export function AdminPromotionsTab({ token }: { token: string }) {
     });
   }, [promotions, search, viewFilter]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, viewFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredPromotions.length / PROMOTIONS_PAGE_SIZE));
+  const pagedPromotions = filteredPromotions.slice(
+    (page - 1) * PROMOTIONS_PAGE_SIZE,
+    page * PROMOTIONS_PAGE_SIZE,
+  );
+
   return (
     <Box sx={{ display: 'grid', gap: 2.5 }}>
       <Card
         sx={{
           overflow: 'hidden',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(246,251,247,0.84) 100%)',
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(246,251,247,0.84) 100%)',
           backdropFilter: 'blur(16px)',
           border: '1px solid rgba(24,38,31,0.06)',
         }}
@@ -329,6 +336,7 @@ export function AdminPromotionsTab({ token }: { token: string }) {
               >
                 <MenuItem value="all">Все акции</MenuItem>
                 <MenuItem value="active">Активные</MenuItem>
+                <MenuItem value="scheduled">Запланированные</MenuItem>
                 <MenuItem value="completed">Завершенные</MenuItem>
                 <MenuItem value="disabled">Отключенные</MenuItem>
               </Select>
@@ -336,100 +344,129 @@ export function AdminPromotionsTab({ token }: { token: string }) {
           </Stack>
 
           <Box sx={{ display: 'grid', gap: 1.25 }}>
-            {filteredPromotions.map((promotion) => (
-              <Card
-                key={promotion.id}
-                variant="outlined"
-                sx={{
-                  borderRadius: 2,
-                  boxShadow: 'none',
-                  cursor: 'pointer',
-                  transition: 'transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease',
-                  ':hover': {
-                    transform: 'translateY(-1px)',
-                    boxShadow: '0 14px 32px rgba(38, 54, 45, 0.08)',
-                    borderColor: 'rgba(92, 143, 115, 0.34)',
-                  },
-                }}
-                onClick={() => openEditDialog(promotion)}
-              >
-                <CardContent sx={{ display: 'grid', gap: 1.5 }}>
-                  <Stack
-                    direction={{ xs: 'column', md: 'row' }}
-                    spacing={1.5}
-                    sx={{ justifyContent: 'space-between', alignItems: { md: 'flex-start' } }}
-                  >
-                    <Box sx={{ display: 'grid', gap: 0.5 }}>
-                      <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
-                        <Typography variant="h6">{promotion.title}</Typography>
-                        <Chip size="small" variant="outlined" label={`Скидка ${promotion.discountPercent}%`} />
-                      </Stack>
+            {pagedPromotions.map((promotion) => {
+              const state = getPromotionState(promotion, new Date());
 
-                      {promotion.description ? (
+              return (
+                <Card
+                  key={promotion.id}
+                  variant="outlined"
+                  sx={{
+                    borderRadius: 2,
+                    boxShadow: 'none',
+                    cursor: 'pointer',
+                    transition: 'transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease',
+                    ':hover': {
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 14px 32px rgba(38, 54, 45, 0.08)',
+                      borderColor: 'rgba(92, 143, 115, 0.34)',
+                    },
+                  }}
+                  onClick={() => openEditDialog(promotion)}
+                >
+                  <CardContent sx={{ display: 'grid', gap: 1.5 }}>
+                    <Stack
+                      direction={{ xs: 'column', md: 'row' }}
+                      spacing={1.5}
+                      sx={{ justifyContent: 'space-between', alignItems: { md: 'flex-start' } }}
+                    >
+                      <Box sx={{ display: 'grid', gap: 0.5 }}>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          useFlexGap
+                          sx={{ flexWrap: 'wrap', alignItems: 'center' }}
+                        >
+                          <Typography variant="h6">{promotion.title}</Typography>
+                          <Chip size="small" variant="outlined" label={`Скидка ${promotion.discountPercent}%`} />
+                        </Stack>
+
+                        {promotion.description ? (
+                          <Typography variant="body2" color="text.secondary">
+                            {promotion.description}
+                          </Typography>
+                        ) : null}
+
                         <Typography variant="body2" color="text.secondary">
-                          {promotion.description}
+                          Букеты: {promotion.bouquetIds?.length ?? 0}, цветы: {promotion.flowerIds?.length ?? 0},
+                          подарки: {promotion.giftIds?.length ?? 0}
                         </Typography>
-                      ) : null}
+                      </Box>
 
-                      <Typography variant="body2" color="text.secondary">
-                        Букеты: {promotion.bouquetIds?.length ?? 0}, цветы: {promotion.flowerIds?.length ?? 0}, подарки: {promotion.giftIds?.length ?? 0}
-                      </Typography>
-                    </Box>
+                      <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                        <Tooltip
+                          title={
+                            state === 'completed'
+                              ? 'Завершенная акция уже не показывается на сайте'
+                              : promotion.isActive
+                                ? 'Нажмите, чтобы отключить акцию на сайте'
+                                : 'Нажмите, чтобы снова включить акцию на сайте'
+                          }
+                        >
+                          <Chip
+                            label={promotion.isActive ? 'Включена на сайте' : 'Отключена на сайте'}
+                            color={promotion.isActive ? 'success' : 'default'}
+                            variant="outlined"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (state === 'completed') {
+                                return;
+                              }
+                              void handleToggleActive(promotion, !promotion.isActive);
+                            }}
+                          />
+                        </Tooltip>
 
-                    <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-                      <Tooltip title={promotion.isActive ? 'Нажмите, чтобы отключить акцию на сайте' : 'Нажмите, чтобы снова включить акцию на сайте'}>
-                        <Chip
-                          label={promotion.isActive ? 'Активна' : 'Отключена'}
-                          color={promotion.isActive ? 'success' : 'default'}
-                          variant="outlined"
+                        <Button
+                          variant="text"
+                          color="inherit"
+                          startIcon={<PencilLine size={16} />}
                           onClick={(event) => {
                             event.stopPropagation();
-                            void handleToggleActive(promotion, !promotion.isActive);
+                            openEditDialog(promotion);
                           }}
-                        />
-                      </Tooltip>
+                        >
+                          Изменить
+                        </Button>
 
-                      <Button
-                        variant="text"
-                        color="inherit"
-                        startIcon={<PencilLine size={16} />}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openEditDialog(promotion);
-                        }}
-                      >
-                        Изменить
-                      </Button>
-
-                      <Button
-                        variant="text"
-                        color="inherit"
-                        startIcon={<Trash2 size={16} />}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void handleDelete(promotion);
-                        }}
-                      >
-                        Удалить
-                      </Button>
+                        <Button
+                          variant="text"
+                          color="inherit"
+                          startIcon={<Trash2 size={16} />}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void handleDelete(promotion);
+                          }}
+                        >
+                          Удалить
+                        </Button>
+                      </Stack>
                     </Stack>
-                  </Stack>
 
-                  <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} sx={{ alignItems: { lg: 'center' } }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-                      Период действия: {formatDate(promotion.startsAtUtc)} - {formatDate(promotion.endsAtUtc)}
-                    </Typography>
+                    <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} sx={{ alignItems: { lg: 'center' } }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+                        Период действия: {formatDate(promotion.startsAtUtc)} - {formatDate(promotion.endsAtUtc)}
+                      </Typography>
 
-                    <Box />
-                  </Stack>
-                </CardContent>
-              </Card>
-            ))}
+                      <Box />
+                    </Stack>
+                  </CardContent>
+                </Card>
+              );
+            })}
 
             {filteredPromotions.length === 0 ? (
               <Typography color="text.secondary">По текущим фильтрам акции не найдены.</Typography>
             ) : null}
           </Box>
+
+          <PaginationControls
+            page={page}
+            pageCount={pageCount}
+            totalCount={filteredPromotions.length}
+            pageSize={PROMOTIONS_PAGE_SIZE}
+            onChange={setPage}
+          />
         </CardContent>
       </Card>
 
@@ -437,7 +474,8 @@ export function AdminPromotionsTab({ token }: { token: string }) {
         <DialogTitle>{dialogState?.mode === 'edit' ? 'Редактирование акции' : 'Создание акции'}</DialogTitle>
         <DialogContent sx={{ pt: 1, display: 'grid', gap: 2 }}>
           <Typography variant="body2" color="text.secondary">
-            Заполните параметры акции, задайте скидку, срок действия и отметьте, на какие товары она распространяется.
+            Заполните параметры акции, задайте скидку, срок действия и отметьте, на какие товары она
+            распространяется.
           </Typography>
 
           <TextField label="Название" value={title} onChange={(event) => setTitle(event.target.value)} fullWidth />
@@ -498,7 +536,13 @@ export function AdminPromotionsTab({ token }: { token: string }) {
                 multiple
                 value={selectedBouquetIds}
                 label="Букеты"
-                onChange={(event) => setSelectedBouquetIds(typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value)}
+                onChange={(event) =>
+                  setSelectedBouquetIds(
+                    typeof event.target.value === 'string'
+                      ? event.target.value.split(',')
+                      : event.target.value,
+                  )
+                }
                 renderValue={(selected) => {
                   const names = getSelectedNames(selected as string[], bouquets);
                   return names.length > 0 ? names.join(', ') : 'Не выбраны';
@@ -519,7 +563,13 @@ export function AdminPromotionsTab({ token }: { token: string }) {
                 multiple
                 value={selectedFlowerIds}
                 label="Цветы"
-                onChange={(event) => setSelectedFlowerIds(typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value)}
+                onChange={(event) =>
+                  setSelectedFlowerIds(
+                    typeof event.target.value === 'string'
+                      ? event.target.value.split(',')
+                      : event.target.value,
+                  )
+                }
                 renderValue={(selected) => {
                   const names = getSelectedNames(selected as string[], flowers);
                   return names.length > 0 ? names.join(', ') : 'Не выбраны';
@@ -540,7 +590,13 @@ export function AdminPromotionsTab({ token }: { token: string }) {
                 multiple
                 value={selectedGiftIds}
                 label="Подарки"
-                onChange={(event) => setSelectedGiftIds(typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value)}
+                onChange={(event) =>
+                  setSelectedGiftIds(
+                    typeof event.target.value === 'string'
+                      ? event.target.value.split(',')
+                      : event.target.value,
+                  )
+                }
                 renderValue={(selected) => {
                   const names = getSelectedNames(selected as string[], gifts);
                   return names.length > 0 ? names.join(', ') : 'Не выбраны';

@@ -21,34 +21,8 @@ import { getProductById, getPromotions } from '../../features/catalog/catalogApi
 import { useCart } from '../../features/cart/CartContext';
 import { ApiError } from '../../shared/api';
 import { formatCurrency } from '../../shared/format';
+import { ProductImage } from '../../shared/ProductImage';
 import { getPromotionPricing } from '../../shared/promotionPricing';
-
-function getProductPlaceholderImage(product: Product) {
-  if (product.imageUrl) {
-    return product.imageUrl;
-  }
-
-  if (product.type === 'Flower') {
-    return 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1200&q=80';
-  }
-
-  if (product.type === 'Gift') {
-    return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=1200&q=80';
-  }
-
-  return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1200&q=80';
-}
-
-function getTypeLabel(product: Product) {
-  switch (product.type) {
-    case 'Flower':
-      return 'Цветок';
-    case 'Gift':
-      return 'Подарок';
-    default:
-      return 'Букет';
-  }
-}
 
 type FeedbackState = {
   message: string;
@@ -242,17 +216,7 @@ export function ProductPage() {
                 cursor: 'pointer',
               }}
             >
-              <Box
-                component="img"
-                src={getProductPlaceholderImage(product)}
-                alt={product.name}
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
-              />
+              <ProductImage src={product.imageUrl} alt={product.name} sx={{ width: '100%', height: '100%' }} />
               <Box
                 sx={{
                   position: 'absolute',
@@ -316,46 +280,6 @@ export function ProductPage() {
 
             <Divider />
 
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-                gap: 1.5,
-              }}
-            >
-              <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92) }}>
-                <CardContent sx={{ display: 'grid', gap: 0.6 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Тип
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {getTypeLabel(product)}
-                  </Typography>
-                </CardContent>
-              </Card>
-
-              <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92) }}>
-                <CardContent sx={{ display: 'grid', gap: 0.6 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Раздел
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {product.categoryName || product.flowerInName || 'Каталог Flowoff'}
-                  </Typography>
-                </CardContent>
-              </Card>
-
-              <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha('#f8fbf9', 0.92) }}>
-                <CardContent sx={{ display: 'grid', gap: 0.6 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Формат
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {product.type === 'Bouquet' ? 'Готовая композиция' : product.type === 'Flower' ? 'Поштучно' : 'Дополнение'}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Box>
           </CardContent>
         </Card>
 
@@ -500,19 +424,22 @@ export function ProductPage() {
           },
         }}
       >
-        <Box
-          component="img"
-          src={getProductPlaceholderImage(product)}
+        <ProductImage
+          src={product.imageUrl}
           alt={product.name}
           sx={{
             display: 'block',
             maxWidth: '92vw',
             maxHeight: '92vh',
-            width: 'auto',
-            height: 'auto',
-            objectFit: 'contain',
+            width: 'min(92vw, 1200px)',
+            height: 'min(92vh, 720px)',
+            minHeight: 320,
             borderRadius: 2,
-            backgroundColor: '#f3f7f4',
+          }}
+          imgSx={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
           }}
         />
       </Dialog>

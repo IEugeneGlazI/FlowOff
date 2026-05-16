@@ -13,14 +13,27 @@ export type PromotionPricing = {
   hasDiscount: boolean;
 };
 
-function isPromotionActive(promotion: Promotion, now = new Date()) {
-  if (!promotion.isActive) {
-    return false;
-  }
-
+export function getPromotionState(promotion: Promotion, now = new Date()) {
   const startsAt = new Date(promotion.startsAtUtc);
   const endsAt = new Date(promotion.endsAtUtc);
-  return startsAt <= now && now <= endsAt;
+
+  if (endsAt < now) {
+    return 'completed' as const;
+  }
+
+  if (!promotion.isActive) {
+    return 'disabled' as const;
+  }
+
+  if (startsAt > now) {
+    return 'scheduled' as const;
+  }
+
+  return 'active' as const;
+}
+
+export function isPromotionActive(promotion: Promotion, now = new Date()) {
+  return getPromotionState(promotion, now) === 'active';
 }
 
 function appliesToProduct(target: PromotionProductTarget, promotion: Promotion) {

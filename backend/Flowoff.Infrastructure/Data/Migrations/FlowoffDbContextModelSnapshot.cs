@@ -627,6 +627,9 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("ClosedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -635,24 +638,127 @@ namespace Flowoff.Infrastructure.Data.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<string>("Subject")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<Guid>("SupportStatusReferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("SupportStatusReferenceId");
+
                     b.ToTable("SupportRequests");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.SupportRequestAttachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("SupportRequestMessageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupportRequestMessageId");
+
+                    b.ToTable("SupportRequestAttachments");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.SupportRequestMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AuthorRole")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("AuthorUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MessageText")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<Guid>("SupportRequestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupportRequestId");
+
+                    b.ToTable("SupportRequestMessages");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.SupportStatusReference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("SupportStatusReferences");
                 });
 
             modelBuilder.Entity("Flowoff.Infrastructure.Identity.ApplicationUser", b =>
@@ -1115,6 +1221,46 @@ namespace Flowoff.Infrastructure.Data.Migrations
                     b.Navigation("Promotion");
                 });
 
+            modelBuilder.Entity("Flowoff.Domain.Entities.SupportRequest", b =>
+                {
+                    b.HasOne("Flowoff.Domain.Entities.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Flowoff.Domain.Entities.SupportStatusReference", "SupportStatusReference")
+                        .WithMany()
+                        .HasForeignKey("SupportStatusReferenceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("SupportStatusReference");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.SupportRequestAttachment", b =>
+                {
+                    b.HasOne("Flowoff.Domain.Entities.SupportRequestMessage", "SupportRequestMessage")
+                        .WithMany("Attachments")
+                        .HasForeignKey("SupportRequestMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SupportRequestMessage");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.SupportRequestMessage", b =>
+                {
+                    b.HasOne("Flowoff.Domain.Entities.SupportRequest", "SupportRequest")
+                        .WithMany("Messages")
+                        .HasForeignKey("SupportRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SupportRequest");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1217,6 +1363,16 @@ namespace Flowoff.Infrastructure.Data.Migrations
                     b.Navigation("Flowers");
 
                     b.Navigation("Gifts");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.SupportRequest", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("Flowoff.Domain.Entities.SupportRequestMessage", b =>
+                {
+                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("Flowoff.Domain.Entities.Bouquet", b =>

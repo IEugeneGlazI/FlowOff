@@ -33,21 +33,10 @@ import { formatCurrency } from '../../shared/format';
 import { apiRequest, ApiError } from '../../shared/api';
 import { getAddressSuggestions } from '../../features/address/addressApi';
 import type { AddressSuggestion } from '../../entities/address';
+import { ProductImage } from '../../shared/ProductImage';
 import { getPromotionPricing } from '../../shared/promotionPricing';
 
 type DeliveryMethod = 'Delivery' | 'Pickup';
-
-function getCartItemPlaceholderImage(productType: 'Flower' | 'Bouquet' | 'Gift') {
-  if (productType === 'Flower') {
-    return 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=480&q=80';
-  }
-
-  if (productType === 'Gift') {
-    return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=480&q=80';
-  }
-
-  return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=480&q=80';
-}
 
 export function CartPage() {
   const { cart, updateItem, clearCart, refreshCart } = useCart();
@@ -458,18 +447,13 @@ export function CartPage() {
                             lineHeight: 0,
                           }}
                         >
-                          <Box
-                            component="img"
-                            src={getCartItemPlaceholderImage(item.productType)}
+                          <ProductImage
                             alt={item.productName}
                             sx={{
                               width: 92,
                               height: 118,
-                              objectFit: 'cover',
                               borderRadius: 2,
                               border: '1px solid rgba(24,38,31,0.08)',
-                              bgcolor: '#f3f7f4',
-                              display: 'block',
                             }}
                           />
                         </Box>
@@ -652,7 +636,7 @@ export function CartPage() {
                           {...params}
                           label="Адрес доставки"
                           placeholder="Город, улица, дом, подъезд, комментарий"
-                          helperText="Начните вводить адрес, и появятся подсказки по населенным пунктам, улицам и домам."
+                          helperText="Начните вводить адрес,и появятся подсказки."
                           error={Boolean(addressLookupError)}
                           sx={{
                             '& .MuiOutlinedInput-root': {

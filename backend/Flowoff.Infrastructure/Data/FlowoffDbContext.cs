@@ -28,7 +28,10 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<OrderStatusReference> OrderStatusReferences => Set<OrderStatusReference>();
     public DbSet<DeliveryStatusReference> DeliveryStatusReferences => Set<DeliveryStatusReference>();
     public DbSet<PaymentStatusReference> PaymentStatusReferences => Set<PaymentStatusReference>();
+    public DbSet<SupportStatusReference> SupportStatusReferences => Set<SupportStatusReference>();
     public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
+    public DbSet<SupportRequestMessage> SupportRequestMessages => Set<SupportRequestMessage>();
+    public DbSet<SupportRequestAttachment> SupportRequestAttachments => Set<SupportRequestAttachment>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<SiteContactSettings> SiteContactSettings => Set<SiteContactSettings>();
 
@@ -79,6 +82,13 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         });
 
         builder.Entity<PaymentStatusReference>(entity =>
+        {
+            entity.Property(status => status.Name).HasMaxLength(150).IsRequired();
+            entity.Property(status => status.IsDeleted).HasDefaultValue(false);
+            entity.HasIndex(status => status.Name).IsUnique();
+        });
+
+        builder.Entity<SupportStatusReference>(entity =>
         {
             entity.Property(status => status.Name).HasMaxLength(150).IsRequired();
             entity.Property(status => status.IsDeleted).HasDefaultValue(false);
@@ -254,8 +264,35 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.Property(request => request.CustomerId).HasMaxLength(450).IsRequired();
             entity.Property(request => request.Subject).HasMaxLength(200).IsRequired();
-            entity.Property(request => request.Message).HasMaxLength(4000).IsRequired();
-            entity.Property(request => request.Status).HasConversion<string>().HasMaxLength(32);
+            entity.Property(request => request.Status).HasMaxLength(64).IsRequired();
+            entity.HasOne(request => request.Order)
+                .WithMany()
+                .HasForeignKey(request => request.OrderId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(request => request.SupportStatusReference)
+                .WithMany()
+                .HasForeignKey(request => request.SupportStatusReferenceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(request => request.Messages)
+                .WithOne(message => message.SupportRequest)
+                .HasForeignKey(message => message.SupportRequestId);
+        });
+
+        builder.Entity<SupportRequestMessage>(entity =>
+        {
+            entity.Property(message => message.AuthorUserId).HasMaxLength(450).IsRequired();
+            entity.Property(message => message.AuthorRole).HasMaxLength(64).IsRequired();
+            entity.Property(message => message.MessageText).HasMaxLength(4000).IsRequired();
+            entity.HasMany(message => message.Attachments)
+                .WithOne(attachment => attachment.SupportRequestMessage)
+                .HasForeignKey(attachment => attachment.SupportRequestMessageId);
+        });
+
+        builder.Entity<SupportRequestAttachment>(entity =>
+        {
+            entity.Property(attachment => attachment.FileName).HasMaxLength(260).IsRequired();
+            entity.Property(attachment => attachment.FileUrl).HasMaxLength(2000).IsRequired();
+            entity.Property(attachment => attachment.ContentType).HasMaxLength(200).IsRequired();
         });
 
         builder.Entity<SiteContactSettings>(entity =>

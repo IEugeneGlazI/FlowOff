@@ -19,6 +19,8 @@ import type { Order } from '../../entities/cart';
 import { useAuth } from '../../features/auth/AuthContext';
 import { apiRequest, ApiError } from '../../shared/api';
 import { formatCurrency, formatDate } from '../../shared/format';
+import { PaginationControls } from '../../shared/PaginationControls';
+import { ProductImage } from '../../shared/ProductImage';
 
 type FeedbackState = {
   severity: 'success' | 'error';
@@ -37,25 +39,16 @@ function getOrderStageLabel(order: Order) {
   return order.deliveryStatus || 'Заказ на рассмотрении';
 }
 
-function getProductPlaceholderImage(productType: Order['items'][number]['productType']) {
-  if (productType === 'Flower') {
-    return 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=80';
-  }
-
-  if (productType === 'Gift') {
-    return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=900&q=80';
-  }
-
-  return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=900&q=80';
-}
-
 export function CourierPanelPage() {
+  const COURIER_PAGE_SIZE = 6;
   const { session } = useAuth();
   const location = useLocation();
   const token = session?.token ?? null;
   const isCourier = session?.role === 'Courier';
 
   const [tab, setTab] = useState<CourierTab>('available');
+  const [availablePage, setAvailablePage] = useState(1);
+  const [assignedPage, setAssignedPage] = useState(1);
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [assignedOrders, setAssignedOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -148,6 +141,18 @@ export function CourierPanelPage() {
     () => assignedOrders.filter((order) => ACTIVE_COURIER_STATUSES.includes(order.deliveryStatus || '')),
     [assignedOrders],
   );
+  const availablePageCount = Math.max(1, Math.ceil(availableOrders.length / COURIER_PAGE_SIZE));
+  const assignedPageCount = Math.max(1, Math.ceil(activeAssignedOrders.length / COURIER_PAGE_SIZE));
+  const pagedAvailableOrders = availableOrders.slice((availablePage - 1) * COURIER_PAGE_SIZE, availablePage * COURIER_PAGE_SIZE);
+  const pagedAssignedOrders = activeAssignedOrders.slice((assignedPage - 1) * COURIER_PAGE_SIZE, assignedPage * COURIER_PAGE_SIZE);
+
+  useEffect(() => {
+    setAvailablePage(1);
+  }, [availableOrders]);
+
+  useEffect(() => {
+    setAssignedPage(1);
+  }, [activeAssignedOrders]);
 
   if (!session || !isCourier) {
     return (
@@ -190,7 +195,7 @@ export function CourierPanelPage() {
             {isLoading ? <Typography>Загружаем заказы...</Typography> : null}
 
             <Box sx={{ display: 'grid', gap: 1.25 }}>
-              {availableOrders.map((order) => (
+              {pagedAvailableOrders.map((order) => (
                 <Card key={order.id} variant="outlined" sx={{ borderRadius: 2, boxShadow: 'none' }}>
                   <CardContent sx={{ display: 'grid', gap: 1.5 }}>
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
@@ -232,16 +237,12 @@ export function CourierPanelPage() {
                           }}
                         >
                           <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', minWidth: 0 }}>
-                            <Box
-                              component="img"
-                              src={getProductPlaceholderImage(item.productType)}
+                            <ProductImage
                               alt={item.productName}
                               sx={{
                                 width: 48,
                                 height: 48,
                                 borderRadius: 1.5,
-                                objectFit: 'cover',
-                                display: 'block',
                                 flexShrink: 0,
                                 border: '1px solid rgba(31, 42, 35, 0.08)',
                               }}
@@ -274,6 +275,13 @@ export function CourierPanelPage() {
                 <Typography color="text.secondary">Сейчас нет заказов, которые ожидают принятия в доставку.</Typography>
               ) : null}
             </Box>
+            <PaginationControls
+              page={availablePage}
+              pageCount={availablePageCount}
+              totalCount={availableOrders.length}
+              pageSize={COURIER_PAGE_SIZE}
+              onChange={setAvailablePage}
+            />
           </CardContent>
         </Card>
       ) : null}
@@ -291,7 +299,7 @@ export function CourierPanelPage() {
             {isLoading ? <Typography>Загружаем заказы...</Typography> : null}
 
             <Box sx={{ display: 'grid', gap: 1.25 }}>
-              {activeAssignedOrders.map((order) => (
+              {pagedAssignedOrders.map((order) => (
                 <Card key={order.id} variant="outlined" sx={{ borderRadius: 2, boxShadow: 'none' }}>
                   <CardContent sx={{ display: 'grid', gap: 1.5 }}>
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
@@ -333,16 +341,12 @@ export function CourierPanelPage() {
                           }}
                         >
                           <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', minWidth: 0 }}>
-                            <Box
-                              component="img"
-                              src={getProductPlaceholderImage(item.productType)}
+                            <ProductImage
                               alt={item.productName}
                               sx={{
                                 width: 48,
                                 height: 48,
                                 borderRadius: 1.5,
-                                objectFit: 'cover',
-                                display: 'block',
                                 flexShrink: 0,
                                 border: '1px solid rgba(31, 42, 35, 0.08)',
                               }}
@@ -389,6 +393,13 @@ export function CourierPanelPage() {
                 <Typography color="text.secondary">У вас пока нет активных доставок.</Typography>
               ) : null}
             </Box>
+            <PaginationControls
+              page={assignedPage}
+              pageCount={assignedPageCount}
+              totalCount={activeAssignedOrders.length}
+              pageSize={COURIER_PAGE_SIZE}
+              onChange={setAssignedPage}
+            />
           </CardContent>
         </Card>
       ) : null}

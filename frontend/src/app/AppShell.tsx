@@ -2,7 +2,6 @@ import { useState } from 'react';
 import type { MouseEvent } from 'react';
 import {
   AppBar,
-  Avatar,
   Badge,
   Box,
   Button,
@@ -17,7 +16,7 @@ import {
   alpha,
 } from '@mui/material';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { ChevronDown, Flower2, Package2, ShoppingBag, UserRound } from 'lucide-react';
+import { ChevronDown, Package2, ShoppingBag, UserRound } from 'lucide-react';
 import { useAuth } from '../features/auth/AuthContext';
 import { useCart } from '../features/cart/CartContext';
 
@@ -77,19 +76,27 @@ export function AppShell() {
             }}
           >
             <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-              <Avatar
+              <Box
                 sx={{
-                  width: 46,
-                  height: 46,
-                  bgcolor: 'transparent',
-                  color: 'primary.dark',
-                  border: '1px solid rgba(24, 38, 31, 0.08)',
-                  background:
-                    'linear-gradient(180deg, rgba(255,255,255,0.84) 0%, rgba(220,239,228,0.82) 100%)',
+                  width: 54,
+                  height: 54,
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                  borderRadius: 2,
                 }}
               >
-                <Flower2 size={18} />
-              </Avatar>
+                <Box
+                  component="img"
+                  src="/brand-mark.png"
+                  alt="Flowoff"
+                  sx={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'block',
+                    objectFit: 'cover',
+                  }}
+                />
+              </Box>
               <Box>
                 <Typography
                   component={NavLink}

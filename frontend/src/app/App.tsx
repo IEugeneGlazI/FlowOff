@@ -11,6 +11,7 @@ import { ContactsPage } from '../pages/about/ContactsPage';
 import { FloristPanelPage } from '../pages/florist/FloristPanelPage';
 import { CourierPanelPage } from '../pages/courier/CourierPanelPage';
 import { AdminPanelPage } from '../pages/admin/AdminPanelPage';
+import { SupportPage } from '../pages/support/SupportPage';
 
 export function App() {
   return (
@@ -26,6 +27,7 @@ export function App() {
         <Route path="/products/:productId" element={<ProductPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/account" element={<AccountPage />} />
+        <Route path="/support" element={<SupportPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/florist" element={<FloristPanelPage />} />
         <Route path="/courier" element={<CourierPanelPage />} />

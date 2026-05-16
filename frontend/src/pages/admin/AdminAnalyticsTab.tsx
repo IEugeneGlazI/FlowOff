@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   alpha,
@@ -13,7 +13,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { BarChart3, Download, RefreshCw } from 'lucide-react';
+import { BarChart3, RefreshCw } from 'lucide-react';
 import type {
   AdminAnalytics,
   EmployeePerformance,
@@ -23,7 +23,6 @@ import type {
 } from '../../entities/analytics';
 import { getAdminAnalytics } from '../../features/analytics/analyticsApi';
 import { ApiError } from '../../shared/api';
-import { downloadExcelWorkbook } from '../../shared/excelWorkbook';
 import { formatCurrency, formatDate } from '../../shared/format';
 
 type FeedbackState = {
@@ -412,93 +411,6 @@ function TopProductsCard({ items }: { items: TopProductAnalytics[] }) {
   );
 }
 
-function exportAnalytics(analytics: AdminAnalytics) {
-  downloadExcelWorkbook(`flowoff-analytics-${analytics.dateFrom}-${analytics.dateTo}`, [
-    {
-      name: 'Сводка',
-      columns: ['Показатель', 'Значение'],
-      rows: [
-        ['Период от', analytics.dateFrom],
-        ['Период до', analytics.dateTo],
-        ['Всего заказов', analytics.summary.totalOrders],
-        ['Активные заказы', analytics.summary.activeOrders],
-        ['Завершенные заказы', analytics.summary.completedOrders],
-        ['Отмененные заказы', analytics.summary.cancelledOrders],
-        ['Доставка', analytics.summary.deliveryOrders],
-        ['Самовывоз', analytics.summary.pickupOrders],
-        ['Оплаченные заказы', analytics.summary.paidOrders],
-        ['Ожидают оплаты', analytics.summary.pendingPaymentOrders],
-        ['Уникальные клиенты', analytics.summary.uniqueCustomers],
-        ['Выручка', analytics.summary.revenue],
-        ['Средний чек', analytics.summary.averageOrderValue],
-      ],
-    },
-    {
-      name: 'Периоды',
-      columns: ['Период', 'Заказов', 'Выручка', 'Средний чек'],
-      rows: analytics.revenueByPeriods.map((period) => [
-        period.label,
-        period.ordersCount,
-        period.revenue,
-        period.averageOrderValue,
-      ]),
-    },
-    {
-      name: 'Динамика',
-      columns: ['Дата', 'Заказов', 'Выручка'],
-      rows: analytics.revenueTrend.map((point) => [point.label, point.ordersCount, point.revenue]),
-    },
-    {
-      name: 'Товары',
-      columns: ['Тип', 'Товар', 'Продано штук', 'Заказов', 'Выручка'],
-      rows: analytics.topProducts.map((item) => [
-        item.productType,
-        item.productName,
-        item.quantitySold,
-        item.ordersCount,
-        item.revenue,
-      ]),
-    },
-    {
-      name: 'Флористы',
-      columns: ['Флорист', 'Email', 'Всего заказов', 'Активных', 'Завершенных', 'Отмененных', 'Выручка', 'Доля завершения %'],
-      rows: analytics.florists.map((item) => [
-        item.fullName,
-        item.email,
-        item.totalAssignedOrders,
-        item.activeOrders,
-        item.completedOrders,
-        item.cancelledOrders,
-        item.revenueHandled,
-        item.completionRatePercent,
-      ]),
-    },
-    {
-      name: 'Курьеры',
-      columns: ['Курьер', 'Email', 'Всего заказов', 'Активных', 'Завершенных', 'Отмененных', 'Выручка', 'Доля завершения %'],
-      rows: analytics.couriers.map((item) => [
-        item.fullName,
-        item.email,
-        item.totalAssignedOrders,
-        item.activeOrders,
-        item.completedOrders,
-        item.cancelledOrders,
-        item.revenueHandled,
-        item.completionRatePercent,
-      ]),
-    },
-    {
-      name: 'Статусы',
-      columns: ['Раздел', 'Статус', 'Количество'],
-      rows: [
-        ...analytics.orderStatuses.map((item) => ['Заказы', item.label, item.count]),
-        ...analytics.deliveryStatuses.map((item) => ['Доставка', item.label, item.count]),
-        ...analytics.paymentStatuses.map((item) => ['Оплата', item.label, item.count]),
-      ],
-    },
-  ]);
-}
-
 export function AdminAnalyticsTab({ token }: { token: string }) {
   const defaultRange = useMemo(() => getDefaultRange(), []);
   const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
@@ -612,10 +524,7 @@ export function AdminAnalyticsTab({ token }: { token: string }) {
                 sx={{ minWidth: 170, bgcolor: alpha('#ffffff', 0.72) }}
               />
               <Button variant="outlined" color="inherit" startIcon={<RefreshCw size={16} />} onClick={() => void loadAnalytics()}>
-                Показать
-              </Button>
-              <Button variant="contained" startIcon={<Download size={16} />} onClick={() => exportAnalytics(analytics)}>
-                Выгрузить в Excel
+                Обновить
               </Button>
             </Stack>
           </Stack>
@@ -681,7 +590,7 @@ export function AdminAnalyticsTab({ token }: { token: string }) {
             <Box sx={{ display: 'grid', gap: 0.5 }}>
               <Typography variant="h5">Выручка по периодам</Typography>
               <Typography variant="body2" color="text.secondary">
-                Быстрое сравнение выбранного диапазона с соседними и крупными периодами.
+                Быстрое сравнение выбранного диапазона с аналогичными периодами.
               </Typography>
             </Box>
 
@@ -808,7 +717,7 @@ export function AdminAnalyticsTab({ token }: { token: string }) {
       >
         <LeaderboardCard
           title="Эффективность флористов"
-          subtitle="Сколько заказов ведут флористы, сколько завершают и какую выручку проводят."
+          subtitle="Сколько заказов ведут флористы, сколько завершены и какую выручку приносят."
           items={analytics.florists}
         />
         <LeaderboardCard
@@ -835,3 +744,4 @@ export function AdminAnalyticsTab({ token }: { token: string }) {
     </Box>
   );
 }
+

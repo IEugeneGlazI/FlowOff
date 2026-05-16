@@ -30,6 +30,7 @@ import {
   updateAdminUser,
 } from '../../features/users/usersApi';
 import { ApiError } from '../../shared/api';
+import { PaginationControls } from '../../shared/PaginationControls';
 
 type FeedbackState = {
   severity: 'success' | 'error';
@@ -44,6 +45,7 @@ type UserDialogState =
 type UserActivationFilter = 'All' | 'Active' | 'Deactivated';
 
 const roleOptions: UserRole[] = ['Customer', 'Florist', 'Courier', 'Administrator'];
+const USERS_PAGE_SIZE = 8;
 
 function getRoleLabel(role: UserRole) {
   switch (role) {
@@ -80,6 +82,7 @@ export function AdminUsersTab({ token }: { token: string }) {
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [dialogState, setDialogState] = useState<UserDialogState>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [page, setPage] = useState(1);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -233,6 +236,16 @@ export function AdminUsersTab({ token }: { token: string }) {
     });
   }, [activationFilter, roleFilter, search, users]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, roleFilter, activationFilter]);
+
+  const pagedUsers = useMemo(
+    () => filteredUsers.slice((page - 1) * USERS_PAGE_SIZE, page * USERS_PAGE_SIZE),
+    [filteredUsers, page],
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredUsers.length / USERS_PAGE_SIZE));
+
   return (
     <Box sx={{ display: 'grid', gap: 2.5 }}>
       <Card
@@ -304,7 +317,7 @@ export function AdminUsersTab({ token }: { token: string }) {
           </Stack>
 
           <Box sx={{ display: 'grid', gap: 1.25 }}>
-            {filteredUsers.map((user) => (
+            {pagedUsers.map((user) => (
               <Card
                 key={user.id}
                 variant="outlined"
@@ -330,7 +343,7 @@ export function AdminUsersTab({ token }: { token: string }) {
                     <Box sx={{ display: 'grid', gap: 0.45 }}>
                       <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
                         <Typography variant="h6">{user.fullName}</Typography>
-                        <Chip label={getRoleLabel(user.role)} size="small" />
+                        <Chip label={getRoleLabel(user.role)} size="small" variant="outlined" />
                         {user.isBlocked || user.isDeleted ? <Chip label={getUserStatusLabel(user)} size="small" variant="outlined" /> : null}
                       </Stack>
                       <Typography variant="body2" color="text.secondary">
@@ -397,6 +410,13 @@ export function AdminUsersTab({ token }: { token: string }) {
             ))}
 
             {filteredUsers.length === 0 ? <Typography color="text.secondary">Пользователи по текущим фильтрам не найдены.</Typography> : null}
+            <PaginationControls
+              page={page}
+              pageCount={pageCount}
+              totalCount={filteredUsers.length}
+              pageSize={USERS_PAGE_SIZE}
+              onChange={setPage}
+            />
           </Box>
         </CardContent>
       </Card>

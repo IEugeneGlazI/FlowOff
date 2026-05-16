@@ -46,11 +46,15 @@ import {
 } from '../../features/catalog/catalogApi';
 import { apiRequest, ApiError } from '../../shared/api';
 import { formatCurrency, formatDate } from '../../shared/format';
+import { PaginationControls } from '../../shared/PaginationControls';
+import { ProductImage } from '../../shared/ProductImage';
 import { getPromotionPricing } from '../../shared/promotionPricing';
 
 type FloristTab = 'products' | 'orders';
 type FloristOrdersTab = 'assembly' | 'accepted';
 type FloristPanelMode = 'florist' | 'admin';
+const FLORIST_PRODUCTS_PAGE_SIZE = 9;
+const FLORIST_ORDERS_PAGE_SIZE = 6;
 
 type ProductFormState = {
   id?: string;
@@ -88,18 +92,6 @@ const emptyProductForm: ProductFormState = {
 
 function normalizeMultiValue(value: string | string[]) {
   return typeof value === 'string' ? value.split(',').filter(Boolean) : value;
-}
-
-function getProductPlaceholderImage(productType: ProductType) {
-  if (productType === 'Flower') {
-    return 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=80';
-  }
-
-  if (productType === 'Gift') {
-    return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=900&q=80';
-  }
-
-  return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=900&q=80';
 }
 
 function getProductTypeLabel(productType: ProductType) {
@@ -141,6 +133,9 @@ export function FloristPanelPage({
 
   const [tab, setTab] = useState<FloristTab>(defaultTab);
   const [ordersTab, setOrdersTab] = useState<FloristOrdersTab>('assembly');
+  const [productsPage, setProductsPage] = useState(1);
+  const [assemblyOrdersPage, setAssemblyOrdersPage] = useState(1);
+  const [acceptedOrdersPage, setAcceptedOrdersPage] = useState(1);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
@@ -477,7 +472,7 @@ export function FloristPanelPage({
   const productImageById = useMemo(
     () =>
       products.reduce<Record<string, string>>((accumulator, product) => {
-        accumulator[product.id] = product.imageUrl || getProductPlaceholderImage(product.type);
+        accumulator[product.id] = product.imageUrl || '';
         return accumulator;
       }, {}),
     [products],
@@ -504,6 +499,26 @@ export function FloristPanelPage({
   );
 
   const visibleOrders = ordersTab === 'assembly' ? assemblyOrders : acceptedOrders;
+  const pagedProducts = sortedProducts.slice((productsPage - 1) * FLORIST_PRODUCTS_PAGE_SIZE, productsPage * FLORIST_PRODUCTS_PAGE_SIZE);
+  const productsPageCount = Math.max(1, Math.ceil(sortedProducts.length / FLORIST_PRODUCTS_PAGE_SIZE));
+  const currentOrdersPage = ordersTab === 'assembly' ? assemblyOrdersPage : acceptedOrdersPage;
+  const ordersPageCount = Math.max(1, Math.ceil(visibleOrders.length / FLORIST_ORDERS_PAGE_SIZE));
+  const pagedVisibleOrders = visibleOrders.slice(
+    (currentOrdersPage - 1) * FLORIST_ORDERS_PAGE_SIZE,
+    currentOrdersPage * FLORIST_ORDERS_PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setProductsPage(1);
+  }, [productSearch, productTypeFilter, productVisibilityFilter, products]);
+
+  useEffect(() => {
+    setAssemblyOrdersPage(1);
+  }, [assemblyOrders]);
+
+  useEffect(() => {
+    setAcceptedOrdersPage(1);
+  }, [acceptedOrders]);
 
   if (!session || !isAllowed) {
     return (
@@ -623,7 +638,7 @@ export function FloristPanelPage({
               {isLoadingProducts ? <Typography>Загружаем товары...</Typography> : null}
 
               <Box sx={{ display: 'grid', gap: 1.25 }}>
-                {sortedProducts.map((product) => (
+                {pagedProducts.map((product) => (
                   <Card
                     key={product.id}
                     variant="outlined"
@@ -647,19 +662,15 @@ export function FloristPanelPage({
                         sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' } }}
                       >
                         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', minWidth: 0 }}>
-                          <Box
-                            component="img"
-                            src={product.imageUrl || getProductPlaceholderImage(product.type)}
+                          <ProductImage
+                            src={product.imageUrl}
                             alt={product.name}
                             sx={{
                               width: 64,
                               height: 64,
                               borderRadius: 2,
-                              objectFit: 'cover',
-                              display: 'block',
                               flexShrink: 0,
                               border: '1px solid rgba(24,38,31,0.06)',
-                              bgcolor: '#f3f7f4',
                             }}
                           />
                           <Box sx={{ display: 'grid', gap: 0.4, minWidth: 0 }}>
@@ -722,6 +733,14 @@ export function FloristPanelPage({
                   </Card>
                 ))}
               </Box>
+
+              <PaginationControls
+                page={productsPage}
+                pageCount={productsPageCount}
+                totalCount={sortedProducts.length}
+                pageSize={FLORIST_PRODUCTS_PAGE_SIZE}
+                onChange={setProductsPage}
+              />
             </CardContent>
           </Card>
 
@@ -783,17 +802,14 @@ export function FloristPanelPage({
                     />
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'center' } }}>
-                      <Box
-                        component="img"
-                        src={productImagePreviewUrl || productForm.imageUrl || getProductPlaceholderImage(productForm.type)}
+                      <ProductImage
+                        src={productImagePreviewUrl || productForm.imageUrl}
                         alt={productForm.name || 'Изображение товара'}
                         sx={{
                           width: 112,
                           height: 112,
                           borderRadius: 2,
-                          objectFit: 'cover',
                           border: '1px solid rgba(24,38,31,0.08)',
-                          bgcolor: '#f3f7f4',
                           flexShrink: 0,
                         }}
                       />
@@ -978,7 +994,7 @@ export function FloristPanelPage({
             {isLoadingOrders ? <Typography>Загружаем заказы...</Typography> : null}
 
             <Box sx={{ display: 'grid', gap: 1.25 }}>
-              {visibleOrders.map((order) => (
+              {pagedVisibleOrders.map((order) => (
                 <Card key={order.id} variant="outlined" sx={{ borderRadius: 2, boxShadow: 'none' }}>
                   <CardContent sx={{ display: 'grid', gap: 1.5 }}>
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
@@ -1022,16 +1038,13 @@ export function FloristPanelPage({
                           }}
                         >
                           <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', minWidth: 0 }}>
-                            <Box
-                              component="img"
-                              src={productImageById[item.productId] || getProductPlaceholderImage(item.productType)}
+                            <ProductImage
+                              src={productImageById[item.productId]}
                               alt={item.productName}
                               sx={{
                                 width: 48,
                                 height: 48,
                                 borderRadius: 1.5,
-                                objectFit: 'cover',
-                                display: 'block',
                                 flexShrink: 0,
                                 border: '1px solid rgba(31, 42, 35, 0.08)',
                               }}
@@ -1082,6 +1095,14 @@ export function FloristPanelPage({
                 </Typography>
               ) : null}
             </Box>
+
+            <PaginationControls
+              page={currentOrdersPage}
+              pageCount={ordersPageCount}
+              totalCount={visibleOrders.length}
+              pageSize={FLORIST_ORDERS_PAGE_SIZE}
+              onChange={ordersTab === 'assembly' ? setAssemblyOrdersPage : setAcceptedOrdersPage}
+            />
           </CardContent>
         </Card>
       )}

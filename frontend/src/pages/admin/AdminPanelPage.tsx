@@ -51,20 +51,21 @@ import {
 } from '../../features/catalog/catalogApi';
 import { ApiError, apiRequest } from '../../shared/api';
 import { formatCurrency, formatDate } from '../../shared/format';
+import { PaginationControls } from '../../shared/PaginationControls';
+import { ProductImage } from '../../shared/ProductImage';
 import { FloristPanelPage } from '../florist/FloristPanelPage';
 import { AdminAnalyticsTab } from './AdminAnalyticsTab';
 import { AdminPromotionsTab } from './AdminPromotionsTab';
 import { AdminSiteContactsTab } from './AdminSiteContactsTab';
+import { AdminSupportTab } from './AdminSupportTab';
 import { AdminUsersTab } from './AdminUsersTab';
 
-type AdminTab = 'products' | 'references' | 'promotions' | 'orders' | 'users' | 'contacts' | 'analytics';
+type AdminTab = 'products' | 'references' | 'promotions' | 'orders' | 'users' | 'contacts' | 'analytics' | 'support';
 type ReferenceTab =
   | 'categories'
   | 'colors'
-  | 'flowerIns'
-  | 'orderStatuses'
-  | 'deliveryStatuses'
-  | 'paymentStatuses';
+  | 'flowerIns';
+const ADMIN_ORDERS_PAGE_SIZE = 6;
 
 type FeedbackState = {
   severity: 'success' | 'error';
@@ -75,9 +76,6 @@ type ReferenceDialogState =
   | { type: 'category'; item?: Category | null }
   | { type: 'color'; item?: ColorReference | null }
   | { type: 'flowerIn'; item?: FlowerInReference | null }
-  | { type: 'orderStatus'; item: StatusReference }
-  | { type: 'deliveryStatus'; item: StatusReference }
-  | { type: 'paymentStatus'; item: StatusReference }
   | null;
 
 type ReferenceListItem = { id: string; name: string };
@@ -214,18 +212,6 @@ function ReferenceSection<TItem extends ReferenceListItem>({
 
 function getDeliveryMethodLabel(method: string) {
   return method === 'Pickup' ? 'Самовывоз' : 'Доставка';
-}
-
-function getProductPlaceholderImage(productType: Order['items'][number]['productType']) {
-  if (productType === 'Flower') {
-    return 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=80';
-  }
-
-  if (productType === 'Gift') {
-    return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=900&q=80';
-  }
-
-  return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=900&q=80';
 }
 
 function getOrderItemsCountLabel(count: number) {
@@ -371,6 +357,7 @@ export function AdminPanelPage() {
   const [orderMethodFilter, setOrderMethodFilter] = useState('');
   const [orderDateFrom, setOrderDateFrom] = useState('');
   const [orderDateTo, setOrderDateTo] = useState('');
+  const [ordersPage, setOrdersPage] = useState(1);
   const [orderStatusDrafts, setOrderStatusDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -688,6 +675,22 @@ export function AdminPanelPage() {
     orderDateTo,
   ]);
 
+  const ordersPageCount = Math.max(1, Math.ceil(filteredOrders.length / ADMIN_ORDERS_PAGE_SIZE));
+  const pagedOrders = filteredOrders.slice((ordersPage - 1) * ADMIN_ORDERS_PAGE_SIZE, ordersPage * ADMIN_ORDERS_PAGE_SIZE);
+
+  useEffect(() => {
+    setOrdersPage(1);
+  }, [
+    orderSearch,
+    orderStatusFilter,
+    deliveryStatusFilter,
+    paymentStatusFilter,
+    orderMethodFilter,
+    orderDateFrom,
+    orderDateTo,
+    orders,
+  ]);
+
   if (!session || !isAdmin) {
     return (
       <Card sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
@@ -717,6 +720,7 @@ export function AdminPanelPage() {
             <Tab value="users" label="Пользователи" />
             <Tab value="contacts" label="Контакты" />
             <Tab value="analytics" label="Аналитика" />
+            <Tab value="support" label="Поддержка" />
           </Tabs>
         </CardContent>
       </Card>
@@ -731,9 +735,6 @@ export function AdminPanelPage() {
                 <Tab value="categories" label="Категории" />
                 <Tab value="colors" label="Цвета" />
                 <Tab value="flowerIns" label="Цветки" />
-                <Tab value="orderStatuses" label="Статусы заказа" />
-                <Tab value="deliveryStatuses" label="Статусы доставки" />
-                <Tab value="paymentStatuses" label="Статусы оплаты" />
               </Tabs>
             </CardContent>
           </Card>
@@ -778,39 +779,6 @@ export function AdminPanelPage() {
               onCreate={() => openCreateDialog('flowerIn')}
               onDelete={(item) => void handleDelete('flowerIn', item)}
               createLabel="Новый цветок"
-            />
-          ) : null}
-
-          {referenceTab === 'orderStatuses' ? (
-            <ReferenceSection
-              title="Статусы заказа"
-              description="Верхний уровень состояния заказа: активен, завершен, отменен."
-              items={filteredOrderStatuses}
-              search={referenceSearch}
-              onSearchChange={setReferenceSearch}
-              onEdit={(item) => openEditDialog('orderStatus', item)}
-            />
-          ) : null}
-
-          {referenceTab === 'deliveryStatuses' ? (
-            <ReferenceSection
-              title="Статусы доставки"
-              description="Детальный маршрут заказа от рассмотрения до получения клиентом."
-              items={filteredDeliveryStatuses}
-              search={referenceSearch}
-              onSearchChange={setReferenceSearch}
-              onEdit={(item) => openEditDialog('deliveryStatus', item)}
-            />
-          ) : null}
-
-          {referenceTab === 'paymentStatuses' ? (
-            <ReferenceSection
-              title="Статусы оплаты"
-              description="Статусы используются в заказах и в админских фильтрах."
-              items={filteredPaymentStatuses}
-              search={referenceSearch}
-              onSearchChange={setReferenceSearch}
-              onEdit={(item) => openEditDialog('paymentStatus', item)}
             />
           ) : null}
         </Box>
@@ -980,7 +948,7 @@ export function AdminPanelPage() {
           </Box>
 
           <Box sx={{ display: 'grid', gap: 1.5 }}>
-            {filteredOrders.map((order) => (
+            {pagedOrders.map((order) => (
               <Card key={order.id} sx={{ background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(14px)' }}>
                 <CardContent sx={{ p: { xs: 2, md: 2.5 }, display: 'grid', gap: 2 }}>
                   <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
@@ -1099,16 +1067,12 @@ export function AdminPanelPage() {
                             spacing={1.25}
                             sx={{ alignItems: 'center', minWidth: 0, flex: 1 }}
                           >
-                            <Box
-                              component="img"
-                              src={getProductPlaceholderImage(item.productType)}
+                            <ProductImage
                               alt={item.productName}
                               sx={{
                                 width: 48,
                                 height: 48,
                                 borderRadius: 1.5,
-                                objectFit: 'cover',
-                                display: 'block',
                                 flexShrink: 0,
                                 border: '1px solid rgba(31, 42, 35, 0.08)',
                               }}
@@ -1198,6 +1162,13 @@ export function AdminPanelPage() {
               <Typography color="text.secondary">По текущим фильтрам заказы не найдены.</Typography>
             ) : null}
           </Box>
+          <PaginationControls
+            page={ordersPage}
+            pageCount={ordersPageCount}
+            totalCount={filteredOrders.length}
+            pageSize={ADMIN_ORDERS_PAGE_SIZE}
+            onChange={setOrdersPage}
+          />
         </Box>
       ) : null}
 
@@ -1206,6 +1177,8 @@ export function AdminPanelPage() {
       {tab === 'contacts' ? <AdminSiteContactsTab token={token!} /> : null}
 
       {tab === 'analytics' ? <AdminAnalyticsTab token={token!} /> : null}
+
+      {tab === 'support' ? <AdminSupportTab token={token!} /> : null}
 
       <Dialog open={Boolean(dialogState)} onClose={closeDialog} fullWidth maxWidth="sm">
         <DialogTitle>{getDialogTitle(dialogState)}</DialogTitle>
@@ -1261,3 +1234,5 @@ export function AdminPanelPage() {
     </Box>
   );
 }
+
+

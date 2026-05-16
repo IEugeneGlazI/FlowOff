@@ -19,12 +19,14 @@ import {
 } from '@mui/material';
 import { Lock } from 'lucide-react';
 import type { Order } from '../../entities/cart';
-import type { ProductType } from '../../entities/catalog';
 import { useAuth } from '../../features/auth/AuthContext';
 import { apiRequest } from '../../shared/api';
 import { formatCurrency, formatDate } from '../../shared/format';
+import { PaginationControls } from '../../shared/PaginationControls';
+import { ProductImage } from '../../shared/ProductImage';
 
 type OrdersView = 'active' | 'completed';
+const ORDERS_PAGE_SIZE = 6;
 
 const deliveryOrderSteps = [
   'Заказ на рассмотрении',
@@ -42,18 +44,6 @@ const pickupOrderSteps = [
   'Заказ готов к выдаче',
   'Заказ получен клиентом',
 ];
-
-function getProductPlaceholderImage(productType: ProductType) {
-  if (productType === 'Flower') {
-    return 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=80';
-  }
-
-  if (productType === 'Gift') {
-    return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=900&q=80';
-  }
-
-  return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=900&q=80';
-}
 
 function getDeliveryMethodLabel(method: string) {
   return method === 'Pickup' ? 'Самовывоз' : 'Доставка';
@@ -202,17 +192,12 @@ function renderOrderCard(order: Order, isMobile: boolean, returnTo: string) {
                 },
               }}
             >
-              <Box
-                component="img"
-                src={getProductPlaceholderImage(item.productType)}
+              <ProductImage
                 alt={item.productName}
                 sx={{
                   width: 72,
                   height: 72,
                   borderRadius: 2,
-                  objectFit: 'cover',
-                  display: 'block',
-                  bgcolor: '#f3f7f4',
                   border: '1px solid rgba(24,38,31,0.06)',
                 }}
               />
@@ -264,6 +249,7 @@ export function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<OrdersView>('active');
+  const [page, setPage] = useState(1);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -282,6 +268,12 @@ export function OrdersPage() {
   const activeOrders = useMemo(() => orders.filter((order) => !isCompletedOrder(order)), [orders]);
   const completedOrders = useMemo(() => orders.filter(isCompletedOrder), [orders]);
   const visibleOrders = view === 'active' ? activeOrders : completedOrders;
+  const pageCount = Math.max(1, Math.ceil(visibleOrders.length / ORDERS_PAGE_SIZE));
+  const pagedOrders = visibleOrders.slice((page - 1) * ORDERS_PAGE_SIZE, page * ORDERS_PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [view, orders]);
 
   if (!session) {
     return (
@@ -376,9 +368,17 @@ export function OrdersPage() {
 
           {!isLoading && visibleOrders.length > 0 ? (
             <Box sx={{ display: 'grid', gap: 2 }}>
-              {visibleOrders.map((order) => renderOrderCard(order, isMobile, location.pathname + location.search))}
+              {pagedOrders.map((order) => renderOrderCard(order, isMobile, location.pathname + location.search))}
             </Box>
           ) : null}
+
+          <PaginationControls
+            page={page}
+            pageCount={pageCount}
+            totalCount={visibleOrders.length}
+            pageSize={ORDERS_PAGE_SIZE}
+            onChange={setPage}
+          />
         </CardContent>
       </Card>
     </Box>

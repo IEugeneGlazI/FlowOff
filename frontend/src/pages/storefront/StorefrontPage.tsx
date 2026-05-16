@@ -22,13 +22,15 @@ import {
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LoaderCircle, Plus, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LoaderCircle, Plus, Search } from 'lucide-react';
 import type { Category, ColorReference, FlowerInReference, Product, Promotion } from '../../entities/catalog';
 import { getCategories, getColors, getFlowerIns, getProducts, getPromotions } from '../../features/catalog/catalogApi';
 import { useCart } from '../../features/cart/CartContext';
 import { ApiError } from '../../shared/api';
-import { formatCurrency } from '../../shared/format';
-import { getPromotionPricing } from '../../shared/promotionPricing';
+import { formatCurrency, formatDate } from '../../shared/format';
+import { PaginationControls } from '../../shared/PaginationControls';
+import { ProductImage } from '../../shared/ProductImage';
+import { getPromotionPricing, isPromotionActive } from '../../shared/promotionPricing';
 
 type CatalogTab = 'bouquets' | 'flowers' | 'gifts';
 type PriceRange = [number, number];
@@ -38,6 +40,7 @@ type FeedbackState = {
 };
 
 const ALL_FILTER_VALUE = '__all__';
+const STOREFRONT_PAGE_SIZE = 9;
 
 function getTabHeading(activeTab: CatalogTab) {
   switch (activeTab) {
@@ -61,22 +64,6 @@ function getTabSubheading(activeTab: CatalogTab) {
   }
 }
 
-function getProductPlaceholderImage(product: Product) {
-  if (product.imageUrl) {
-    return product.imageUrl;
-  }
-
-  if (product.type === 'Flower') {
-    return 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=80';
-  }
-
-  if (product.type === 'Gift') {
-    return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=900&q=80';
-  }
-
-  return 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=900&q=80';
-}
-
 function normalizeMultiValue(value: string | string[]) {
   return typeof value === 'string' ? value.split(',').filter(Boolean) : value;
 }
@@ -96,6 +83,8 @@ export function StorefrontPage() {
   const [selectedFlowerInIds, setSelectedFlowerInIds] = useState<string[]>([]);
   const [selectedFlowerColorIds, setSelectedFlowerColorIds] = useState<string[]>([]);
   const [selectedGiftCategoryIds, setSelectedGiftCategoryIds] = useState<string[]>([]);
+  const [activePromotionIndex, setActivePromotionIndex] = useState(0);
+  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const { addItem } = useCart();
@@ -118,11 +107,27 @@ export function StorefrontPage() {
       setCategories(nextCategories);
       setColors(nextColors);
       setFlowerIns(nextFlowerIns);
-      setPromotions(nextPromotions.filter((item) => item.isActive));
+      setPromotions(nextPromotions.filter((item) => isPromotionActive(item)));
     }
 
     void loadReferences();
   }, []);
+
+  useEffect(() => {
+    setActivePromotionIndex(0);
+  }, [promotions.length]);
+
+  useEffect(() => {
+    if (promotions.length <= 1) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setActivePromotionIndex((current) => (current + 1) % promotions.length);
+    }, 5500);
+
+    return () => window.clearInterval(timer);
+  }, [promotions]);
 
   useEffect(() => {
     async function loadProducts() {
@@ -209,6 +214,9 @@ export function StorefrontPage() {
     selectedGiftCategoryIds,
   ]);
 
+  const pageCount = Math.max(1, Math.ceil(filteredProducts.length / STOREFRONT_PAGE_SIZE));
+  const pagedProducts = filteredProducts.slice((page - 1) * STOREFRONT_PAGE_SIZE, page * STOREFRONT_PAGE_SIZE);
+
   useEffect(() => {
     setSearch('');
     setSelectedBouquetColorIds([]);
@@ -216,13 +224,26 @@ export function StorefrontPage() {
     setSelectedFlowerInIds([]);
     setSelectedFlowerColorIds([]);
     setSelectedGiftCategoryIds([]);
+    setPage(1);
   }, [activeTab]);
 
   useEffect(() => {
     setPriceRange(priceBounds);
   }, [priceBounds]);
 
-  async function handleAddToCart(productId: string) {
+  useEffect(() => {
+    setPage(1);
+  }, [
+    search,
+    priceRange,
+    selectedBouquetColorIds,
+    selectedBouquetFlowerInIds,
+    selectedFlowerInIds,
+    selectedFlowerColorIds,
+    selectedGiftCategoryIds,
+  ]);
+
+    async function handleAddToCart(productId: string) {
     try {
       await addItem(productId, 1);
       setFeedback({
@@ -297,6 +318,14 @@ export function StorefrontPage() {
       .join(', ');
   }
 
+  function showPreviousPromotion() {
+    setActivePromotionIndex((current) => (current - 1 + promotions.length) % promotions.length);
+  }
+
+  function showNextPromotion() {
+    setActivePromotionIndex((current) => (current + 1) % promotions.length);
+  }
+
   function renderTabFilters() {
     if (activeTab === 'bouquets') {
       return (
@@ -327,10 +356,10 @@ export function StorefrontPage() {
               labelId="bouquet-flowerin-label"
               value={selectedBouquetFlowerInIds}
               input={<OutlinedInput label="Цветы в составе" />}
-              renderValue={(selected) => renderSelectedNames(selected, flowerIns, 'Все цветки')}
+              renderValue={(selected) => renderSelectedNames(selected, flowerIns, 'Все цветы')}
               onChange={(event) => handleMultipleChange(event, setSelectedBouquetFlowerInIds)}
             >
-              <MenuItem value={ALL_FILTER_VALUE}>Все цветки</MenuItem>
+              <MenuItem value={ALL_FILTER_VALUE}>Все цветы</MenuItem>
               {flowerIns.map((flowerIn) => (
                 <MenuItem key={flowerIn.id} value={flowerIn.id}>
                   {flowerIn.name}
@@ -424,6 +453,171 @@ export function StorefrontPage() {
         </Typography>
       </Box>
 
+      {promotions.length > 0 ? (
+        <Box sx={{ display: 'grid', gap: 1.5 }}>
+          {[promotions[activePromotionIndex]].filter(Boolean).map((promotion) => (
+            <Card
+              key={`${promotion.id}-${activePromotionIndex}`}
+              sx={{
+                position: 'relative',
+                overflow: 'visible',
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(220,239,228,0.74) 100%)',
+                animation: 'promotionSlideIn 420ms ease',
+                '@keyframes promotionSlideIn': {
+                  '0%': {
+                    opacity: 0,
+                    transform: 'translateX(18px) scale(0.985)',
+                  },
+                  '100%': {
+                    opacity: 1,
+                    transform: 'translateX(0) scale(1)',
+                  },
+                },
+                '& .promotion-nav': {
+                  opacity: 0,
+                  pointerEvents: 'none',
+                  transition: 'opacity 180ms ease',
+                },
+                '&:hover .promotion-nav': {
+                  opacity: 1,
+                  pointerEvents: 'auto',
+                },
+              }}
+            >
+              <CardContent
+                sx={{
+                  display: 'grid',
+                  gap: 2,
+                  minHeight: { xs: 220, md: 240 },
+                  gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.15fr) minmax(220px, 0.85fr)' },
+                  alignItems: 'stretch',
+                }}
+              >
+                <Box sx={{ display: 'grid', gap: 1.4, alignContent: 'space-between' }}>
+                  <Box />
+
+                  <Box sx={{ display: 'grid', gap: 0.9 }}>
+                    <Typography variant="h4">{promotion.title}</Typography>
+                    <Typography variant="body1" color="text.secondary">
+                      {promotion.description || 'Скидка уже доступна для ближайших заказов.'}
+                    </Typography>
+                  </Box>
+
+                  <Typography variant="body2" color="text.secondary">
+                    Действует до {formatDate(promotion.endsAtUtc)}
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    borderRadius: 2,
+                    border: '1px solid rgba(24,38,31,0.06)',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.74) 0%, rgba(243,248,244,0.96) 100%)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    textAlign: 'center',
+                    px: 2,
+                    py: 2.25,
+                  }}
+                >
+                  <Box sx={{ display: 'grid', gap: 0.75 }}>
+                    <Typography variant="overline" color="text.secondary">
+                      Специальное предложение
+                    </Typography>
+                    <Typography variant="h2">-{promotion.discountPercent}%</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Для выбранных товаров из текущей подборки
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+
+              {promotions.length > 1 ? (
+                <>
+                  <Button
+                    className="promotion-nav"
+                    color="inherit"
+                    aria-label="Предыдущая акция"
+                    onClick={showPreviousPromotion}
+                    sx={{
+                      position: 'absolute',
+                      left: 0,
+                      top: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      minWidth: 42,
+                      width: 42,
+                      height: 42,
+                      borderRadius: '50%',
+                      p: 0,
+                      bgcolor: 'rgba(255,255,255,0.92)',
+                      boxShadow: '0 10px 24px rgba(31,42,35,0.12)',
+                      zIndex: 1,
+                      ':hover': {
+                        bgcolor: 'rgba(255,255,255,1)',
+                        transform: 'translate(-50%, -50%) scale(1.04)',
+                      },
+                    }}
+                  >
+                    <ChevronLeft size={18} />
+                  </Button>
+
+                  <Button
+                    className="promotion-nav"
+                    color="inherit"
+                    aria-label="Следующая акция"
+                    onClick={showNextPromotion}
+                    sx={{
+                      position: 'absolute',
+                      right: 0,
+                      top: '50%',
+                      transform: 'translate(50%, -50%)',
+                      minWidth: 42,
+                      width: 42,
+                      height: 42,
+                      borderRadius: '50%',
+                      p: 0,
+                      bgcolor: 'rgba(255,255,255,0.92)',
+                      boxShadow: '0 10px 24px rgba(31,42,35,0.12)',
+                      zIndex: 1,
+                      ':hover': {
+                        bgcolor: 'rgba(255,255,255,1)',
+                        transform: 'translate(50%, -50%) scale(1.04)',
+                      },
+                    }}
+                  >
+                    <ChevronRight size={18} />
+                  </Button>
+                </>
+              ) : null}
+            </Card>
+          ))}
+
+          {promotions.length > 1 ? (
+            <Stack direction="row" spacing={1} sx={{ justifyContent: 'center', alignItems: 'center' }}>
+              {promotions.map((promotion, index) => (
+                <Box
+                  key={promotion.id}
+                  component="button"
+                  type="button"
+                  aria-label={`Перейти к акции ${index + 1}`}
+                  onClick={() => setActivePromotionIndex(index)}
+                  sx={{
+                    width: index === activePromotionIndex ? 28 : 10,
+                    height: 10,
+                    borderRadius: 999,
+                    border: 'none',
+                    p: 0,
+                    cursor: 'pointer',
+                    bgcolor: index === activePromotionIndex ? '#5c8f73' : 'rgba(92,143,115,0.24)',
+                    transition: 'all 220ms ease',
+                  }}
+                />
+              ))}
+            </Stack>
+          ) : null}
+        </Box>
+      ) : null}
+
       <Card
         sx={{
           overflow: 'hidden',
@@ -477,9 +671,7 @@ export function StorefrontPage() {
                     bgcolor: alpha('#ffffff', 0.52),
                     width: { xs: '100%', md: 'fit-content' },
                   }}
-                >
-                  Сбросить фильтры
-                </Button>
+                > Сбросить фильтры</Button>
               </Box>
             </Grid>
           </Grid>
@@ -495,9 +687,7 @@ export function StorefrontPage() {
                   border: '1px solid rgba(24,38,31,0.05)',
                 }}
               >
-                 <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
-                  Цена
-                </Typography>
+                 <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>Цена</Typography>
                 <Stack direction="row" spacing={1.25} sx={{ mt: 1.25 }}>
                   <TextField
                     fullWidth
@@ -529,9 +719,7 @@ export function StorefrontPage() {
                   gap: 1.1,
                 }}
               >
-                 <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>
-                  Фильтры
-                </Typography>
+                 <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 0.4 }}>Фильтры</Typography>
                 <Box sx={{ width: '100%' }}>{renderTabFilters()}</Box>
               </Box>
             </Grid>
@@ -539,31 +727,155 @@ export function StorefrontPage() {
         </CardContent>
       </Card>
 
-      {promotions.length > 0 ? (
-        <Grid container spacing={2}>
-          {promotions.slice(0, 3).map((promotion) => (
-            <Grid key={promotion.id} size={{ xs: 12, md: 4 }}>
-              <Card
+      {false && promotions.length > 0 ? (
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 1.5,
+            position: 'relative',
+            px: { xs: 0, md: promotions.length > 1 ? 7 : 0 },
+          }}
+        >
+          {[promotions[activePromotionIndex]].filter(Boolean).map((promotion) => (
+            <Card
+              key={`${promotion.id}-${activePromotionIndex}`}
+              sx={{
+                height: '100%',
+                overflow: 'hidden',
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(220,239,228,0.74) 100%)',
+                animation: 'promotionSlideIn 420ms ease',
+                '@keyframes promotionSlideIn': {
+                  '0%': {
+                    opacity: 0,
+                    transform: 'translateX(18px) scale(0.985)',
+                  },
+                  '100%': {
+                    opacity: 1,
+                    transform: 'translateX(0) scale(1)',
+                  },
+                },
+              }}
+            >
+              <CardContent
                 sx={{
-                  height: '100%',
-                  background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(220,239,228,0.74) 100%)',
+                  display: 'grid',
+                  gap: 2,
+                  minHeight: { xs: 220, md: 240 },
+                  gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.15fr) minmax(220px, 0.85fr)' },
+                  alignItems: 'stretch',
                 }}
               >
-                <CardContent sx={{ display: 'grid', gap: 1.5, minHeight: 172 }}>
-                  <Chip
-                    label={`-${promotion.discountPercent}%`}
-                    color="primary"
-                    sx={{ width: 'fit-content', bgcolor: alpha('#5c8f73', 0.14), color: 'primary.dark' }}
-                  />
-                  <Typography variant="h6">{promotion.title}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {promotion.description || 'Скидка уже доступна для ближайших заказов.'}
+                <Box sx={{ display: 'grid', gap: 1.4, alignContent: 'space-between' }}>                  <Box />
+
+                  <Box sx={{ display: 'grid', gap: 0.9 }}>
+                    <Typography variant="h4">{promotion.title}</Typography>
+                    <Typography variant="body1" color="text.secondary">
+                      {promotion.description || 'Скидка уже доступна для ближайших заказов.'}
+                    </Typography>
+                  </Box>                  <Typography variant="body2" color="text.secondary">Действует до {formatDate(promotion.endsAtUtc)}
                   </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+                </Box>
+
+                <Box
+                  sx={{
+                    borderRadius: 2,
+                    border: '1px solid rgba(24,38,31,0.06)',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.74) 0%, rgba(243,248,244,0.96) 100%)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    textAlign: 'center',
+                    px: 2,
+                    py: 2.25,
+                  }}
+                >
+                  <Box sx={{ display: 'grid', gap: 0.75 }}>
+                    <Typography variant="overline" color="text.secondary">Специальное предложение</Typography>
+                    <Typography variant="h2">-{promotion.discountPercent}%</Typography>
+                    <Typography variant="body2" color="text.secondary">Для выбранных товаров из текущей подборки</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
           ))}
-        </Grid>
+
+          {promotions.length > 1 ? (
+            <>
+              <Button
+                color="inherit"
+                aria-label="Предыдущая акция"
+                onClick={showPreviousPromotion}
+                sx={{
+                  position: 'absolute',
+                  left: { xs: -6, md: 4 },
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  minWidth: 42,
+                  width: 42,
+                  height: 42,
+                  borderRadius: '50%',
+                  p: 0,
+                  bgcolor: 'rgba(255,255,255,0.92)',
+                  boxShadow: '0 10px 24px rgba(31,42,35,0.12)',
+                  zIndex: 1,
+                  ':hover': {
+                    bgcolor: 'rgba(255,255,255,1)',
+                    transform: 'translateY(-50%) scale(1.04)',
+                  },
+                }}
+              >
+                <ChevronLeft size={18} />
+              </Button>
+
+              <Button
+                color="inherit"
+                aria-label="Следующая акция"
+                onClick={showNextPromotion}
+                sx={{
+                  position: 'absolute',
+                  right: { xs: -6, md: 4 },
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  minWidth: 42,
+                  width: 42,
+                  height: 42,
+                  borderRadius: '50%',
+                  p: 0,
+                  bgcolor: 'rgba(255,255,255,0.92)',
+                  boxShadow: '0 10px 24px rgba(31,42,35,0.12)',
+                  zIndex: 1,
+                  ':hover': {
+                    bgcolor: 'rgba(255,255,255,1)',
+                    transform: 'translateY(-50%) scale(1.04)',
+                  },
+                }}
+              >
+                <ChevronRight size={18} />
+              </Button>
+
+              <Stack direction="row" spacing={1} sx={{ justifyContent: 'center', alignItems: 'center' }}>
+                {promotions.map((promotion, index) => (
+                  <Box
+                    key={promotion.id}
+                    component="button"
+                    type="button"
+                    aria-label={`Перейти к акции ${index + 1}`}
+                    onClick={() => setActivePromotionIndex(index)}
+                    sx={{
+                      width: index === activePromotionIndex ? 28 : 10,
+                      height: 10,
+                      borderRadius: 999,
+                      border: 'none',
+                      p: 0,
+                      cursor: 'pointer',
+                      bgcolor: index === activePromotionIndex ? '#5c8f73' : 'rgba(92,143,115,0.24)',
+                      transition: 'all 220ms ease',
+                    }}
+                  />
+                ))}
+              </Stack>
+            </>
+          ) : null}
+        </Box>
       ) : null}
 
       <Box>
@@ -578,7 +890,7 @@ export function StorefrontPage() {
           </Card>
         ) : (
           <Grid container spacing={2}>
-            {filteredProducts.map((product) => (
+            {pagedProducts.map((product) => (
               <Grid key={product.id} size={{ xs: 12, md: 6, xl: 4 }}>
                 {(() => {
                   const pricing = getPromotionPricing(
@@ -625,15 +937,12 @@ export function StorefrontPage() {
                           backgroundColor: '#f3f7f4',
                         }}
                       >
-                        <Box
-                          component="img"
-                          src={getProductPlaceholderImage(product)}
+                        <ProductImage
+                          src={product.imageUrl}
                           alt={product.name}
                           sx={{
                             width: '100%',
                             height: 320,
-                            objectFit: 'cover',
-                            display: 'block',
                           }}
                         />
                         <Box
@@ -787,12 +1096,19 @@ export function StorefrontPage() {
         {!isLoading && filteredProducts.length === 0 ? (
           <Card sx={{ mt: 2, backgroundColor: alpha('#ffffff', 0.8) }}>
             <CardContent>
-              <Typography variant="body1">
-                Ничего не найдено. Попробуйте изменить поисковый запрос или сбросить фильтры, чтобы увидеть все доступные товары.
-              </Typography>
+              <Typography variant="body1">Ничего не найдено. Попробуйте изменить поисковый запрос или сбросить фильтры, чтобы увидеть все доступные товары.</Typography>
             </CardContent>
           </Card>
         ) : null}
+        <Box sx={{ mt: 2 }}>
+          <PaginationControls
+            page={page}
+            pageCount={pageCount}
+            totalCount={filteredProducts.length}
+            pageSize={STOREFRONT_PAGE_SIZE}
+            onChange={setPage}
+          />
+        </Box>
       </Box>
 
       <Snackbar

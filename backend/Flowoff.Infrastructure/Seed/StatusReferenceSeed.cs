@@ -12,6 +12,7 @@ public static class StatusReferenceSeed
         await SyncOrderStatusesAsync(dbContext);
         await SyncDeliveryStatusesAsync(dbContext);
         await SyncPaymentStatusesAsync(dbContext);
+        await SyncSupportStatusesAsync(dbContext);
 
         await dbContext.SaveChangesAsync();
     }
@@ -38,6 +39,14 @@ public static class StatusReferenceSeed
             dbContext.PaymentStatusReferences,
             PaymentStatusCodes.All,
             name => new PaymentStatusReference(name));
+    }
+
+    private static Task SyncSupportStatusesAsync(FlowoffDbContext dbContext)
+    {
+        return SyncStatusesAsync(
+            dbContext.SupportStatusReferences,
+            SupportStatusCodes.All,
+            name => new SupportStatusReference(name));
     }
 
     private static async Task SyncStatusesAsync<TEntity>(
@@ -83,6 +92,16 @@ public static class StatusReferenceSeed
                         dbSet.Remove(entity);
                     }
                     break;
+                case SupportStatusReference supportStatus:
+                    if (activeNameSet.Contains(supportStatus.Name))
+                    {
+                        supportStatus.Restore(supportStatus.Name);
+                    }
+                    else
+                    {
+                        dbSet.Remove(entity);
+                    }
+                    break;
             }
         }
 
@@ -92,6 +111,7 @@ public static class StatusReferenceSeed
                 OrderStatusReference orderStatus => orderStatus.Name,
                 DeliveryStatusReference deliveryStatus => deliveryStatus.Name,
                 PaymentStatusReference paymentStatus => paymentStatus.Name,
+                SupportStatusReference supportStatus => supportStatus.Name,
                 _ => string.Empty
             })
             .ToHashSet(StringComparer.Ordinal);

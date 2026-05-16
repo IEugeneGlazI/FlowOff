@@ -79,6 +79,7 @@ public static class DependencyInjection
         services.AddScoped<IOrderStatusReferenceRepository, OrderStatusReferenceRepository>();
         services.AddScoped<IDeliveryStatusReferenceRepository, DeliveryStatusReferenceRepository>();
         services.AddScoped<IPaymentStatusReferenceRepository, PaymentStatusReferenceRepository>();
+        services.AddScoped<ISupportStatusReferenceRepository, SupportStatusReferenceRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();

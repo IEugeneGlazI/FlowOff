@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
   Alert,
@@ -10,6 +10,7 @@ import {
   IconButton,
   InputAdornment,
   Link,
+  Snackbar,
   Stack,
   TextField,
   ToggleButton,
@@ -217,11 +218,11 @@ export function AccountPage() {
     clearError();
 
     try {
-      const message = await updateProfile({
+      await updateProfile({
         email: profileEmail,
         fullName: profileFullName,
       });
-      setFeedback(message);
+      setFeedback('Данные профиля успешно обновлены.');
     } catch {
       // Error state is handled in AuthContext.
     }
@@ -244,11 +245,11 @@ export function AccountPage() {
     }
 
     try {
-      const message = await changePassword({
+      await changePassword({
         currentPassword,
         newPassword,
       });
-      setFeedback(message);
+      setFeedback('Пароль успешно изменён.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
@@ -301,6 +302,9 @@ export function AccountPage() {
   }
 
   if (session) {
+    const sessionNotice = localError ?? error ?? feedback;
+    const sessionNoticeSeverity = localError || error ? 'error' : 'success';
+
     return (
       <Box sx={{ display: 'grid', gap: 3 }}>
         <Box
@@ -319,28 +323,37 @@ export function AccountPage() {
             </Typography>
           </Box>
 
-          <Button
-            type="button"
-            variant="text"
-            color="inherit"
-            startIcon={<LogOut size={16} />}
-            onClick={() => {
-              logout();
-              navigate('/bouquets');
-            }}
-            sx={{ alignSelf: { xs: 'stretch', md: 'center' } }}
-          >
-            Выйти из аккаунта
-          </Button>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignSelf: { xs: 'stretch', md: 'center' } }}>
+            <Button
+              type="button"
+              variant="outlined"
+              color="inherit"
+              onClick={() => navigate('/support')}
+              sx={{ alignSelf: { xs: 'stretch', md: 'center' } }}
+            >
+              Поддержка
+            </Button>
+
+            <Button
+              type="button"
+              variant="text"
+              color="inherit"
+              startIcon={<LogOut size={16} />}
+              onClick={() => {
+                logout();
+                navigate('/bouquets');
+              }}
+              sx={{ alignSelf: { xs: 'stretch', md: 'center' } }}
+            >
+              Выйти из аккаунта
+            </Button>
+          </Stack>
         </Box>
 
         <Card sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
           <CardContent sx={{ p: { xs: 2.5, md: 3 }, display: 'grid', gap: 3 }}>
             <Box sx={{ display: 'grid', gap: 0.75 }}>
               <Typography variant="h5">Личные данные</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Обновите имя и email, которые используются в аккаунте.
-              </Typography>
             </Box>
 
             <form onSubmit={(event) => void handleProfileSubmit(event)}>
@@ -390,9 +403,6 @@ export function AccountPage() {
 
             <Box sx={{ display: 'grid', gap: 0.75 }}>
               <Typography variant="h5">Смена пароля</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Укажите текущий пароль и задайте новый.
-              </Typography>
             </Box>
 
             <form onSubmit={(event) => void handlePasswordSubmit(event)}>
@@ -431,9 +441,28 @@ export function AccountPage() {
           </CardContent>
         </Card>
 
-        {feedback ? <Alert severity="success">{feedback}</Alert> : null}
-        {localError ? <Alert severity="error">{localError}</Alert> : null}
-        {error ? <Alert severity="error">{error}</Alert> : null}
+        <Snackbar
+          open={Boolean(sessionNotice)}
+          autoHideDuration={4000}
+          onClose={() => {
+            setFeedback(null);
+            setLocalError(null);
+            clearError();
+          }}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert
+            severity={sessionNoticeSeverity}
+            onClose={() => {
+              setFeedback(null);
+              setLocalError(null);
+              clearError();
+            }}
+            sx={{ borderRadius: 2, minWidth: 320 }}
+          >
+            {sessionNotice}
+          </Alert>
+        </Snackbar>
       </Box>
     );
   }
@@ -604,3 +633,4 @@ export function AccountPage() {
     </Box>
   );
 }
+
