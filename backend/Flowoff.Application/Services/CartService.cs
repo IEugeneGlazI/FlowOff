@@ -26,8 +26,14 @@ public class CartService : ICartService
         var product = await _productRepository.GetByIdAsync(
             request.ProductId,
             cancellationToken,
+            includeHidden: true,
             asTracking: false)
             ?? throw new InvalidOperationException("Product not found.");
+
+        if (!product.IsVisible)
+        {
+            throw new InvalidOperationException("Данный товар в настоящий момент скрыт с сайта и не продается.");
+        }
 
         var cart = await _cartRepository.AddItemAsync(customerId, product, request.Quantity, cancellationToken);
 

@@ -76,6 +76,9 @@ type ReferenceDialogState =
   | { type: 'category'; item?: Category | null }
   | { type: 'color'; item?: ColorReference | null }
   | { type: 'flowerIn'; item?: FlowerInReference | null }
+  | { type: 'orderStatus'; item: StatusReference }
+  | { type: 'deliveryStatus'; item: StatusReference }
+  | { type: 'paymentStatus'; item: StatusReference }
   | null;
 
 type ReferenceListItem = { id: string; name: string };
@@ -308,15 +311,15 @@ function getDialogDescription(dialogState: ReferenceDialogState) {
   switch (dialogState.type) {
     case 'category':
       return dialogState.item
-        ? 'Измените название и описание категории. Все изменения сразу отразятся в фильтрах и карточках товаров.'
-        : 'Добавьте новую категорию подарков, чтобы она появилась в каталоге и в фильтрах.';
+        ? 'Измените название категории в справочнике.'
+        : 'Добавьте новую категорию для подарков.';
     case 'color':
       return dialogState.item
-        ? 'Измените название цвета. Он будет использоваться в карточках и фильтрации каталога.'
+        ? 'Измените название цвета в справочнике.'
         : 'Добавьте новый цвет для букетов и цветов.';
     case 'flowerIn':
       return dialogState.item
-        ? 'Измените название цветка в справочнике состава.'
+        ? 'Измените название цветка в справочнике.'
         : 'Добавьте новый цветок в справочник состава букетов и типов цветов.';
     case 'orderStatus':
       return 'Измените название статуса заказа.';
@@ -348,7 +351,7 @@ export function AdminPanelPage() {
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [dialogState, setDialogState] = useState<ReferenceDialogState>(null);
   const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [, setDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('');
@@ -416,14 +419,12 @@ export function AdminPanelPage() {
     item: Category | ColorReference | FlowerInReference | StatusReference,
   ) {
     setName(item.name);
+    setDescription('');
 
     if (type === 'category') {
-      setDescription((item as Category).description ?? '');
       setDialogState({ type, item: item as Category });
       return;
     }
-
-    setDescription('');
 
     if (type === 'color') {
       setDialogState({ type, item: item as ColorReference });
@@ -453,8 +454,6 @@ export function AdminPanelPage() {
     }
 
     const trimmedName = name.trim();
-    const trimmedDescription = description.trim();
-
     if (!trimmedName) {
       setFeedback({ severity: 'error', message: 'Введите название.' });
       return;
@@ -468,7 +467,7 @@ export function AdminPanelPage() {
         case 'category': {
           const payload = {
             name: trimmedName,
-            description: trimmedDescription ? trimmedDescription : null,
+            description: null,
           };
 
           if (dialogState.item?.id) {
@@ -599,10 +598,6 @@ export function AdminPanelPage() {
   const filteredCategories = categories.filter((item) => item.name.toLowerCase().includes(normalizedReferenceSearch));
   const filteredColors = colors.filter((item) => item.name.toLowerCase().includes(normalizedReferenceSearch));
   const filteredFlowerIns = flowerIns.filter((item) => item.name.toLowerCase().includes(normalizedReferenceSearch));
-  const filteredOrderStatuses = orderStatuses.filter((item) => item.name.toLowerCase().includes(normalizedReferenceSearch));
-  const filteredDeliveryStatuses = deliveryStatuses.filter((item) => item.name.toLowerCase().includes(normalizedReferenceSearch));
-  const filteredPaymentStatuses = paymentStatuses.filter((item) => item.name.toLowerCase().includes(normalizedReferenceSearch));
-
   const allStatusOptions = useMemo(
     () => ({
       order: orderStatuses,
@@ -706,7 +701,7 @@ export function AdminPanelPage() {
       <Box sx={{ display: 'grid', gap: 0.75 }}>
         <Typography variant="h1">Панель администратора</Typography>
         <Typography variant="body1" color="text.secondary">
-          Здесь можно управлять товарами, справочниками, акциями, заказами и пользователями.
+          Здесь можно управлять всей системой магазина.
         </Typography>
       </Box>
 
@@ -742,14 +737,13 @@ export function AdminPanelPage() {
           {referenceTab === 'categories' ? (
             <ReferenceSection
               title="Категории подарков"
-              description="Категории используются для фильтрации и оформления витрины подарков."
+              description="Категории используются для фильтрации подарков по их типу."
               items={filteredCategories}
               search={referenceSearch}
               onSearchChange={setReferenceSearch}
               onEdit={(item) => openEditDialog('category', item)}
               onCreate={() => openCreateDialog('category')}
               onDelete={(item) => void handleDelete('category', item)}
-              renderMeta={(item) => item.description || 'Описание не заполнено'}
               createLabel="Новая категория"
             />
           ) : null}
@@ -757,7 +751,7 @@ export function AdminPanelPage() {
           {referenceTab === 'colors' ? (
             <ReferenceSection
               title="Цвета"
-              description="Цвета используются в карточках товаров и в пользовательских фильтрах."
+              description="Цвета используются для фильтрации букетов и цветов по их цвету."
               items={filteredColors}
               search={referenceSearch}
               onSearchChange={setReferenceSearch}
@@ -771,7 +765,7 @@ export function AdminPanelPage() {
           {referenceTab === 'flowerIns' ? (
             <ReferenceSection
               title="Цветки в составе"
-              description="Этот справочник используется для состава букетов и типов цветов."
+              description="Цветки используются для фильтрации букетов по цветкам в их составе."
               items={filteredFlowerIns}
               search={referenceSearch}
               onSearchChange={setReferenceSearch}
@@ -1195,16 +1189,6 @@ export function AdminPanelPage() {
             fullWidth
           />
 
-          {dialogState?.type === 'category' ? (
-            <TextField
-              label="Описание"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              multiline
-              minRows={3}
-              fullWidth
-            />
-          ) : null}
 
           <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1.25} sx={{ justifyContent: 'flex-end' }}>
             <Button color="inherit" onClick={closeDialog} disabled={isSaving}>
@@ -1234,5 +1218,3 @@ export function AdminPanelPage() {
     </Box>
   );
 }
-
-

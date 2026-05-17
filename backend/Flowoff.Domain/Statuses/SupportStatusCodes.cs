@@ -1,26 +1,29 @@
-namespace Flowoff.Domain.Statuses;
+﻿namespace Flowoff.Domain.Statuses;
 
 public static class SupportStatusCodes
 {
     public const string New = "Новое";
     public const string InProgress = "В работе";
-    public const string WaitingForUser = "Ожидает ответа пользователя";
     public const string Resolved = "Решено";
-    public const string Closed = "Закрыто";
+    public const string Rejected = "Отклонено";
 
     public static readonly string[] All =
     [
         New,
         InProgress,
-        WaitingForUser,
         Resolved,
-        Closed
+        Rejected
     ];
 
     public static readonly string[] OpenStatuses =
     [
         New,
-        InProgress,
-        WaitingForUser
+        InProgress
+    ];
+
+    public static readonly string[] ClosedStatuses =
+    [
+        Resolved,
+        Rejected
     ];
 }

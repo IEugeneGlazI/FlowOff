@@ -31,7 +31,7 @@ export async function getCategories() {
   return apiRequest<Category[]>('/Categories');
 }
 
-export async function createCategory(payload: { name: string; description?: string | null }, token: string) {
+export async function createCategory(payload: { name: string }, token: string) {
   return apiRequest<Category>('/Categories', {
     method: 'POST',
     token,
@@ -39,7 +39,7 @@ export async function createCategory(payload: { name: string; description?: stri
   });
 }
 
-export async function updateCategory(categoryId: string, payload: { name: string; description?: string | null }, token: string) {
+export async function updateCategory(categoryId: string, payload: { name: string }, token: string) {
   return apiRequest<Category>(`/Categories/${categoryId}`, {
     method: 'PUT',
     token,

@@ -982,7 +982,7 @@ export function FloristPanelPage({
               <Typography variant="body2" color="text.secondary">
                 {ordersTab === 'assembly'
                   ? 'Здесь находятся заказы, которые можно принять в сборку.'
-                  : 'Здесь находятся заказы, уже принятые в работу.'}
+                  : 'Здесь находятся заказы, уже принятые вами в работу.'}
               </Typography>
             </Box>
 

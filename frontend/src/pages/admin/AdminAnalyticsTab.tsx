@@ -344,7 +344,8 @@ function LeaderboardCard({
 }
 
 function TopProductsCard({ items }: { items: TopProductAnalytics[] }) {
-  const maxQuantity = Math.max(...items.map((item) => item.quantitySold), 1);
+  const visibleItems = items.slice(0, 5);
+  const maxQuantity = Math.max(...visibleItems.map((item) => item.quantitySold), 1);
 
   return (
     <Card sx={{ background: 'rgba(255,255,255,0.84)', backdropFilter: 'blur(14px)' }}>
@@ -357,7 +358,7 @@ function TopProductsCard({ items }: { items: TopProductAnalytics[] }) {
         </Box>
 
         <Stack spacing={1.1}>
-          {items.map((item) => {
+          {visibleItems.map((item) => {
             const ratio = (item.quantitySold / maxQuantity) * 100;
 
             return (
@@ -722,7 +723,7 @@ export function AdminAnalyticsTab({ token }: { token: string }) {
         />
         <LeaderboardCard
           title="Эффективность доставщиков"
-          subtitle="Активность курьеров, завершение доставок и объем обработанной выручки."
+          subtitle="Сколько заказов ведут доставщики, сколько завершены и какую выручку приносят."
           items={analytics.couriers}
         />
       </Box>
@@ -744,4 +745,3 @@ export function AdminAnalyticsTab({ token }: { token: string }) {
     </Box>
   );
 }
-

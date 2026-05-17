@@ -44,15 +44,15 @@ export function getStatusColor(status: string): 'default' | 'warning' | 'info' |
     return 'info';
   }
 
-  if (status === 'Ожидает ответа пользователя') {
-    return 'warning';
+  if (status === 'Отклонено') {
+    return 'default';
   }
 
   return 'success';
 }
 
 function isClosedStatus(status: string) {
-  return status === 'Закрыто';
+  return status === 'Решено' || status === 'Отклонено';
 }
 
 export function SupportPage() {

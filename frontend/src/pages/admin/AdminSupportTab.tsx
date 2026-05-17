@@ -43,8 +43,8 @@ export function getStatusColor(status: string): 'default' | 'warning' | 'info' |
     return 'info';
   }
 
-  if (status === 'Ожидает ответа пользователя') {
-    return 'warning';
+  if (status === 'Отклонено') {
+    return 'default';
   }
 
   return 'success';
@@ -209,7 +209,7 @@ export function AdminSupportTab({ token }: { token: string }) {
           <Box sx={{ display: 'grid', gap: 0.5 }}>
             <Typography variant="h5">Поддержка</Typography>
             <Typography variant="body2" color="text.secondary">
-              Просматривайте обращения клиентов, меняйте статусы и отвечайте прямо из панели администратора.
+              Просматривайте обращения клиентов и отвечайте на их вопросы.
             </Typography>
           </Box>
 
@@ -310,7 +310,7 @@ export function AdminSupportTab({ token }: { token: string }) {
         </DialogTitle>
         <DialogContent
           sx={{
-            pt: 1,
+            pt: 1.5,
             pb: 3,
             display: 'flex',
             flexDirection: 'column',
@@ -328,8 +328,8 @@ export function AdminSupportTab({ token }: { token: string }) {
                 <Chip label={selectedRequest.status} color="success" variant="outlined" sx={{ width: 'fit-content' }} />
               </Stack>
 
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
-                <FormControl fullWidth>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ pt: 0.5 }}>
+                <FormControl fullWidth sx={{ mt: 0.25 }}>
                   <InputLabel id="support-status-draft-label">Новый статус</InputLabel>
                   <Select
                     labelId="support-status-draft-label"

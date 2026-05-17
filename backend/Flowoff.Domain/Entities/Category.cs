@@ -5,7 +5,6 @@ namespace Flowoff.Domain.Entities;
 public class Category : Entity
 {
     public string Name { get; private set; } = string.Empty;
-    public string? Description { get; private set; }
     public bool IsDeleted { get; private set; }
     public DateTime? DeletedAtUtc { get; private set; }
 
@@ -13,16 +12,14 @@ public class Category : Entity
     {
     }
 
-    public Category(string name, string? description = null)
+    public Category(string name)
     {
         Name = name;
-        Description = description;
     }
 
-    public void Update(string name, string? description)
+    public void Update(string name)
     {
         Name = name;
-        Description = description;
     }
 
     public void SoftDelete()

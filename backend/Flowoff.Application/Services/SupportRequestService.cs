@@ -37,7 +37,7 @@ public class SupportRequestService : ISupportRequestService
         }
 
         var newStatus = await GetRequiredStatusAsync(SupportStatusCodes.New, cancellationToken);
-        var supportRequest = new SupportRequest(userId, request.Subject.Trim(), request.OrderId, newStatus.Id, newStatus.Name);
+        var supportRequest = new SupportRequest(userId, request.Subject.Trim(), request.OrderId, newStatus.Id);
 
         var initialMessage = CreateMessage(
             userId,
@@ -84,7 +84,7 @@ public class SupportRequestService : ISupportRequestService
             throw new InvalidOperationException("Message or at least one attachment is required.");
         }
 
-        if (supportRequest.Status == SupportStatusCodes.Closed)
+        if (SupportStatusCodes.ClosedStatuses.Contains(GetStatusName(supportRequest)))
         {
             throw new InvalidOperationException("Closed support request cannot be updated.");
         }
@@ -161,7 +161,7 @@ public class SupportRequestService : ISupportRequestService
             OrderId = supportRequest.OrderId,
             OrderNumber = supportRequest.Order?.OrderNumber,
             Subject = supportRequest.Subject,
-            Status = supportRequest.Status,
+            Status = GetStatusName(supportRequest),
             StatusReferenceId = supportRequest.SupportStatusReferenceId,
             CreatedAtUtc = supportRequest.CreatedAtUtc,
             UpdatedAtUtc = supportRequest.UpdatedAtUtc,
@@ -235,6 +235,12 @@ public class SupportRequestService : ISupportRequestService
     {
         return await _supportStatusReferenceRepository.GetByNameAsync(status.Trim(), cancellationToken)
             ?? throw new InvalidOperationException("Support request status not found.");
+    }
+
+    private static string GetStatusName(SupportRequest supportRequest)
+    {
+        return supportRequest.SupportStatusReference?.Name
+            ?? throw new InvalidOperationException("Support request status reference is not loaded.");
     }
 
     private bool IsAdministrator() => string.Equals(_currentUserService.Role, "Administrator", StringComparison.Ordinal);

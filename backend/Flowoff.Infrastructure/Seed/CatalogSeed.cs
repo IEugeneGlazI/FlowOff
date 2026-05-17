@@ -28,7 +28,7 @@ public static class CatalogSeed
                 return category;
             }
 
-            category = new Category(name, description);
+            category = new Category(name);
             existing[name] = category;
             dbContext.Categories.Add(category);
             return category;

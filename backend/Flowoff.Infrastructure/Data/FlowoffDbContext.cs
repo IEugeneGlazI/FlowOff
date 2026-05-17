@@ -49,7 +49,6 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<Category>(entity =>
         {
             entity.Property(category => category.Name).HasMaxLength(100).IsRequired();
-            entity.Property(category => category.Description).HasMaxLength(500);
             entity.Property(category => category.IsDeleted).HasDefaultValue(false);
         });
 
@@ -264,7 +263,6 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.Property(request => request.CustomerId).HasMaxLength(450).IsRequired();
             entity.Property(request => request.Subject).HasMaxLength(200).IsRequired();
-            entity.Property(request => request.Status).HasMaxLength(64).IsRequired();
             entity.HasOne(request => request.Order)
                 .WithMany()
                 .HasForeignKey(request => request.OrderId)

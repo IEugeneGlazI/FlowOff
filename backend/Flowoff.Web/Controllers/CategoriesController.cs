@@ -24,8 +24,7 @@ public class CategoriesController : ControllerBase
         var response = categories.Select(category => new
         {
             category.Id,
-            category.Name,
-            category.Description
+            category.Name
         });
 
         return Ok(response);
@@ -35,10 +34,10 @@ public class CategoriesController : ControllerBase
     [Authorize(Roles = nameof(UserRole.Administrator))]
     public async Task<IActionResult> Create(CreateCategoryRequest request, CancellationToken cancellationToken)
     {
-        var category = new Flowoff.Domain.Entities.Category(request.Name.Trim(), string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim());
+        var category = new Flowoff.Domain.Entities.Category(request.Name.Trim());
         await _categoryRepository.AddAsync(category, cancellationToken);
         await _categoryRepository.SaveChangesAsync(cancellationToken);
-        return Ok(new { category.Id, category.Name, category.Description });
+        return Ok(new { category.Id, category.Name });
     }
 
     [HttpPut("{id:guid}")]
@@ -51,9 +50,9 @@ public class CategoriesController : ControllerBase
             return NotFound();
         }
 
-        category.Update(request.Name.Trim(), string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim());
+        category.Update(request.Name.Trim());
         await _categoryRepository.SaveChangesAsync(cancellationToken);
-        return Ok(new { category.Id, category.Name, category.Description });
+        return Ok(new { category.Id, category.Name });
     }
 
     [HttpDelete("{id:guid}")]
@@ -71,6 +70,6 @@ public class CategoriesController : ControllerBase
         return NoContent();
     }
 
-    public sealed record CreateCategoryRequest(string Name, string? Description);
-    public sealed record UpdateCategoryRequest(string Name, string? Description);
+    public sealed record CreateCategoryRequest(string Name);
+    public sealed record UpdateCategoryRequest(string Name);
 }

@@ -3,7 +3,6 @@ export type ProductType = 'Flower' | 'Bouquet' | 'Gift';
 export type Category = {
   id: string;
   name: string;
-  description?: string | null;
 };
 
 export type ColorReference = {

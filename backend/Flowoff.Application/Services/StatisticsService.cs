@@ -111,7 +111,7 @@ public class StatisticsService : IStatisticsService
             PickupOrders = orders.Count(order => order.DeliveryMethod == DeliveryMethod.Pickup),
             PaidOrders = paidOrders.Count,
             PendingPaymentOrders = orders.Count(order => order.Payment?.Status == PaymentStatusCodes.Pending),
-            OpenSupportRequests = supportRequests.Count(request => SupportStatusCodes.OpenStatuses.Contains(request.Status)),
+            OpenSupportRequests = supportRequests.Count(request => SupportStatusCodes.OpenStatuses.Contains(GetSupportStatusName(request))),
             UniqueCustomers = orders
                 .Select(order => order.CustomerId)
                 .Where(customerId => !string.IsNullOrWhiteSpace(customerId))
@@ -135,6 +135,12 @@ public class StatisticsService : IStatisticsService
             BuildRevenuePeriod("year", "Текущий год", paidOrders, new DateOnly(today.Year, 1, 1), today),
             BuildRevenuePeriod("all", "За все время", paidOrders, null, null),
         ];
+    }
+
+    private static string GetSupportStatusName(SupportRequest supportRequest)
+    {
+        return supportRequest.SupportStatusReference?.Name
+            ?? string.Empty;
     }
 
     private static RevenuePeriodMetricDto BuildRevenuePeriod(

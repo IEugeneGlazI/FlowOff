@@ -10,6 +10,8 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Select,
@@ -19,7 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
-import { Mail, PencilLine, ShieldBan, UserCheck, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, Mail, PencilLine, ShieldBan, UserCheck, UserPlus } from 'lucide-react';
 import type { AdminUser, UserRole } from '../../entities/users';
 import {
   createAdminUser,
@@ -86,6 +88,7 @@ export function AdminUsersTab({ token }: { token: string }) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('Customer');
 
   useEffect(() => {
@@ -101,6 +104,7 @@ export function AdminUsersTab({ token }: { token: string }) {
     setFullName('');
     setEmail('');
     setPassword('');
+    setShowPassword(false);
     setRole('Customer');
   }
 
@@ -436,9 +440,24 @@ export function AdminUsersTab({ token }: { token: string }) {
           {dialogState?.mode === 'create' ? (
             <TextField
               label="Пароль"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        edge="end"
+                        onClick={() => setShowPassword((current) => !current)}
+                        aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
               fullWidth
             />
           ) : null}

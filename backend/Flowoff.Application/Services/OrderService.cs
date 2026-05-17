@@ -88,10 +88,19 @@ public class OrderService : IOrderService
 
         foreach (var item in request.Items)
         {
-            var product = await _productRepository.GetByIdAsync(item.ProductId, cancellationToken, asTracking: false);
+            var product = await _productRepository.GetByIdAsync(
+                item.ProductId,
+                cancellationToken,
+                includeHidden: true,
+                asTracking: false);
             if (product is null)
             {
                 throw new InvalidOperationException($"Product {item.ProductId} not found.");
+            }
+
+            if (!product.IsVisible)
+            {
+                throw new InvalidOperationException("Данный товар в настоящий момент скрыт с сайта и не продается.");
             }
 
             var discountedPrice = GetDiscountedPrice(product, promotions);

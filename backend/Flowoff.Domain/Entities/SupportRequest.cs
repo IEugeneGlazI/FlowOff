@@ -9,7 +9,6 @@ public class SupportRequest : Entity
     public Guid? OrderId { get; private set; }
     public Order? Order { get; private set; }
     public string Subject { get; private set; } = string.Empty;
-    public string Status { get; private set; } = SupportStatusCodes.New;
     public Guid SupportStatusReferenceId { get; private set; }
     public SupportStatusReference? SupportStatusReference { get; private set; }
     public DateTime CreatedAtUtc { get; private set; } = DateTime.UtcNow;
@@ -25,14 +24,12 @@ public class SupportRequest : Entity
         string customerId,
         string subject,
         Guid? orderId,
-        Guid supportStatusReferenceId,
-        string status)
+        Guid supportStatusReferenceId)
     {
         CustomerId = customerId;
         Subject = subject;
         OrderId = orderId;
         SupportStatusReferenceId = supportStatusReferenceId;
-        Status = status;
     }
 
     public void AddMessage(SupportRequestMessage message)
@@ -41,12 +38,11 @@ public class SupportRequest : Entity
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
-    public void SetStatus(Guid supportStatusReferenceId, string status)
+    public void SetStatus(Guid supportStatusReferenceId, string statusName)
     {
         SupportStatusReferenceId = supportStatusReferenceId;
-        Status = status;
         UpdatedAtUtc = DateTime.UtcNow;
-        ClosedAtUtc = status is SupportStatusCodes.Resolved or SupportStatusCodes.Closed
+        ClosedAtUtc = SupportStatusCodes.ClosedStatuses.Contains(statusName)
             ? UpdatedAtUtc
             : null;
     }
