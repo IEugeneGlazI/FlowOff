@@ -12,6 +12,9 @@ function getMapUrl(address: string) {
 export function ContactsPage() {
   const [contacts, setContacts] = useState<SiteContactSettings | null>(null);
   const mapUrl = useMemo(() => (contacts ? getMapUrl(contacts.address) : ''), [contacts]);
+  const hasVk = Boolean(contacts?.vkUrl?.trim());
+  const hasTelegram = Boolean(contacts?.telegramUrl?.trim());
+  const hasMessengers = hasVk || hasTelegram;
 
   useEffect(() => {
     void getSiteContactSettings().then(setContacts);
@@ -42,25 +45,47 @@ export function ContactsPage() {
             <ContactRow icon={<MapPin size={18} />} title="Адрес" value={contacts.address} />
             <ContactRow icon={<Timer size={18} />} title="Время работы" value={contacts.workingHours} />
 
-            <Stack direction="row" spacing={1.25} sx={{ alignItems: 'flex-start' }}>
-              <Box sx={{ color: 'primary.main', mt: 0.2 }}>
-                <MessageCircleMore size={18} />
-              </Box>
-              <Box sx={{ display: 'grid', gap: 0.35 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Мессенджеры
-                </Typography>
-              </Box>
-            </Stack>
+            {hasMessengers ? (
+              <>
+                <Stack direction="row" spacing={1.25} sx={{ alignItems: 'flex-start' }}>
+                  <Box sx={{ color: 'primary.main', mt: 0.2 }}>
+                    <MessageCircleMore size={18} />
+                  </Box>
+                  <Box sx={{ display: 'grid', gap: 0.35 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Мессенджеры
+                    </Typography>
+                  </Box>
+                </Stack>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-              <Button component="a" href={contacts.vkUrl} target="_blank" rel="noreferrer" variant="outlined" startIcon={<MessageCircleMore size={16} />}>
-                VK
-              </Button>
-              <Button component="a" href={contacts.telegramUrl} target="_blank" rel="noreferrer" variant="outlined" startIcon={<MessageCircleMore size={16} />}>
-                Telegram
-              </Button>
-            </Stack>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                  {hasVk ? (
+                    <Button
+                      component="a"
+                      href={contacts.vkUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      variant="outlined"
+                      startIcon={<MessageCircleMore size={16} />}
+                    >
+                      VK
+                    </Button>
+                  ) : null}
+                  {hasTelegram ? (
+                    <Button
+                      component="a"
+                      href={contacts.telegramUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      variant="outlined"
+                      startIcon={<MessageCircleMore size={16} />}
+                    >
+                      Telegram
+                    </Button>
+                  ) : null}
+                </Stack>
+              </>
+            ) : null}
           </CardContent>
         </Card>
 

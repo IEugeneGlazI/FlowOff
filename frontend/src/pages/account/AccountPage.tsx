@@ -118,6 +118,7 @@ export function AccountPage() {
     () => confirmNewPassword.length > 0 && newPassword !== confirmNewPassword,
     [newPassword, confirmNewPassword],
   );
+  const isResetModeActive = mode === 'reset' && resetToken.trim().length > 0;
 
   function switchMode(nextMode: Mode, options?: { preserveFeedback?: boolean }) {
     const targetMode = nextMode === 'reset' && !resetToken.trim() ? 'forgot' : nextMode;
@@ -301,7 +302,7 @@ export function AccountPage() {
     );
   }
 
-  if (session) {
+  if (session && !isResetModeActive) {
     const sessionNotice = localError ?? error ?? feedback;
     const sessionNoticeSeverity = localError || error ? 'error' : 'success';
 

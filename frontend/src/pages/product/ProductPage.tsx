@@ -434,20 +434,22 @@ export function ProductPage() {
         </Card>
       </Box>
 
-      <Snackbar
-        open={Boolean(feedback)}
-        autoHideDuration={3200}
-        onClose={() => setFeedback(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert
-          severity={feedback?.severity ?? 'info'}
+      {feedback ? (
+        <Snackbar
+          open
+          autoHideDuration={3200}
           onClose={() => setFeedback(null)}
-          sx={{ borderRadius: 2, minWidth: 320, boxShadow: '0 18px 40px rgba(31,42,35,0.18)' }}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          {feedback?.message}
-        </Alert>
-      </Snackbar>
+          <Alert
+            severity={feedback.severity}
+            onClose={() => setFeedback(null)}
+            sx={{ borderRadius: 2, minWidth: 320, boxShadow: '0 18px 40px rgba(31,42,35,0.18)' }}
+          >
+            {feedback.message}
+          </Alert>
+        </Snackbar>
+      ) : null}
 
       <Dialog
         open={isImagePreviewOpen}

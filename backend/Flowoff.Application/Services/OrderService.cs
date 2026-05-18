@@ -310,52 +310,34 @@ public class OrderService : IOrderService
 
         var status = request.Status.Trim();
 
-        if (!OrderStatusCodes.All.Contains(status, StringComparer.Ordinal) &&
-            !DeliveryStatusCodes.All.Contains(status, StringComparer.Ordinal) &&
-            !PaymentStatusCodes.All.Contains(status, StringComparer.Ordinal))
+        var isOrderStatus = OrderStatusCodes.All.Contains(status, StringComparer.Ordinal);
+        var isDeliveryStatus = DeliveryStatusCodes.All.Contains(status, StringComparer.Ordinal);
+        var isPaymentStatus = PaymentStatusCodes.All.Contains(status, StringComparer.Ordinal);
+
+        if (!isOrderStatus && !isDeliveryStatus && !isPaymentStatus)
         {
             throw new InvalidOperationException("Invalid order status.");
         }
 
-        if (status == OrderStatusCodes.Cancelled)
+        if (isOrderStatus)
         {
-            var cancelledOrderStatusId = await GetOrderStatusIdAsync(OrderStatusCodes.Cancelled, cancellationToken);
-            order.Cancel(cancelledOrderStatusId);
+            var orderStatusId = await GetOrderStatusIdAsync(status, cancellationToken);
+            order.SetStatusByAdmin(orderStatusId, status);
         }
-        else if (new[] { DeliveryStatusCodes.InAssembly, DeliveryStatusCodes.ReadyForPickup }.Contains(status))
+        else if (isDeliveryStatus)
         {
-            var activeOrderStatusId = await GetOrderStatusIdAsync(OrderStatusCodes.Active, cancellationToken);
             var deliveryStatusId = await GetDeliveryStatusIdAsync(status, cancellationToken);
-            order.SetAssemblyStatus(status, activeOrderStatusId, deliveryStatusId);
+            await ApplyAdminDeliveryStatusAsync(order, status, deliveryStatusId, cancellationToken);
         }
-        else if (status == DeliveryStatusCodes.ReceivedByCustomer && order.DeliveryMethod == DeliveryMethod.Pickup)
+        else if (isPaymentStatus)
         {
-            var completedOrderStatusId = await GetOrderStatusIdAsync(OrderStatusCodes.Completed, cancellationToken);
-            var receivedByCustomerStatusId = await GetDeliveryStatusIdAsync(DeliveryStatusCodes.ReceivedByCustomer, cancellationToken);
-            var paidPaymentStatusId = await GetPaymentStatusIdAsync(PaymentStatusCodes.Paid, cancellationToken);
-            order.CompletePickup(completedOrderStatusId, receivedByCustomerStatusId, paidPaymentStatusId);
-        }
-        else if (new[] { DeliveryStatusCodes.InTransit, DeliveryStatusCodes.Delivered, DeliveryStatusCodes.ReceivedByCustomer }.Contains(status))
-        {
-            var orderStatusId = await GetOrderStatusIdAsync(
-                status == DeliveryStatusCodes.ReceivedByCustomer ? OrderStatusCodes.Completed : OrderStatusCodes.Active,
-                cancellationToken);
-            var deliveryStatusId = await GetDeliveryStatusIdAsync(status, cancellationToken);
-            Guid? paidPaymentStatusId = status == DeliveryStatusCodes.ReceivedByCustomer
-                ? await GetPaymentStatusIdAsync(PaymentStatusCodes.Paid, cancellationToken)
-                : null;
-            order.SetDeliveryStatus(status, orderStatusId, deliveryStatusId, paidPaymentStatusId);
-        }
-        else if (status == PaymentStatusCodes.Paid)
-        {
-            var activeOrderStatusId = await GetOrderStatusIdAsync(OrderStatusCodes.Active, cancellationToken);
-            var paidPaymentStatusId = await GetPaymentStatusIdAsync(PaymentStatusCodes.Paid, cancellationToken);
-            order.MarkPaid(activeOrderStatusId);
-            order.Payment?.MarkPaid(paidPaymentStatusId);
-        }
-        else
-        {
-            throw new InvalidOperationException("This status cannot be set manually.");
+            if (order.Payment is null)
+            {
+                throw new InvalidOperationException("Order payment state is not initialized.");
+            }
+
+            var paymentStatusId = await GetPaymentStatusIdAsync(status, cancellationToken);
+            order.Payment.SetStatusByAdmin(paymentStatusId, status);
         }
 
         await _orderRepository.SaveChangesAsync(cancellationToken);
@@ -368,7 +350,7 @@ public class OrderService : IOrderService
             ?? throw new InvalidOperationException("Order not found.");
 
         var cancelledOrderStatusId = await GetOrderStatusIdAsync(OrderStatusCodes.Cancelled, cancellationToken);
-        order.Cancel(cancelledOrderStatusId);
+        order.CancelByAdmin(cancelledOrderStatusId);
         await _orderRepository.SaveChangesAsync(cancellationToken);
         return await MapOrderAsync(order, cancellationToken);
     }
@@ -403,6 +385,67 @@ public class OrderService : IOrderService
             Gift => promotion.Gifts.Any(item => item.GiftId == product.Id),
             _ => false
         };
+    }
+
+    private async Task ApplyAdminDeliveryStatusAsync(Order order, string status, Guid deliveryStatusId, CancellationToken cancellationToken)
+    {
+        if (order.Delivery is null)
+        {
+            throw new InvalidOperationException("Order fulfillment state is not initialized.");
+        }
+
+        order.Delivery.SetStatusByAdmin(deliveryStatusId, status);
+
+        if (status == DeliveryStatusCodes.UnderReview)
+        {
+            order.ClearFloristAssignment();
+            order.Delivery.ClearCourierAssignment();
+            var activeOrderStatusId = await GetOrderStatusIdAsync(OrderStatusCodes.Active, cancellationToken);
+            order.SetStatusByAdmin(activeOrderStatusId, OrderStatusCodes.Active);
+            return;
+        }
+
+        if (status == DeliveryStatusCodes.InAssembly)
+        {
+            order.Delivery.ClearCourierAssignment();
+            var activeOrderStatusId = await GetOrderStatusIdAsync(OrderStatusCodes.Active, cancellationToken);
+            order.SetStatusByAdmin(activeOrderStatusId, OrderStatusCodes.Active);
+            return;
+        }
+
+        if (status == DeliveryStatusCodes.ReadyForPickup)
+        {
+            order.Delivery.ClearCourierAssignment();
+            var activeOrderStatusId = await GetOrderStatusIdAsync(OrderStatusCodes.Active, cancellationToken);
+            order.SetStatusByAdmin(activeOrderStatusId, OrderStatusCodes.Active);
+            return;
+        }
+
+        if (status == DeliveryStatusCodes.TransferringToDelivery)
+        {
+            var activeOrderStatusId = await GetOrderStatusIdAsync(OrderStatusCodes.Active, cancellationToken);
+            order.SetStatusByAdmin(activeOrderStatusId, OrderStatusCodes.Active);
+            return;
+        }
+
+        if (status == DeliveryStatusCodes.AcceptedByCourier || status == DeliveryStatusCodes.InTransit || status == DeliveryStatusCodes.Delivered)
+        {
+            var activeOrderStatusId = await GetOrderStatusIdAsync(OrderStatusCodes.Active, cancellationToken);
+            order.SetStatusByAdmin(activeOrderStatusId, OrderStatusCodes.Active);
+            return;
+        }
+
+        if (status == DeliveryStatusCodes.ReceivedByCustomer)
+        {
+            var completedOrderStatusId = await GetOrderStatusIdAsync(OrderStatusCodes.Completed, cancellationToken);
+            order.SetStatusByAdmin(completedOrderStatusId, OrderStatusCodes.Completed);
+
+            if (order.Payment is not null && order.Payment.Status == PaymentStatusCodes.Pending)
+            {
+                var paidPaymentStatusId = await GetPaymentStatusIdAsync(PaymentStatusCodes.Paid, cancellationToken);
+                order.Payment.SetStatusByAdmin(paidPaymentStatusId, PaymentStatusCodes.Paid);
+            }
+        }
     }
 
     private async Task<OrderDto> MapOrderAsync(Order order, CancellationToken cancellationToken)

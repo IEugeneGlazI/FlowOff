@@ -84,9 +84,9 @@ public class SupportRequestService : ISupportRequestService
             throw new InvalidOperationException("Message or at least one attachment is required.");
         }
 
-        if (SupportStatusCodes.ClosedStatuses.Contains(GetStatusName(supportRequest)))
+        if (IsMessagingLocked(supportRequest))
         {
-            throw new InvalidOperationException("Closed support request cannot be updated.");
+            throw new InvalidOperationException("Messages cannot be added to resolved or cancelled support requests.");
         }
 
         var userId = GetRequiredUserId();
@@ -235,6 +235,13 @@ public class SupportRequestService : ISupportRequestService
     {
         return await _supportStatusReferenceRepository.GetByNameAsync(status.Trim(), cancellationToken)
             ?? throw new InvalidOperationException("Support request status not found.");
+    }
+
+    private static bool IsMessagingLocked(SupportRequest supportRequest)
+    {
+        var statusName = GetStatusName(supportRequest);
+        return SupportStatusCodes.ClosedStatuses.Contains(statusName, StringComparer.Ordinal)
+            || string.Equals(statusName, "Отменено", StringComparison.Ordinal);
     }
 
     private static string GetStatusName(SupportRequest supportRequest)

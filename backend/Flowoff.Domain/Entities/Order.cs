@@ -185,6 +185,21 @@ public class Order : Entity
         SetOrderStatus(orderStatusReferenceId, OrderStatusCodes.Cancelled);
     }
 
+    public void CancelByAdmin(Guid orderStatusReferenceId)
+    {
+        SetOrderStatus(orderStatusReferenceId, OrderStatusCodes.Cancelled);
+    }
+
+    public void SetStatusByAdmin(Guid orderStatusReferenceId, string status)
+    {
+        SetOrderStatus(orderStatusReferenceId, status);
+    }
+
+    public void ClearFloristAssignment()
+    {
+        FloristId = null;
+    }
+
     public void AttachDelivery(Delivery delivery)
     {
         Delivery = delivery;

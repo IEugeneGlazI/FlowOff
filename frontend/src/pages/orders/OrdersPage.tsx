@@ -270,6 +270,7 @@ export function OrdersPage() {
       return;
     }
 
+    const token = session.token;
     let cancelled = false;
 
     async function loadOrders(showLoader: boolean) {
@@ -278,7 +279,7 @@ export function OrdersPage() {
       }
 
       try {
-        const nextOrders = await apiRequest<Order[]>('/Orders/my', { token: session.token });
+        const nextOrders = await apiRequest<Order[]>('/Orders/my', { token });
 
         if (!cancelled) {
           setOrders(nextOrders);

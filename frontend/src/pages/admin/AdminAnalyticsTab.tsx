@@ -661,7 +661,7 @@ export function AdminAnalyticsTab({ token }: { token: string }) {
           gap: 1.5,
           gridTemplateColumns: {
             xs: '1fr',
-            lg: 'minmax(0, 0.9fr) minmax(0, 1.1fr)',
+            xl: 'repeat(2, minmax(0, 1fr))',
           },
         }}
       >

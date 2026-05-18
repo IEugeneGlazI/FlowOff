@@ -162,6 +162,25 @@ export function CartPage() {
     );
   }
 
+  async function handleItemQuantityChange(productId: string, productName: string, nextQuantity: number) {
+    try {
+      await updateItem(productId, Math.max(0, nextQuantity));
+
+      if (nextQuantity <= 0) {
+        setFeedback({
+          severity: 'success',
+          message: `Товар "${productName}" удален из корзины.`,
+        });
+      }
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Не удалось обновить корзину.';
+      setFeedback({
+        severity: 'error',
+        message,
+      });
+    }
+  }
+
   async function handleRemoveSelectedItems() {
     if (selectedItems.length === 0) {
       setFeedback({
@@ -173,11 +192,46 @@ export function CartPage() {
 
     setFeedback(null);
 
-    for (const item of selectedItems) {
-      await updateItem(item.productId, 0);
+    try {
+      for (const item of selectedItems) {
+        await updateItem(item.productId, 0);
+      }
+
+      await refreshCart();
+      setFeedback({
+        severity: 'success',
+        message:
+          selectedItems.length === 1
+            ? 'Выбранный товар удален из корзины.'
+            : `Из корзины удалено товаров: ${selectedItems.length}.`,
+      });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Не удалось удалить товары из корзины.';
+      setFeedback({
+        severity: 'error',
+        message,
+      });
+    }
+  }
+
+  async function handleClearCart() {
+    if (!hasItems) {
+      return;
     }
 
-    await refreshCart();
+    try {
+      await clearCart();
+      setFeedback({
+        severity: 'success',
+        message: 'Корзина очищена.',
+      });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Не удалось очистить корзину.';
+      setFeedback({
+        severity: 'error',
+        message,
+      });
+    }
   }
 
   function validateCheckout() {
@@ -355,7 +409,7 @@ export function CartPage() {
                   <Button variant="text" color="inherit" startIcon={<Trash2 size={16} />} onClick={() => void handleRemoveSelectedItems()}>
                     Удалить выбранное
                   </Button>
-                  <Button variant="text" color="inherit" startIcon={<Trash2 size={16} />} onClick={() => void clearCart()}>
+                  <Button variant="text" color="inherit" startIcon={<Trash2 size={16} />} onClick={() => void handleClearCart()}>
                     Очистить все
                   </Button>
                 </Stack>
@@ -499,11 +553,11 @@ export function CartPage() {
                             border: '1px solid rgba(24,38,31,0.08)',
                           }}
                         >
-                          <IconButton size="small" onClick={() => void updateItem(item.productId, Math.max(0, item.quantity - 1))}>
+                          <IconButton size="small" onClick={() => void handleItemQuantityChange(item.productId, item.productName, item.quantity - 1)}>
                             <Minus size={16} />
                           </IconButton>
                           <Typography sx={{ minWidth: 28, textAlign: 'center', fontWeight: 600 }}>{item.quantity}</Typography>
-                          <IconButton size="small" onClick={() => void updateItem(item.productId, item.quantity + 1)}>
+                          <IconButton size="small" onClick={() => void handleItemQuantityChange(item.productId, item.productName, item.quantity + 1)}>
                             <Plus size={16} />
                           </IconButton>
                         </Stack>

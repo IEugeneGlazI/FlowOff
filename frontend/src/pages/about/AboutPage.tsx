@@ -51,6 +51,9 @@ const steps = [
 
 export function AboutPage() {
   const [contacts, setContacts] = useState<SiteContactSettings | null>(null);
+  const hasVk = Boolean(contacts?.vkUrl?.trim());
+  const hasTelegram = Boolean(contacts?.telegramUrl?.trim());
+  const hasMessengers = hasVk || hasTelegram;
 
   useEffect(() => {
     void getSiteContactSettings().then(setContacts);
@@ -147,28 +150,34 @@ export function AboutPage() {
             Подписывайтесь и пишите в мессенджеры
           </Typography>
           {contacts ? (
+            hasMessengers ? (
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-              <Button
-                component="a"
-                href={contacts.vkUrl}
-                target="_blank"
-                rel="noreferrer"
-                variant="outlined"
-                startIcon={<MessageCircleMore size={16} />}
-              >
-                VK
-              </Button>
-              <Button
-                component="a"
-                href={contacts.telegramUrl}
-                target="_blank"
-                rel="noreferrer"
-                variant="outlined"
-                startIcon={<MessageCircleMore size={16} />}
-              >
-                Telegram
-              </Button>
+              {hasVk ? (
+                <Button
+                  component="a"
+                  href={contacts.vkUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="outlined"
+                  startIcon={<MessageCircleMore size={16} />}
+                >
+                  VK
+                </Button>
+              ) : null}
+              {hasTelegram ? (
+                <Button
+                  component="a"
+                  href={contacts.telegramUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="outlined"
+                  startIcon={<MessageCircleMore size={16} />}
+                >
+                  Telegram
+                </Button>
+              ) : null}
             </Stack>
+            ) : null
           ) : (
             <CircularProgress size={24} />
           )}

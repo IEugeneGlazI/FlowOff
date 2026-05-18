@@ -50,6 +50,10 @@ export function getStatusColor(status: string): 'default' | 'warning' | 'info' |
   return 'success';
 }
 
+function isClosedStatus(status: string) {
+  return status === 'Решено' || status === 'Отменено' || status === 'Отклонено';
+}
+
 export function AdminSupportTab({ token }: { token: string }) {
   const [requests, setRequests] = useState<SupportRequest[]>([]);
   const [statuses, setStatuses] = useState<StatusReference[]>([]);
@@ -183,6 +187,10 @@ export function AdminSupportTab({ token }: { token: string }) {
 
   async function handleSendReply() {
     if (!selectedRequest) {
+      return;
+    }
+
+    if (isClosedStatus(selectedRequest.status)) {
       return;
     }
 
@@ -446,6 +454,8 @@ export function AdminSupportTab({ token }: { token: string }) {
 
               <Divider />
 
+              {!isClosedStatus(selectedRequest.status) ? (
+                <>
               <input
                 ref={replyFileInputRef}
                 type="file"
@@ -507,6 +517,12 @@ export function AdminSupportTab({ token }: { token: string }) {
                   <Send size={18} />
                 </IconButton>
               </Stack>
+                </>
+              ) : (
+                <Alert severity="info" sx={{ borderRadius: 2, flexShrink: 0 }}>
+                  Для обращений со статусом «Решено» или «Отменено» отправка новых сообщений недоступна.
+                </Alert>
+              )}
             </>
           ) : null}
         </DialogContent>

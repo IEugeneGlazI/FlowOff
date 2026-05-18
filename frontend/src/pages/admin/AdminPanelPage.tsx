@@ -1136,7 +1136,7 @@ export function AdminPanelPage() {
                         Сохранить статус
                       </Button>
 
-                      {order.status !== 'Отменен' && order.status !== 'Завершен' ? (
+                      {order.status !== 'Отменен' ? (
                         <Button
                           variant="text"
                           color="inherit"

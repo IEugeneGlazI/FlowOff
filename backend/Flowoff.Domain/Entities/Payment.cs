@@ -33,6 +33,22 @@ public class Payment : Entity
         PaidAtUtc = DateTime.UtcNow;
     }
 
+    public void SetStatusByAdmin(Guid paymentStatusReferenceId, string status)
+    {
+        SetStatus(paymentStatusReferenceId, status);
+
+        if (status == PaymentStatusCodes.Paid)
+        {
+            PaidAtUtc = DateTime.UtcNow;
+            return;
+        }
+
+        if (status == PaymentStatusCodes.Pending || status == PaymentStatusCodes.Failed)
+        {
+            PaidAtUtc = null;
+        }
+    }
+
     private void SetStatus(Guid paymentStatusReferenceId, string status)
     {
         PaymentStatusReferenceId = paymentStatusReferenceId;

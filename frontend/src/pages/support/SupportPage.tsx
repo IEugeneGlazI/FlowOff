@@ -52,7 +52,7 @@ export function getStatusColor(status: string): 'default' | 'warning' | 'info' |
 }
 
 function isClosedStatus(status: string) {
-  return status === 'Решено' || status === 'Отклонено';
+  return status === 'Решено' || status === 'Отменено' || status === 'Отклонено';
 }
 
 export function SupportPage() {
@@ -199,6 +199,10 @@ export function SupportPage() {
 
   async function handleSendReply() {
     if (!token || !selectedRequest) {
+      return;
+    }
+
+    if (isClosedStatus(selectedRequest.status)) {
       return;
     }
 
@@ -585,7 +589,14 @@ export function SupportPage() {
                     </Stack>
                   </Box>
                 </>
-              ) : null}
+              ) : (
+                <>
+                  <Divider />
+                  <Alert severity="info" sx={{ borderRadius: 2, flexShrink: 0 }}>
+                    Для обращений со статусом «Решено» или «Отменено» отправка новых сообщений недоступна.
+                  </Alert>
+                </>
+              )}
             </>
           ) : null}
         </DialogContent>

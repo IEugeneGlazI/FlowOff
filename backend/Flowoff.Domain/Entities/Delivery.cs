@@ -69,4 +69,22 @@ public class Delivery : Entity
         SetStatus(deliveryStatusReferenceId, DeliveryStatusCodes.Delivered);
         DeliveredAtUtc = DateTime.UtcNow;
     }
+
+    public void ClearCourierAssignment()
+    {
+        CourierId = null;
+    }
+
+    public void SetStatusByAdmin(Guid deliveryStatusReferenceId, string status)
+    {
+        SetStatus(deliveryStatusReferenceId, status);
+
+        if (status == DeliveryStatusCodes.Delivered || status == DeliveryStatusCodes.ReceivedByCustomer)
+        {
+            DeliveredAtUtc ??= DateTime.UtcNow;
+            return;
+        }
+
+        DeliveredAtUtc = null;
+    }
 }

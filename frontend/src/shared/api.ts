@@ -61,7 +61,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       body,
     });
   } catch {
-    throw new ApiError('Не удалось соединиться с сервером. Проверьте, что backend запущен и CORS настроен.', 0);
+    throw new ApiError('Не удалось соединиться с сервером.', 0);
   }
 
   if (!response.ok) {
