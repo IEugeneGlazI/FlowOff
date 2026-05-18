@@ -63,6 +63,11 @@ public class FlowerInsController : ControllerBase
             return NotFound();
         }
 
+        if (await _flowerInRepository.IsInUseAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "Нельзя удалить цветок, пока он используется в карточке товара." });
+        }
+
         flowerIn.SoftDelete();
         await _flowerInRepository.SaveChangesAsync(cancellationToken);
         return NoContent();

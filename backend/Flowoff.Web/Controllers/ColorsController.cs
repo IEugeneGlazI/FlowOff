@@ -63,6 +63,11 @@ public class ColorsController : ControllerBase
             return NotFound();
         }
 
+        if (await _colorRepository.IsInUseAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "Нельзя удалить цвет, пока он используется в карточке товара." });
+        }
+
         color.SoftDelete();
         await _colorRepository.SaveChangesAsync(cancellationToken);
         return NoContent();

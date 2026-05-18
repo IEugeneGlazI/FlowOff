@@ -27,6 +27,7 @@ import { ProductImage } from '../../shared/ProductImage';
 
 type OrdersView = 'active' | 'completed';
 const ORDERS_PAGE_SIZE = 6;
+const ORDERS_REFRESH_INTERVAL_MS = 10000;
 
 const deliveryOrderSteps = [
   'Заказ на рассмотрении',
@@ -51,6 +52,14 @@ function getDeliveryMethodLabel(method: string) {
 
 function getPaymentStatusLabel(status?: string | null) {
   return status || 'Не указано';
+}
+
+function getDisplayDeliveryStatus(order: Order) {
+  if (order.deliveryMethod !== 'Pickup' && order.deliveryStatus === 'Заказ готов к выдаче') {
+    return 'Заказ передается в доставку';
+  }
+
+  return order.deliveryStatus || 'Заказ на рассмотрении';
 }
 
 function getDeliveryStepIndex(deliveryStatus: string | null | undefined, isPickup: boolean) {
@@ -95,7 +104,8 @@ function isLastStepCompleted(order: Order) {
 
 function renderOrderCard(order: Order, isMobile: boolean, returnTo: string) {
   const isPickup = order.deliveryMethod === 'Pickup';
-  const activeStep = getDeliveryStepIndex(order.deliveryStatus, isPickup);
+  const displayDeliveryStatus = getDisplayDeliveryStatus(order);
+  const activeStep = getDeliveryStepIndex(displayDeliveryStatus, isPickup);
   const orderSteps = isPickup ? pickupOrderSteps : deliveryOrderSteps;
   const lastStepCompleted = isLastStepCompleted(order);
 
@@ -150,7 +160,7 @@ function renderOrderCard(order: Order, isMobile: boolean, returnTo: string) {
           }}
         >
           <InfoCard label="Статус заказа" value={order.status} />
-          <InfoCard label="Статус доставки" value={order.deliveryStatus || 'Не указано'} />
+          <InfoCard label="Статус доставки" value={displayDeliveryStatus} />
           <InfoCard label="Статус оплаты" value={getPaymentStatusLabel(order.paymentStatus)} />
           <InfoCard label="Получение" value={getDeliveryMethodLabel(order.deliveryMethod)} />
         </Box>
@@ -193,6 +203,7 @@ function renderOrderCard(order: Order, isMobile: boolean, returnTo: string) {
               }}
             >
               <ProductImage
+                src={item.imageUrl}
                 alt={item.productName}
                 sx={{
                   width: 72,
@@ -259,10 +270,45 @@ export function OrdersPage() {
       return;
     }
 
-    setIsLoading(true);
-    void apiRequest<Order[]>('/Orders/my', { token: session.token })
-      .then(setOrders)
-      .finally(() => setIsLoading(false));
+    let cancelled = false;
+
+    async function loadOrders(showLoader: boolean) {
+      if (showLoader) {
+        setIsLoading(true);
+      }
+
+      try {
+        const nextOrders = await apiRequest<Order[]>('/Orders/my', { token: session.token });
+
+        if (!cancelled) {
+          setOrders(nextOrders);
+        }
+      } finally {
+        if (!cancelled && showLoader) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadOrders(true);
+
+    const intervalId = window.setInterval(() => {
+      void loadOrders(false);
+    }, ORDERS_REFRESH_INTERVAL_MS);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void loadOrders(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [session]);
 
   const activeOrders = useMemo(() => orders.filter((order) => !isCompletedOrder(order)), [orders]);

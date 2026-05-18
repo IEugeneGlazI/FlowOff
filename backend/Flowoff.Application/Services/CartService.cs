@@ -113,6 +113,7 @@ public class CartService : ICartService
                 ProductId = item.ProductId,
                 ProductType = product.Type.ToString(),
                 ProductName = product.Name,
+                ImageUrl = product.ImageUrl,
                 UnitPrice = product.Price,
                 Quantity = item.Quantity,
                 LineTotal = product.Price * item.Quantity

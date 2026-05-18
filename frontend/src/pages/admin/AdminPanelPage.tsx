@@ -1062,6 +1062,7 @@ export function AdminPanelPage() {
                             sx={{ alignItems: 'center', minWidth: 0, flex: 1 }}
                           >
                             <ProductImage
+                              src={item.imageUrl}
                               alt={item.productName}
                               sx={{
                                 width: 48,

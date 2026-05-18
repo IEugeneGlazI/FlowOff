@@ -111,15 +111,53 @@ export function SupportPage() {
 
   const availableOrders = useMemo(() => orders.filter((order) => order.status !== 'Отменен'), [orders]);
 
-  async function reloadRequests(nextSelectedId?: string | null) {
+  async function reloadRequests(nextSelectedId?: string | null, options?: { silent?: boolean }) {
     if (!token) {
       return;
     }
 
-    const nextRequests = await getMySupportRequests(token);
-    setRequests(nextRequests);
-    setSelectedRequest(nextSelectedId ? nextRequests.find((item) => item.id === nextSelectedId) ?? null : null);
+    try {
+      const nextRequests = await getMySupportRequests(token);
+      setRequests(nextRequests);
+      setSelectedRequest(nextSelectedId ? nextRequests.find((item) => item.id === nextSelectedId) ?? null : null);
+    } catch (error) {
+      if (!options?.silent) {
+        const nextMessage = error instanceof ApiError ? error.message : 'РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ РѕР±СЂР°С‰РµРЅРёСЏ.';
+        setFeedback({ severity: 'error', message: nextMessage });
+      }
+
+      throw error;
+    }
   }
+
+  useEffect(() => {
+    if (!token || session?.role !== 'Customer') {
+      return;
+    }
+
+    let isActive = true;
+
+    const pollRequests = async () => {
+      if (!isActive || document.visibilityState === 'hidden' || isSubmitting) {
+        return;
+      }
+
+      try {
+        await reloadRequests(selectedRequest?.id ?? null, { silent: true });
+      } catch {
+        // Silent background refresh should not interrupt the user.
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void pollRequests();
+    }, 5000);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+    };
+  }, [token, session?.role, selectedRequest?.id, isSubmitting]);
 
   async function handleCreateRequest() {
     if (!token) {

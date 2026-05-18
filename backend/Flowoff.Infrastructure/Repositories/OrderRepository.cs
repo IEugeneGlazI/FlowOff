@@ -35,6 +35,11 @@ public class OrderRepository : IOrderRepository
     {
         return _dbContext.Orders
             .Include(order => order.Items)
+                .ThenInclude(item => item.Bouquet)
+            .Include(order => order.Items)
+                .ThenInclude(item => item.Flower)
+            .Include(order => order.Items)
+                .ThenInclude(item => item.Gift)
             .Include(order => order.Delivery)
             .Include(order => order.Payment)
             .FirstOrDefaultAsync(order => order.Id == id, cancellationToken);
@@ -52,6 +57,11 @@ public class OrderRepository : IOrderRepository
     {
         return _dbContext.Orders
             .Include(order => order.Items)
+                .ThenInclude(item => item.Bouquet)
+            .Include(order => order.Items)
+                .ThenInclude(item => item.Flower)
+            .Include(order => order.Items)
+                .ThenInclude(item => item.Gift)
             .Include(order => order.Delivery)
             .Include(order => order.Payment);
     }
@@ -61,6 +71,11 @@ public class OrderRepository : IOrderRepository
         return await _dbContext.Orders
             .AsNoTracking()
             .Include(order => order.Items)
+                .ThenInclude(item => item.Bouquet)
+            .Include(order => order.Items)
+                .ThenInclude(item => item.Flower)
+            .Include(order => order.Items)
+                .ThenInclude(item => item.Gift)
             .Include(order => order.Delivery)
             .Include(order => order.Payment)
             .Where(order =>
@@ -78,6 +93,11 @@ public class OrderRepository : IOrderRepository
         return await _dbContext.Orders
             .AsNoTracking()
             .Include(order => order.Items)
+                .ThenInclude(item => item.Bouquet)
+            .Include(order => order.Items)
+                .ThenInclude(item => item.Flower)
+            .Include(order => order.Items)
+                .ThenInclude(item => item.Gift)
             .Include(order => order.Delivery)
             .Include(order => order.Payment)
             .Where(order => order.Delivery != null && order.Delivery.CourierId == courierId)
@@ -90,6 +110,11 @@ public class OrderRepository : IOrderRepository
         return await _dbContext.Orders
             .AsNoTracking()
             .Include(order => order.Items)
+                .ThenInclude(item => item.Bouquet)
+            .Include(order => order.Items)
+                .ThenInclude(item => item.Flower)
+            .Include(order => order.Items)
+                .ThenInclude(item => item.Gift)
             .Include(order => order.Delivery)
             .Include(order => order.Payment)
             .Where(order => order.CustomerId == customerId)

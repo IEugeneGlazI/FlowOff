@@ -465,6 +465,7 @@ public class OrderService : IOrderService
                     ProductId = item.ProductId,
                     ProductType = item.ProductType,
                     ProductName = item.ProductName,
+                    ImageUrl = item.Bouquet?.ImageUrl ?? item.Flower?.ImageUrl ?? item.Gift?.ImageUrl,
                     UnitPrice = item.UnitPrice,
                     Quantity = item.Quantity
                 }).ToArray()

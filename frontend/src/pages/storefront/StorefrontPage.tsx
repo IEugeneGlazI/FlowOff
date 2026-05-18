@@ -68,6 +68,10 @@ function normalizeMultiValue(value: string | string[]) {
   return typeof value === 'string' ? value.split(',').filter(Boolean) : value;
 }
 
+function areProductsEqual(current: Product[], next: Product[]) {
+  return JSON.stringify(current) === JSON.stringify(next);
+}
+
 export function StorefrontPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -138,7 +142,7 @@ export function StorefrontPage() {
           type: activeTab === 'bouquets' ? 'Bouquet' : activeTab === 'flowers' ? 'Flower' : 'Gift',
         });
 
-        setProducts(nextProducts);
+        setProducts((current) => (areProductsEqual(current, nextProducts) ? current : nextProducts));
 
         if (nextProducts.length > 0) {
           const prices = nextProducts.map((item) => item.price);
@@ -152,6 +156,35 @@ export function StorefrontPage() {
     }
 
     void loadProducts();
+  }, [activeTab]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const pollProducts = async () => {
+      if (!isActive || document.visibilityState === 'hidden') {
+        return;
+      }
+
+      try {
+        const nextProducts = await getProducts({
+          type: activeTab === 'bouquets' ? 'Bouquet' : activeTab === 'flowers' ? 'Flower' : 'Gift',
+        });
+
+        setProducts((current) => (areProductsEqual(current, nextProducts) ? current : nextProducts));
+      } catch {
+        // Silent background refresh should not interrupt storefront browsing.
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void pollProducts();
+    }, 5000);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+    };
   }, [activeTab]);
 
   const priceBounds = useMemo<PriceRange>(() => {

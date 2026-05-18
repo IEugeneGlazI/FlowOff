@@ -28,6 +28,12 @@ public class CategoryRepository : ICategoryRepository
         return _dbContext.Categories.FirstOrDefaultAsync(category => category.Id == id && !category.IsDeleted, cancellationToken);
     }
 
+    public Task<bool> IsInUseAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return _dbContext.Gifts
+            .AnyAsync(gift => !gift.IsDeleted && gift.CategoryId == id, cancellationToken);
+    }
+
     public async Task AddAsync(Category category, CancellationToken cancellationToken)
     {
         await _dbContext.Categories.AddAsync(category, cancellationToken);

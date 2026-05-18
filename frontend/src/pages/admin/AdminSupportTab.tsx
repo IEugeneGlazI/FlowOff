@@ -112,20 +112,54 @@ export function AdminSupportTab({ token }: { token: string }) {
     });
   }, [requests, search, statusFilter]);
 
-  async function reloadRequests(nextSelectedId?: string | null) {
-    const nextRequests = await getAllSupportRequests(token);
-    setRequests(nextRequests);
+  async function reloadRequests(nextSelectedId?: string | null, options?: { silent?: boolean }) {
+    try {
+      const nextRequests = await getAllSupportRequests(token);
+      setRequests(nextRequests);
 
-    if (nextSelectedId) {
-      const nextSelected = nextRequests.find((item) => item.id === nextSelectedId) ?? null;
-      setSelectedRequest(nextSelected);
-      setStatusDraft(nextSelected?.status ?? '');
-      return;
+      if (nextSelectedId) {
+        const nextSelected = nextRequests.find((item) => item.id === nextSelectedId) ?? null;
+        setSelectedRequest(nextSelected);
+        setStatusDraft(nextSelected?.status ?? '');
+        return;
+      }
+
+      setSelectedRequest(null);
+      setStatusDraft('');
+    } catch (error) {
+      if (!options?.silent) {
+        const nextMessage = error instanceof ApiError ? error.message : 'РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ РѕР±СЂР°С‰РµРЅРёСЏ.';
+        setFeedback({ severity: 'error', message: nextMessage });
+      }
+
+      throw error;
     }
-
-    setSelectedRequest(null);
-    setStatusDraft('');
   }
+
+  useEffect(() => {
+    let isActive = true;
+
+    const pollRequests = async () => {
+      if (!isActive || document.visibilityState === 'hidden' || isSubmitting) {
+        return;
+      }
+
+      try {
+        await reloadRequests(selectedRequest?.id ?? null, { silent: true });
+      } catch {
+        // Silent background refresh should not interrupt the admin.
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void pollRequests();
+    }, 5000);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+    };
+  }, [token, selectedRequest?.id, isSubmitting]);
 
   async function handleSaveStatus() {
     if (!selectedRequest || !statusDraft) {

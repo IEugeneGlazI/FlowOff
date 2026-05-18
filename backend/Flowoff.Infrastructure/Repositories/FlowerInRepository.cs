@@ -28,6 +28,17 @@ public class FlowerInRepository : IFlowerInRepository
         return _dbContext.FlowerIns.FirstOrDefaultAsync(item => item.Id == id && !item.IsDeleted, cancellationToken);
     }
 
+    public async Task<bool> IsInUseAsync(Guid id, CancellationToken cancellationToken)
+    {
+        if (await _dbContext.Flowers.AnyAsync(flower => !flower.IsDeleted && flower.FlowerInId == id, cancellationToken))
+        {
+            return true;
+        }
+
+        return await _dbContext.Set<BouquetFlowerIn>()
+            .AnyAsync(item => item.FlowerInId == id && !item.Bouquet!.IsDeleted, cancellationToken);
+    }
+
     public async Task AddAsync(FlowerIn flowerIn, CancellationToken cancellationToken)
     {
         await _dbContext.FlowerIns.AddAsync(flowerIn, cancellationToken);

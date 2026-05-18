@@ -2,6 +2,7 @@ export type CartItem = {
   productId: string;
   productType: 'Flower' | 'Bouquet' | 'Gift';
   productName: string;
+  imageUrl?: string | null;
   unitPrice: number;
   quantity: number;
   lineTotal: number;
@@ -39,6 +40,7 @@ export type Order = {
     productId: string;
     productType: 'Flower' | 'Bouquet' | 'Gift';
     productName: string;
+    imageUrl?: string | null;
     unitPrice: number;
     quantity: number;
   }[];

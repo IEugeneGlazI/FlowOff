@@ -238,6 +238,7 @@ export function CourierPanelPage() {
                         >
                           <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', minWidth: 0 }}>
                             <ProductImage
+                              src={item.imageUrl}
                               alt={item.productName}
                               sx={{
                                 width: 48,
@@ -342,6 +343,7 @@ export function CourierPanelPage() {
                         >
                           <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', minWidth: 0 }}>
                             <ProductImage
+                              src={item.imageUrl}
                               alt={item.productName}
                               sx={{
                                 width: 48,

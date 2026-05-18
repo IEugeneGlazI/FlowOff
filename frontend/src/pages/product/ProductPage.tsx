@@ -29,6 +29,10 @@ type FeedbackState = {
   severity: 'success' | 'info' | 'warning' | 'error';
 };
 
+function areProductsEqual(current: Product | null, next: Product | null) {
+  return JSON.stringify(current) === JSON.stringify(next);
+}
+
 export function ProductPage() {
   const { productId } = useParams();
   const location = useLocation();
@@ -67,7 +71,11 @@ export function ProductPage() {
       try {
         const nextProduct = await getProductById(productId as string);
         if (isMounted) {
-          setProduct(nextProduct);
+          setProduct((current) => (areProductsEqual(current, nextProduct) ? current : nextProduct));
+        }
+      } catch {
+        if (isMounted) {
+          setProduct(null);
         }
       } finally {
         if (isMounted) {
@@ -80,6 +88,40 @@ export function ProductPage() {
 
     return () => {
       isMounted = false;
+    };
+  }, [productId]);
+
+  useEffect(() => {
+    if (!productId) {
+      return;
+    }
+
+    let isActive = true;
+
+    const pollProduct = async () => {
+      if (!isActive || document.visibilityState === 'hidden') {
+        return;
+      }
+
+      try {
+        const nextProduct = await getProductById(productId);
+        if (isActive) {
+          setProduct((current) => (areProductsEqual(current, nextProduct) ? current : nextProduct));
+        }
+      } catch {
+        if (isActive) {
+          setProduct(null);
+        }
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void pollProduct();
+    }, 5000);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
     };
   }, [productId]);
 

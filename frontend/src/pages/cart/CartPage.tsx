@@ -17,6 +17,7 @@ import {
   Divider,
   FormControlLabel,
   IconButton,
+  Snackbar,
   Stack,
   TextField,
   ToggleButton,
@@ -448,6 +449,7 @@ export function CartPage() {
                           }}
                         >
                           <ProductImage
+                            src={item.imageUrl}
                             alt={item.productName}
                             sx={{
                               width: 92,
@@ -711,7 +713,6 @@ export function CartPage() {
               </Stack>
             </form>
 
-            {feedback ? <Alert severity={feedback.severity}>{feedback.message}</Alert> : null}
           </CardContent>
         </Card>
       </Box>
@@ -751,6 +752,17 @@ export function CartPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={Boolean(feedback)}
+        autoHideDuration={3200}
+        onClose={() => setFeedback(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity={feedback?.severity ?? 'success'} onClose={() => setFeedback(null)} sx={{ borderRadius: 2, minWidth: 320 }}>
+          {feedback?.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

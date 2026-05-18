@@ -65,6 +65,11 @@ public class CategoriesController : ControllerBase
             return NotFound();
         }
 
+        if (await _categoryRepository.IsInUseAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "Нельзя удалить категорию, пока она используется в карточке товара." });
+        }
+
         category.SoftDelete();
         await _categoryRepository.SaveChangesAsync(cancellationToken);
         return NoContent();
