@@ -162,6 +162,10 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.Property(cart => cart.CustomerId).HasMaxLength(450).IsRequired();
             entity.HasIndex(cart => cart.CustomerId).IsUnique();
+            entity.HasOne<ApplicationUser>()
+                .WithMany(user => user.Carts)
+                .HasForeignKey(cart => cart.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasMany(cart => cart.Items)
                 .WithOne(item => item.Cart)
                 .HasForeignKey(item => item.CartId);
@@ -200,8 +204,15 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(order => order.CustomerId).HasMaxLength(450).IsRequired();
             entity.Property(order => order.FloristId).HasMaxLength(450);
             entity.Property(order => order.TotalAmount).HasPrecision(18, 2);
-            entity.Property(order => order.Status).HasMaxLength(64).IsRequired();
             entity.Property(order => order.DeliveryMethod).HasConversion<string>().HasMaxLength(32);
+            entity.HasOne<ApplicationUser>()
+                .WithMany(user => user.CustomerOrders)
+                .HasForeignKey(order => order.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>()
+                .WithMany(user => user.FloristOrders)
+                .HasForeignKey(order => order.FloristId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(order => order.OrderStatusReference)
                 .WithMany()
                 .HasForeignKey(order => order.OrderStatusReferenceId)
@@ -235,7 +246,10 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.Property(delivery => delivery.Address).HasMaxLength(500);
             entity.Property(delivery => delivery.CourierId).HasMaxLength(450);
-            entity.Property(delivery => delivery.Status).HasMaxLength(64).IsRequired();
+            entity.HasOne<ApplicationUser>()
+                .WithMany(user => user.CourierDeliveries)
+                .HasForeignKey(delivery => delivery.CourierId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(delivery => delivery.DeliveryStatusReference)
                 .WithMany()
                 .HasForeignKey(delivery => delivery.DeliveryStatusReferenceId)
@@ -249,7 +263,6 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.Property(payment => payment.Amount).HasPrecision(18, 2);
             entity.Property(payment => payment.Provider).HasMaxLength(100).IsRequired();
-            entity.Property(payment => payment.Status).HasMaxLength(64).IsRequired();
             entity.HasOne(payment => payment.PaymentStatusReference)
                 .WithMany()
                 .HasForeignKey(payment => payment.PaymentStatusReferenceId)
@@ -263,6 +276,10 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.Property(request => request.CustomerId).HasMaxLength(450).IsRequired();
             entity.Property(request => request.Subject).HasMaxLength(200).IsRequired();
+            entity.HasOne<ApplicationUser>()
+                .WithMany(user => user.SupportRequests)
+                .HasForeignKey(request => request.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(request => request.Order)
                 .WithMany()
                 .HasForeignKey(request => request.OrderId)
@@ -281,6 +298,10 @@ public class FlowoffDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(message => message.AuthorUserId).HasMaxLength(450).IsRequired();
             entity.Property(message => message.AuthorRole).HasMaxLength(64).IsRequired();
             entity.Property(message => message.MessageText).HasMaxLength(4000).IsRequired();
+            entity.HasOne<ApplicationUser>()
+                .WithMany(user => user.SupportRequestMessages)
+                .HasForeignKey(message => message.AuthorUserId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasMany(message => message.Attachments)
                 .WithOne(attachment => attachment.SupportRequestMessage)
                 .HasForeignKey(attachment => attachment.SupportRequestMessageId);

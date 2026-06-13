@@ -1,0 +1,153 @@
+<mxfile host="app.diagrams.net" modified="2026-06-11T12:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="flowoff-checkout-class" name="Checkout Class Diagram">
+    <mxGraphModel dx="1900" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="Диаграмма классов для варианта использования «Оформление заказа покупателем»" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="500" y="20" width="900" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="layer1" value="Web" style="swimlane;html=1;rounded=0;startSize=26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="340" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="layer2" value="Application" style="swimlane;html=1;rounded=0;startSize=26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="410" y="80" width="640" height="380" as="geometry"/>
+        </mxCell>
+        <mxCell id="layer3" value="Domain" style="swimlane;html=1;rounded=0;startSize=26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="80" width="760" height="500" as="geometry"/>
+        </mxCell>
+        <mxCell id="layer4" value="Infrastructure" style="swimlane;html=1;rounded=0;startSize=26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="410" y="490" width="640" height="230" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ordersController" value="&lt;&lt;Controller&gt;&gt;&#xa;OrdersController&#xa;------------------------&#xa;+Create(request, ct): ActionResult&lt;OrderDto&gt;" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer1">
+          <mxGeometry x="20" y="40" width="290" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="iOrderService" value="&lt;&lt;Interface&gt;&gt;&#xa;IOrderService&#xa;------------------------&#xa;+CreateAsync(request, ct): Task&lt;OrderDto&gt;" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;dashed=1;" vertex="1" parent="layer2">
+          <mxGeometry x="20" y="40" width="260" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="orderService" value="&lt;&lt;Service&gt;&gt;&#xa;OrderService&#xa;------------------------&#xa;+CreateAsync(request, ct): Task&lt;OrderDto&gt;&#xa;-GetDiscountedPrice(...)&#xa;-GetPickupAddressAsync(...)" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer2">
+          <mxGeometry x="310" y="30" width="300" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="createOrderDto" value="&lt;&lt;DTO&gt;&gt;&#xa;CreateOrderRequestDto&#xa;------------------------&#xa;+DeliveryMethod&#xa;+DeliveryAddress&#xa;+PayOnPickup&#xa;+Items" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer2">
+          <mxGeometry x="20" y="170" width="220" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="createOrderItemDto" value="&lt;&lt;DTO&gt;&gt;&#xa;CreateOrderItemRequestDto&#xa;------------------------&#xa;+ProductId&#xa;+Quantity" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer2">
+          <mxGeometry x="30" y="310" width="200" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="orderDto" value="&lt;&lt;DTO&gt;&gt;&#xa;OrderDto&#xa;------------------------&#xa;+Id&#xa;+OrderNumber&#xa;+Status&#xa;+DeliveryMethod&#xa;+TotalAmount&#xa;+DeliveryAddress&#xa;+DeliveryStatus&#xa;+PaymentStatus" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer2">
+          <mxGeometry x="420" y="190" width="190" height="160" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="currentUser" value="&lt;&lt;Interface&gt;&gt;&#xa;ICurrentUserService&#xa;------------------------&#xa;+UserId&#xa;+Role&#xa;+IsAuthenticated" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;dashed=1;" vertex="1" parent="layer2">
+          <mxGeometry x="260" y="190" width="140" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="siteContacts" value="&lt;&lt;Interface&gt;&gt;&#xa;ISiteContactSettingsService&#xa;------------------------&#xa;+GetAsync(ct): SiteContactSettingsDto" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;dashed=1;" vertex="1" parent="layer2">
+          <mxGeometry x="260" y="310" width="190" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="siteContactsDto" value="&lt;&lt;DTO&gt;&gt;&#xa;SiteContactSettingsDto&#xa;------------------------&#xa;+Address&#xa;+Phone&#xa;+Email" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer2">
+          <mxGeometry x="470" y="370" width="140" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="iOrderRepo" value="&lt;&lt;Interface&gt;&gt;&#xa;IOrderRepository&#xa;------------------------&#xa;+AddAsync(order, ct)&#xa;+GetNextOrderNumberAsync(ct)" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;dashed=1;" vertex="1" parent="layer2">
+          <mxGeometry x="630" y="30" width="180" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="iProductRepo" value="&lt;&lt;Interface&gt;&gt;&#xa;IProductRepository&#xa;------------------------&#xa;+GetByIdAsync(id, ct, ...)" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;dashed=1;" vertex="1" parent="layer2">
+          <mxGeometry x="630" y="140" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="iPromotionRepo" value="&lt;&lt;Interface&gt;&gt;&#xa;IPromotionRepository&#xa;------------------------&#xa;+GetAllAsync(ct)" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;dashed=1;" vertex="1" parent="layer2">
+          <mxGeometry x="630" y="240" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="iOrderStatusRepo" value="&lt;&lt;Interface&gt;&gt;&#xa;IOrderStatusReferenceRepository&#xa;------------------------&#xa;+GetByNameAsync(name, ct)" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;dashed=1;" vertex="1" parent="layer2">
+          <mxGeometry x="830" y="30" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="iDeliveryStatusRepo" value="&lt;&lt;Interface&gt;&gt;&#xa;IDeliveryStatusReferenceRepository&#xa;------------------------&#xa;+GetByNameAsync(name, ct)" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;dashed=1;" vertex="1" parent="layer2">
+          <mxGeometry x="830" y="130" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="iPaymentStatusRepo" value="&lt;&lt;Interface&gt;&gt;&#xa;IPaymentStatusReferenceRepository&#xa;------------------------&#xa;+GetByNameAsync(name, ct)" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;dashed=1;" vertex="1" parent="layer2">
+          <mxGeometry x="830" y="230" width="180" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="orderEntity" value="&lt;&lt;Entity&gt;&gt;&#xa;Order&#xa;------------------------&#xa;+OrderNumber&#xa;+CustomerId&#xa;+DeliveryMethod&#xa;+TotalAmount&#xa;+CreatedAtUtc&#xa;+Items&#xa;+Delivery&#xa;+Payment" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer3">
+          <mxGeometry x="20" y="40" width="200" height="170" as="geometry"/>
+        </mxCell>
+        <mxCell id="orderItemEntity" value="&lt;&lt;Entity&gt;&gt;&#xa;OrderItem&#xa;------------------------&#xa;+ProductType&#xa;+ProductName&#xa;+UnitPrice&#xa;+Quantity" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer3">
+          <mxGeometry x="250" y="60" width="180" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="productEntity" value="&lt;&lt;Entity&gt;&gt;&#xa;Product&#xa;------------------------&#xa;+Name&#xa;+Price&#xa;+IsVisible&#xa;+Type" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer3">
+          <mxGeometry x="460" y="60" width="160" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="promotionEntity" value="&lt;&lt;Entity&gt;&gt;&#xa;Promotion&#xa;------------------------&#xa;+DiscountPercent&#xa;+StartsAtUtc&#xa;+EndsAtUtc&#xa;+IsActive" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer3">
+          <mxGeometry x="650" y="60" width="170" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="deliveryEntity" value="&lt;&lt;Entity&gt;&gt;&#xa;Delivery&#xa;------------------------&#xa;+Address&#xa;+DeliveryStatusReferenceId&#xa;+DeliveredAtUtc" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer3">
+          <mxGeometry x="20" y="260" width="190" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="paymentEntity" value="&lt;&lt;Entity&gt;&gt;&#xa;Payment&#xa;------------------------&#xa;+Amount&#xa;+Provider&#xa;+PaymentStatusReferenceId&#xa;+PaidAtUtc" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer3">
+          <mxGeometry x="240" y="260" width="200" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="orderStatusRef" value="&lt;&lt;Entity&gt;&gt;&#xa;OrderStatusReference&#xa;------------------------&#xa;+Name" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer3">
+          <mxGeometry x="470" y="250" width="160" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="deliveryStatusRef" value="&lt;&lt;Entity&gt;&gt;&#xa;DeliveryStatusReference&#xa;------------------------&#xa;+Name" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer3">
+          <mxGeometry x="660" y="250" width="170" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="paymentStatusRef" value="&lt;&lt;Entity&gt;&gt;&#xa;PaymentStatusReference&#xa;------------------------&#xa;+Name" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="layer3">
+          <mxGeometry x="860" y="250" width="170" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="orderRepoImpl" value="&lt;&lt;Repository&gt;&gt;&#xa;OrderRepository" style="shape=rectangle;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=13;" vertex="1" parent="layer4">
+          <mxGeometry x="40" y="50" width="150" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="productRepoImpl" value="&lt;&lt;Repository&gt;&gt;&#xa;ProductRepository" style="shape=rectangle;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=13;" vertex="1" parent="layer4">
+          <mxGeometry x="220" y="50" width="150" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="promotionRepoImpl" value="&lt;&lt;Repository&gt;&gt;&#xa;PromotionRepository" style="shape=rectangle;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=13;" vertex="1" parent="layer4">
+          <mxGeometry x="400" y="50" width="160" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="dbContext" value="&lt;&lt;DbContext&gt;&gt;&#xa;FlowoffDbContext" style="shape=rectangle;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=13;" vertex="1" parent="layer4">
+          <mxGeometry x="590" y="50" width="150" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e1" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="ordersController" target="iOrderService"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" style="endArrow=block;html=1;dashed=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="iOrderService"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="ordersController" target="createOrderDto"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="createOrderDto" target="createOrderItemDto"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="orderDto"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e6" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="currentUser"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="siteContacts"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e8" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="siteContacts" target="siteContactsDto"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e9" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="iOrderRepo"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e10" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="iProductRepo"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e11" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="iPromotionRepo"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e12" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="iOrderStatusRepo"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e13" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="iDeliveryStatusRepo"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e14" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="iPaymentStatusRepo"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e15" style="endArrow=block;html=1;dashed=1;strokeWidth=2;" edge="1" parent="1" source="orderRepoImpl" target="iOrderRepo"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e16" style="endArrow=block;html=1;dashed=1;strokeWidth=2;" edge="1" parent="1" source="productRepoImpl" target="iProductRepo"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e17" style="endArrow=block;html=1;dashed=1;strokeWidth=2;" edge="1" parent="1" source="promotionRepoImpl" target="iPromotionRepo"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e18" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderRepoImpl" target="dbContext"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e19" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="productRepoImpl" target="dbContext"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e20" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="promotionRepoImpl" target="dbContext"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e21" style="endArrow=diamondThin;html=1;strokeWidth=2;" edge="1" parent="1" source="orderEntity" target="orderItemEntity"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e22" style="endArrow=diamondThin;html=1;strokeWidth=2;" edge="1" parent="1" source="orderEntity" target="deliveryEntity"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e23" style="endArrow=diamondThin;html=1;strokeWidth=2;" edge="1" parent="1" source="orderEntity" target="paymentEntity"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e24" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderItemEntity" target="productEntity"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e25" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderEntity" target="orderStatusRef"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e26" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="deliveryEntity" target="deliveryStatusRef"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e27" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="paymentEntity" target="paymentStatusRef"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e28" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="orderEntity"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e29" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="promotionEntity"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e30" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="orderService" target="productEntity"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

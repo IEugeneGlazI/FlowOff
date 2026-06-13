@@ -1,6 +1,6 @@
 using Flowoff.Domain.Common;
-
 using Flowoff.Domain.Statuses;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Flowoff.Domain.Entities;
 
@@ -10,10 +10,14 @@ public class Delivery : Entity
     public Order? Order { get; private set; }
     public string? CourierId { get; private set; }
     public string? Address { get; private set; }
-    public string Status { get; private set; } = DeliveryStatusCodes.UnderReview;
     public Guid DeliveryStatusReferenceId { get; private set; }
     public DeliveryStatusReference? DeliveryStatusReference { get; private set; }
     public DateTime? DeliveredAtUtc { get; private set; }
+    [NotMapped]
+    public string Status => DeliveryStatusReference?.Name ?? _statusName;
+
+    [NotMapped]
+    private string _statusName = DeliveryStatusCodes.UnderReview;
 
     private Delivery()
     {
@@ -61,7 +65,7 @@ public class Delivery : Entity
     public void SetStatus(Guid deliveryStatusReferenceId, string status)
     {
         DeliveryStatusReferenceId = deliveryStatusReferenceId;
-        Status = status;
+        _statusName = status;
     }
 
     public void MarkDelivered(Guid deliveryStatusReferenceId)

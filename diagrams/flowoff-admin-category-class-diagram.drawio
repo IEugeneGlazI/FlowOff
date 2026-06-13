@@ -1,0 +1,92 @@
+<mxfile host="app.diagrams.net" modified="2026-06-11T12:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="flowoff-admin-category-class" name="Admin Category Class Diagram">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="Диаграмма классов для варианта использования «Изменение администратором категории подарка»" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="350" y="20" width="1100" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="frontendLayer" value="Frontend" style="swimlane;html=1;rounded=0;startSize=28;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="420" height="360" as="geometry"/>
+        </mxCell>
+        <mxCell id="webLayer" value="Web API" style="swimlane;html=1;rounded=0;startSize=28;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="90" width="420" height="360" as="geometry"/>
+        </mxCell>
+        <mxCell id="domainLayer" value="Domain" style="swimlane;html=1;rounded=0;startSize=28;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="90" width="760" height="360" as="geometry"/>
+        </mxCell>
+        <mxCell id="infraLayer" value="Infrastructure" style="swimlane;html=1;rounded=0;startSize=28;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="500" width="820" height="300" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="adminPanelPage" value="&lt;&lt;Boundary&gt;&gt;&#xa;AdminPanelPage&#xa;------------------------------&#xa;-categories: Category[]&#xa;-dialogState: DialogState&#xa;-referenceTab: ReferenceTab&#xa;------------------------------&#xa;+openEditDialog(type, item): void&#xa;+handleReferenceSubmit(): Promise&lt;void&gt;&#xa;+loadReferenceData(): Promise&lt;void&gt;" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="frontendLayer">
+          <mxGeometry x="30" y="50" width="350" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="catalogApi" value="&lt;&lt;API client&gt;&gt;&#xa;catalogApi&#xa;------------------------------&#xa;+getCategories(): Promise&lt;Category[]&gt;&#xa;+createCategory(payload, token): Promise&lt;Category&gt;&#xa;+updateCategory(categoryId, payload, token): Promise&lt;Category&gt;&#xa;+deleteCategory(categoryId, token): Promise&lt;void&gt;" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="frontendLayer">
+          <mxGeometry x="30" y="240" width="350" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="categoriesController" value="&lt;&lt;Controller&gt;&gt;&#xa;CategoriesController&#xa;------------------------------&#xa;-_categoryRepository: ICategoryRepository&#xa;------------------------------&#xa;+GetAll(ct): Task&lt;IActionResult&gt;&#xa;+Create(request, ct): Task&lt;IActionResult&gt;&#xa;+Update(id, request, ct): Task&lt;IActionResult&gt;&#xa;+Delete(id, ct): Task&lt;IActionResult&gt;" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="webLayer">
+          <mxGeometry x="30" y="50" width="350" height="170" as="geometry"/>
+        </mxCell>
+        <mxCell id="updateCategoryRequest" value="&lt;&lt;DTO&gt;&gt;&#xa;UpdateCategoryRequest&#xa;------------------------------&#xa;+Name: string" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="webLayer">
+          <mxGeometry x="55" y="260" width="300" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="iCategoryRepository" value="&lt;&lt;Interface&gt;&gt;&#xa;ICategoryRepository&#xa;------------------------------&#xa;+GetAllAsync(ct): Task&lt;IReadOnlyCollection&lt;Category&gt;&gt;&#xa;+GetByIdAsync(id, ct): Task&lt;Category?&gt;&#xa;+IsInUseAsync(id, ct): Task&lt;bool&gt;&#xa;+AddAsync(category, ct): Task&#xa;+SaveChangesAsync(ct): Task" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;dashed=1;" vertex="1" parent="domainLayer">
+          <mxGeometry x="30" y="50" width="360" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="category" value="&lt;&lt;Entity&gt;&gt;&#xa;Category&#xa;------------------------------&#xa;+Name: string&#xa;+IsDeleted: bool&#xa;+DeletedAtUtc: DateTime?&#xa;------------------------------&#xa;+Category(name)&#xa;+Update(name): void&#xa;+SoftDelete(): void" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="domainLayer">
+          <mxGeometry x="450" y="50" width="280" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="entity" value="&lt;&lt;Base class&gt;&gt;&#xa;Entity&#xa;------------------------------&#xa;+Id: Guid" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="domainLayer">
+          <mxGeometry x="470" y="250" width="240" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="gift" value="&lt;&lt;Entity&gt;&gt;&#xa;Gift&#xa;------------------------------&#xa;+CategoryId: Guid&#xa;+Category: Category?&#xa;+Type: ProductType = Gift&#xa;------------------------------&#xa;+UpdateDetails(..., categoryId): void" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="domainLayer">
+          <mxGeometry x="30" y="240" width="340" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="categoryRepository" value="&lt;&lt;Repository&gt;&gt;&#xa;CategoryRepository&#xa;------------------------------&#xa;-_dbContext: FlowoffDbContext&#xa;------------------------------&#xa;+GetAllAsync(ct): Task&lt;IReadOnlyCollection&lt;Category&gt;&gt;&#xa;+GetByIdAsync(id, ct): Task&lt;Category?&gt;&#xa;+IsInUseAsync(id, ct): Task&lt;bool&gt;&#xa;+AddAsync(category, ct): Task&#xa;+SaveChangesAsync(ct): Task" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="infraLayer">
+          <mxGeometry x="30" y="50" width="390" height="170" as="geometry"/>
+        </mxCell>
+        <mxCell id="dbContext" value="&lt;&lt;DbContext&gt;&gt;&#xa;FlowoffDbContext&#xa;------------------------------&#xa;+Categories: DbSet&lt;Category&gt;&#xa;+Gifts: DbSet&lt;Gift&gt;&#xa;------------------------------&#xa;+SaveChangesAsync(ct): Task&lt;int&gt;" style="shape=rectangle;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="infraLayer">
+          <mxGeometry x="500" y="70" width="280" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="adminToPage" value="использует" style="endArrow=block;html=1;rounded=0;fontSize=12;" edge="1" parent="1" source="adminPanelPage" target="catalogApi">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="apiToController" value="PUT /api/Categories/{id}" style="endArrow=block;html=1;rounded=0;fontSize=12;" edge="1" parent="1" source="catalogApi" target="categoriesController">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="controllerToDto" value="получает" style="endArrow=open;html=1;rounded=0;dashed=1;fontSize=12;" edge="1" parent="1" source="categoriesController" target="updateCategoryRequest">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="controllerToInterface" value="зависит от" style="endArrow=block;html=1;rounded=0;fontSize=12;" edge="1" parent="1" source="categoriesController" target="iCategoryRepository">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="repoImplements" value="реализует" style="endArrow=block;endFill=0;html=1;rounded=0;dashed=1;fontSize=12;" edge="1" parent="1" source="categoryRepository" target="iCategoryRepository">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="repoToDb" value="использует" style="endArrow=block;html=1;rounded=0;fontSize=12;" edge="1" parent="1" source="categoryRepository" target="dbContext">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="interfaceToCategory" value="возвращает / сохраняет" style="endArrow=open;html=1;rounded=0;dashed=1;fontSize=12;" edge="1" parent="1" source="iCategoryRepository" target="category">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="categoryInheritsEntity" value="наследует" style="endArrow=block;endFill=0;html=1;rounded=0;fontSize=12;" edge="1" parent="1" source="category" target="entity">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="giftToCategory" value="1 категория — 0..* подарков" style="endArrow=open;html=1;rounded=0;fontSize=12;" edge="1" parent="1" source="gift" target="category">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="dbToEntities" value="хранит" style="endArrow=open;html=1;rounded=0;dashed=1;fontSize=12;" edge="1" parent="1" source="dbContext" target="category">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

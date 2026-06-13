@@ -1,0 +1,154 @@
+<mxfile host="app.diagrams.net" agent="Codex">
+  <diagram id="gift-category-class-diagram" name="Изменение категории подарка">
+    <mxGraphModel dx="2109" dy="1084" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1450" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="Title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" value="Диаграмма классов для варианта использования «Изменение категории подарка в карточке товара»" vertex="1">
+          <mxGeometry height="40" width="1050" x="575" y="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="UpdateProductRequestDto" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;DTO&amp;gt;&amp;gt;&lt;br&gt;UpdateProductRequestDto&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ Name : string&lt;br&gt;+ Description : string?&lt;br&gt;+ ImageUrl : string?&lt;br&gt;+ Price : decimal&lt;br&gt;+ IsVisible : bool&lt;br&gt;+ CategoryId : Guid?&lt;br&gt;+ FlowerInId : Guid?&lt;br&gt;+ ColorId : Guid?&lt;br&gt;+ FlowerInIds : IReadOnlyCollection&amp;lt;Guid&amp;gt;&lt;br&gt;+ ColorIds : IReadOnlyCollection&amp;lt;Guid&amp;gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="220" width="330" x="70" y="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ProductType" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;enumeration&amp;gt;&amp;gt;&lt;br&gt;ProductType&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;Flower&lt;br&gt;Bouquet&lt;br&gt;Gift&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="230" x="120" y="420" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ProductDto" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;DTO&amp;gt;&amp;gt;&lt;br&gt;ProductDto&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ Id : Guid&lt;br&gt;+ Name : string&lt;br&gt;+ Description : string?&lt;br&gt;+ ImageUrl : string?&lt;br&gt;+ Price : decimal&lt;br&gt;+ IsVisible : bool&lt;br&gt;+ Type : string&lt;br&gt;+ CategoryId : Guid?&lt;br&gt;+ CategoryName : string?&lt;/div&gt;" vertex="1">
+          <mxGeometry height="205" width="280" x="95" y="650" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ProductsController" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;Controller&amp;gt;&amp;gt;&lt;br&gt;ProductsController&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;- _productService : IProductService&lt;br&gt;- _environment : IWebHostEnvironment&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ ProductsController(productService : IProductService, environment : IWebHostEnvironment)&lt;br&gt;+ GetCatalog(type : ProductType?, categoryId : Guid?, includeHidden : bool, ct : CancellationToken) : Task&amp;lt;ActionResult&amp;lt;IReadOnlyCollection&amp;lt;ProductDto&amp;gt;&amp;gt;&amp;gt;&lt;br&gt;+ GetById(id : Guid, ct : CancellationToken) : Task&amp;lt;ActionResult&amp;lt;ProductDto&amp;gt;&amp;gt;&lt;br&gt;+ Update(id : Guid, request : UpdateProductRequestDto, ct : CancellationToken) : Task&amp;lt;ActionResult&amp;lt;ProductDto&amp;gt;&amp;gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="245" width="500" x="500" y="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="IProductService" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;Interface&amp;gt;&amp;gt;&lt;br&gt;IProductService&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ GetCatalogAsync(filter : ProductFilterDto, ct : CancellationToken, includeHidden : bool) : Task&amp;lt;IReadOnlyCollection&amp;lt;ProductDto&amp;gt;&amp;gt;&lt;br&gt;+ GetByIdAsync(id : Guid, ct : CancellationToken, includeHidden : bool) : Task&amp;lt;ProductDto?&amp;gt;&lt;br&gt;+ CreateAsync(request : CreateProductRequestDto, ct : CancellationToken) : Task&amp;lt;ProductDto&amp;gt;&lt;br&gt;+ UpdateAsync(id : Guid, request : UpdateProductRequestDto, ct : CancellationToken) : Task&amp;lt;ProductDto&amp;gt;&lt;br&gt;+ DeleteAsync(id : Guid, ct : CancellationToken) : Task&lt;/div&gt;" vertex="1">
+          <mxGeometry height="175" width="500" x="500" y="470" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ProductService" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;Service&amp;gt;&amp;gt;&lt;br&gt;ProductService&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;- _productRepository : IProductRepository&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ ProductService(productRepository : IProductRepository)&lt;br&gt;+ GetCatalogAsync(filter : ProductFilterDto, ct : CancellationToken, includeHidden : bool) : Task&amp;lt;IReadOnlyCollection&amp;lt;ProductDto&amp;gt;&amp;gt;&lt;br&gt;+ GetByIdAsync(id : Guid, ct : CancellationToken, includeHidden : bool) : Task&amp;lt;ProductDto?&amp;gt;&lt;br&gt;+ UpdateAsync(id : Guid, request : UpdateProductRequestDto, ct : CancellationToken) : Task&amp;lt;ProductDto&amp;gt;&lt;br&gt;- EnsureCategoryExistsAsync(categoryId : Guid, ct : CancellationToken) : Task&lt;br&gt;- Map(product : Product) : ProductDto&lt;/div&gt;" vertex="1">
+          <mxGeometry height="250" width="500" x="500" y="770" as="geometry" />
+        </mxCell>
+
+        <mxCell id="IProductRepository" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;Interface&amp;gt;&amp;gt;&lt;br&gt;IProductRepository&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ GetAllAsync(type : ProductType?, categoryId : Guid?, colorId : Guid?, flowerInId : Guid?, includeHidden : bool, ct : CancellationToken) : Task&amp;lt;IReadOnlyCollection&amp;lt;Product&amp;gt;&amp;gt;&lt;br&gt;+ GetByIdAsync(id : Guid, ct : CancellationToken, includeHidden : bool, asTracking : bool) : Task&amp;lt;Product?&amp;gt;&lt;br&gt;+ AddAsync(product : Product, ct : CancellationToken) : Task&lt;br&gt;+ CategoryExistsAsync(categoryId : Guid, ct : CancellationToken) : Task&amp;lt;bool&amp;gt;&lt;br&gt;+ SaveChangesAsync(ct : CancellationToken) : Task&lt;/div&gt;" vertex="1">
+          <mxGeometry height="190" width="500" x="500" y="1130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="Gift" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&lt;br&gt;Gift&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ CategoryId : Guid&lt;br&gt;+ Category : Category?&lt;br&gt;+ Type : ProductType&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ Gift(name : string, description : string?, imageUrl : string?, price : decimal, categoryId : Guid, isVisible : bool)&lt;br&gt;+ UpdateDetails(name : string, description : string?, imageUrl : string?, price : decimal, categoryId : Guid) : void&lt;/div&gt;" vertex="1">
+          <mxGeometry height="190" width="440" x="1120" y="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="Product" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&lt;br&gt;Product&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ Name : string&lt;br&gt;+ Description : string?&lt;br&gt;+ ImageUrl : string?&lt;br&gt;+ Price : decimal&lt;br&gt;+ IsVisible : bool&lt;br&gt;+ IsDeleted : bool&lt;br&gt;+ DeletedAtUtc : DateTime?&lt;br&gt;+ Type : ProductType&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ UpdateDetails(name : string, description : string?, imageUrl : string?, price : decimal) : void&lt;br&gt;+ SetVisibility(isVisible : bool) : void&lt;br&gt;+ SoftDelete() : void&lt;/div&gt;" vertex="1">
+          <mxGeometry height="275" width="420" x="1140" y="440" as="geometry" />
+        </mxCell>
+
+        <mxCell id="Category" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&lt;br&gt;Category&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ Name : string&lt;br&gt;+ IsDeleted : bool&lt;br&gt;+ DeletedAtUtc : DateTime?&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ Category(name : string)&lt;br&gt;+ Update(name : string) : void&lt;br&gt;+ SoftDelete() : void&lt;/div&gt;" vertex="1">
+          <mxGeometry height="175" width="300" x="1200" y="830" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ProductRepository" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;Repository&amp;gt;&amp;gt;&lt;br&gt;ProductRepository&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;- _dbContext : FlowoffDbContext&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ ProductRepository(dbContext : FlowoffDbContext)&lt;br&gt;+ GetAllAsync(type : ProductType?, categoryId : Guid?, colorId : Guid?, flowerInId : Guid?, includeHidden : bool, ct : CancellationToken) : Task&amp;lt;IReadOnlyCollection&amp;lt;Product&amp;gt;&amp;gt;&lt;br&gt;+ GetByIdAsync(id : Guid, ct : CancellationToken, includeHidden : bool, asTracking : bool) : Task&amp;lt;Product?&amp;gt;&lt;br&gt;+ CategoryExistsAsync(categoryId : Guid, ct : CancellationToken) : Task&amp;lt;bool&amp;gt;&lt;br&gt;+ SaveChangesAsync(ct : CancellationToken) : Task&lt;/div&gt;" vertex="1">
+          <mxGeometry height="230" width="500" x="1130" y="1110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="FlowoffDbContext" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=top;spacingTop=6;fontSize=12;" value="&lt;div&gt;&lt;b&gt;&amp;lt;&amp;lt;DbContext&amp;gt;&amp;gt;&lt;br&gt;FlowoffDbContext&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ Gifts : DbSet&amp;lt;Gift&amp;gt;&lt;br&gt;+ Categories : DbSet&amp;lt;Category&amp;gt;&lt;br&gt;+ Bouquets : DbSet&amp;lt;Bouquet&amp;gt;&lt;br&gt;+ Flowers : DbSet&amp;lt;Flower&amp;gt;&lt;/div&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;+ SaveChangesAsync(ct : CancellationToken) : Task&amp;lt;int&amp;gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="175" width="330" x="1770" y="1135" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-controller-dto" edge="1" parent="1" source="ProductsController" style="endArrow=open;html=1;rounded=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" target="UpdateProductRequestDto">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-dto-producttype" edge="1" parent="1" source="UpdateProductRequestDto" style="endArrow=open;html=1;rounded=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" target="ProductType">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-controller-service" edge="1" parent="1" source="ProductsController" style="endArrow=none;startArrow=diamondThin;startFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="IProductService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-controller-service-left" connectable="0" parent="e-controller-service" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry"><mxPoint x="8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="e-controller-service-right" connectable="0" parent="e-controller-service" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry"><mxPoint x="-8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e-service-realization" edge="1" parent="1" source="ProductService" style="endArrow=block;endFill=0;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="IProductService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-service-repo" edge="1" parent="1" source="ProductService" style="endArrow=none;startArrow=diamondThin;startFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="IProductRepository">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-service-repo-left" connectable="0" parent="e-service-repo" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry"><mxPoint x="8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="e-service-repo-right" connectable="0" parent="e-service-repo" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry"><mxPoint x="-8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e-service-gift" edge="1" parent="1" source="ProductService" style="endArrow=open;html=1;rounded=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" target="Gift">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-service-productdto" edge="1" parent="1" source="ProductService" style="endArrow=open;html=1;rounded=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" target="ProductDto">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-repo-realization" edge="1" parent="1" source="ProductRepository" style="endArrow=block;endFill=0;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="IProductRepository">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-repo-db" edge="1" parent="1" source="ProductRepository" style="endArrow=none;startArrow=diamondThin;startFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="FlowoffDbContext">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-repo-db-left" connectable="0" parent="e-repo-db" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry"><mxPoint x="8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="e-repo-db-right" connectable="0" parent="e-repo-db" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry"><mxPoint x="-8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e-gift-product" edge="1" parent="1" source="Gift" style="endArrow=block;endFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="Product">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-gift-category" edge="1" parent="1" source="Gift" style="endArrow=none;startArrow=diamondThin;startFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="Category">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-gift-category-left" connectable="0" parent="e-gift-category" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry"><mxPoint x="8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="e-gift-category-right" connectable="0" parent="e-gift-category" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry"><mxPoint x="-8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e-product-type" edge="1" parent="1" source="Product" style="endArrow=open;html=1;rounded=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" target="ProductType">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-db-gift" edge="1" parent="1" source="FlowoffDbContext" style="endArrow=none;startArrow=diamondThin;startFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="Gift">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-db-gift-left" connectable="0" parent="e-db-gift" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry"><mxPoint x="8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="e-db-gift-right" connectable="0" parent="e-db-gift" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry"><mxPoint x="-8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e-db-category" edge="1" parent="1" source="FlowoffDbContext" style="endArrow=none;startArrow=diamondThin;startFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="Category">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-db-category-left" connectable="0" parent="e-db-category" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry"><mxPoint x="8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="e-db-category-right" connectable="0" parent="e-db-category" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;fontSize=12;" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry"><mxPoint x="-8" y="-10" as="offset" /></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

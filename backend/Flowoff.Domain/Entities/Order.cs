@@ -1,6 +1,7 @@
 using Flowoff.Domain.Common;
 using Flowoff.Domain.Enums;
 using Flowoff.Domain.Statuses;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Flowoff.Domain.Entities;
 
@@ -10,7 +11,6 @@ public class Order : Entity
     public string CustomerId { get; private set; } = string.Empty;
     public string? FloristId { get; private set; }
     public DeliveryMethod DeliveryMethod { get; private set; }
-    public string Status { get; private set; } = OrderStatusCodes.Active;
     public Guid OrderStatusReferenceId { get; private set; }
     public OrderStatusReference? OrderStatusReference { get; private set; }
     public decimal TotalAmount { get; private set; }
@@ -18,6 +18,11 @@ public class Order : Entity
     public ICollection<OrderItem> Items { get; private set; } = [];
     public Delivery? Delivery { get; private set; }
     public Payment? Payment { get; private set; }
+    [NotMapped]
+    public string Status => OrderStatusReference?.Name ?? _statusName;
+
+    [NotMapped]
+    private string _statusName = OrderStatusCodes.Active;
 
     private Order()
     {
@@ -259,6 +264,6 @@ public class Order : Entity
     private void SetOrderStatus(Guid referenceId, string status)
     {
         OrderStatusReferenceId = referenceId;
-        Status = status;
+        _statusName = status;
     }
 }

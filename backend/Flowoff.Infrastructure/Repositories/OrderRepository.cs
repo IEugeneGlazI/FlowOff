@@ -34,6 +34,7 @@ public class OrderRepository : IOrderRepository
     public Task<Order?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return _dbContext.Orders
+            .Include(order => order.OrderStatusReference)
             .Include(order => order.Items)
                 .ThenInclude(item => item.Bouquet)
             .Include(order => order.Items)
@@ -41,7 +42,9 @@ public class OrderRepository : IOrderRepository
             .Include(order => order.Items)
                 .ThenInclude(item => item.Gift)
             .Include(order => order.Delivery)
+                .ThenInclude(delivery => delivery!.DeliveryStatusReference)
             .Include(order => order.Payment)
+                .ThenInclude(payment => payment!.PaymentStatusReference)
             .FirstOrDefaultAsync(order => order.Id == id, cancellationToken);
     }
 
@@ -56,6 +59,7 @@ public class OrderRepository : IOrderRepository
     public IQueryable<Order> Query()
     {
         return _dbContext.Orders
+            .Include(order => order.OrderStatusReference)
             .Include(order => order.Items)
                 .ThenInclude(item => item.Bouquet)
             .Include(order => order.Items)
@@ -63,7 +67,9 @@ public class OrderRepository : IOrderRepository
             .Include(order => order.Items)
                 .ThenInclude(item => item.Gift)
             .Include(order => order.Delivery)
-            .Include(order => order.Payment);
+                .ThenInclude(delivery => delivery!.DeliveryStatusReference)
+            .Include(order => order.Payment)
+                .ThenInclude(payment => payment!.PaymentStatusReference);
     }
 
     public async Task<IReadOnlyCollection<Order>> GetAvailableForCourierAsync(CancellationToken cancellationToken)
@@ -76,13 +82,18 @@ public class OrderRepository : IOrderRepository
                 .ThenInclude(item => item.Flower)
             .Include(order => order.Items)
                 .ThenInclude(item => item.Gift)
+            .Include(order => order.OrderStatusReference)
             .Include(order => order.Delivery)
+                .ThenInclude(delivery => delivery!.DeliveryStatusReference)
             .Include(order => order.Payment)
+                .ThenInclude(payment => payment!.PaymentStatusReference)
             .Where(order =>
                 order.DeliveryMethod == DeliveryMethod.Delivery
-                && order.Status == OrderStatusCodes.Active
+                && order.OrderStatusReference != null
+                && order.OrderStatusReference.Name == OrderStatusCodes.Active
                 && order.Delivery != null
-                && order.Delivery.Status == DeliveryStatusCodes.ReadyForPickup
+                && order.Delivery.DeliveryStatusReference != null
+                && order.Delivery.DeliveryStatusReference.Name == DeliveryStatusCodes.ReadyForPickup
                 && order.Delivery.CourierId == null)
             .OrderByDescending(order => order.CreatedAtUtc)
             .ToArrayAsync(cancellationToken);
@@ -98,8 +109,11 @@ public class OrderRepository : IOrderRepository
                 .ThenInclude(item => item.Flower)
             .Include(order => order.Items)
                 .ThenInclude(item => item.Gift)
+            .Include(order => order.OrderStatusReference)
             .Include(order => order.Delivery)
+                .ThenInclude(delivery => delivery!.DeliveryStatusReference)
             .Include(order => order.Payment)
+                .ThenInclude(payment => payment!.PaymentStatusReference)
             .Where(order => order.Delivery != null && order.Delivery.CourierId == courierId)
             .OrderByDescending(order => order.CreatedAtUtc)
             .ToArrayAsync(cancellationToken);
@@ -115,8 +129,11 @@ public class OrderRepository : IOrderRepository
                 .ThenInclude(item => item.Flower)
             .Include(order => order.Items)
                 .ThenInclude(item => item.Gift)
+            .Include(order => order.OrderStatusReference)
             .Include(order => order.Delivery)
+                .ThenInclude(delivery => delivery!.DeliveryStatusReference)
             .Include(order => order.Payment)
+                .ThenInclude(payment => payment!.PaymentStatusReference)
             .Where(order => order.CustomerId == customerId)
             .OrderByDescending(order => order.CreatedAtUtc)
             .ToArrayAsync(cancellationToken);

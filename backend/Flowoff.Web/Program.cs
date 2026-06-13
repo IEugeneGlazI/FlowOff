@@ -37,6 +37,7 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1",
         Description = "API for flower store web application."
     });
+    options.CustomSchemaIds(type => type.FullName?.Replace("+", ".") ?? type.Name);
 
     var jwtSecurityScheme = new OpenApiSecurityScheme
     {
@@ -64,11 +65,8 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseCors(FrontendCorsPolicy);

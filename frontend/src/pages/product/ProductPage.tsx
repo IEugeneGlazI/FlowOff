@@ -41,6 +41,7 @@ export function ProductPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [quantityInput, setQuantityInput] = useState('1');
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const { addItem } = useCart();
@@ -90,6 +91,10 @@ export function ProductPage() {
       isMounted = false;
     };
   }, [productId]);
+
+  useEffect(() => {
+    setQuantityInput(String(quantity));
+  }, [quantity]);
 
   useEffect(() => {
     if (!productId) {
@@ -143,6 +148,30 @@ export function ProductPage() {
         severity: error instanceof ApiError && error.status === 401 ? 'warning' : 'error',
       });
     }
+  }
+
+  function handleQuantityInputChange(value: string) {
+    if (!/^\d*$/.test(value)) {
+      return;
+    }
+
+    setQuantityInput(value);
+
+    if (!value) {
+      return;
+    }
+
+    const parsedValue = Number(value);
+    if (Number.isInteger(parsedValue) && parsedValue >= 1) {
+      setQuantity(parsedValue);
+    }
+  }
+
+  function commitQuantityInput() {
+    const parsedValue = Number(quantityInput);
+    const nextQuantity = Number.isInteger(parsedValue) && parsedValue >= 1 ? parsedValue : 1;
+    setQuantity(nextQuantity);
+    setQuantityInput(String(nextQuantity));
   }
 
   const detailChips = useMemo(() => {
@@ -396,8 +425,19 @@ export function ProductPage() {
                 </Button>
 
                 <TextField
-                  value={quantity}
+                  value={quantityInput}
                   size="small"
+                  onChange={(event) => handleQuantityInputChange(event.target.value)}
+                  onBlur={commitQuantityInput}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      commitQuantityInput();
+                    }
+                  }}
+                  inputProps={{
+                    inputMode: 'numeric',
+                    pattern: '[0-9]*',
+                  }}
                   sx={{
                     width: 84,
                     '& .MuiOutlinedInput-input': {
